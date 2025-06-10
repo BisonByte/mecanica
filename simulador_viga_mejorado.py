@@ -723,7 +723,7 @@ class SimuladorVigaMejorado:
         ax.grid(True, linestyle='--', alpha=0.7)
         ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=3, fontsize=10, frameon=True, facecolor='white', edgecolor='gray')
 
-        plt.tight_layout()
+
         canvas = FigureCanvasTkAgg(fig, master=self.frame_grafico)
         canvas.draw()
         canvas.get_tk_widget().pack(fill="both", expand=True)
@@ -917,12 +917,9 @@ class SimuladorVigaMejorado:
         for widget in self.frame_grafico.winfo_children():
             widget.destroy()
             
-        fig = plt.figure(figsize=(12, 24))
-        gs = fig.add_gridspec(4, 1, height_ratios=[1, 1, 1, 1], hspace=0.4)
-        ax1 = fig.add_subplot(gs[0])
-        ax2 = fig.add_subplot(gs[1])
-        ax3 = fig.add_subplot(gs[2])
-        ax4 = fig.add_subplot(gs[3])
+        fig, (ax1, ax2, ax3, ax4) = plt.subplots(
+            4, 1, figsize=(12, 24), constrained_layout=True
+        )
         
         L = self.longitud.get()
         
@@ -1009,8 +1006,7 @@ class SimuladorVigaMejorado:
         # Añadir valor del par torsor al diagrama de torsión
         ax4.text(L*1.05, par_torsor, f'T: {par_torsor:.2f}N·m', va='center', ha='left', fontsize=8)
         
-        plt.tight_layout()
-        
+
         canvas = FigureCanvasTkAgg(fig, master=self.frame_grafico)
         canvas.draw()
         canvas.get_tk_widget().pack(fill="both", expand=True)
