@@ -851,46 +851,32 @@ class SimuladorVigaMejorado:
         
     def mostrar_ayuda(self):
         ayuda = """
-🎓 GUÍA COMPLETA DEL SIMULADOR DE VIGA
+🎓 GUÍA RÁPIDA DEL SIMULADOR DE VIGA
 
-📐 CONCEPTOS BÁSICOS:
-• Viga: Elemento estructural horizontal que soporta cargas
-• Reacciones: Fuerzas en los apoyos que equilibran las cargas
-• Cortante: Fuerza interna perpendicular al eje de la viga
-• Momento: Tendencia a causar rotación en la viga
-
-🔧 CONFIGURACIÓN:
-• Longitud (5-30 m)
-• Apoyos: Fijo (impide movimiento) y Móvil (permite deslizamiento)
+🔹 CONFIGURACIÓN
+• Longitud entre 5 y 30 m
+• Apoyos A y B (Fijo/Móvil) y apoyo C opcional con posición
 • Altura inicial y final para vigas inclinadas
-• Par torsor opcional
+• Par torsor y modo 3D opcionales
 
-⬇️ TIPOS DE CARGAS:
-• Puntuales: Fuerza concentrada en un punto específico
-• Distribuidas: Fuerza repartida uniformemente en un tramo
+🔹 CARGAS
+• Puntuales: posición y magnitud
+• Distribuidas: inicio, fin y magnitud (N/m)
 
-📊 CÁLCULOS:
-• Reacciones usando ΣF=0 y ΣM=0
-• Centro de masa de las cargas
-• Diagramas de cortante y momento
-• Propiedades de la sección transversal
-• Cálculo del centro de gravedad de figuras irregulares (clic en el lienzo para agregarlas)
+🔹 QUÉ PUEDE HACER
+• 🧮 Calcular Reacciones
+• 📍 Calcular Centro de Masa de las cargas
+• 📊 Mostrar Diagramas de cortante y momento
+• Calcular Propiedades de la Sección (área, CG e inercia)
+• Figuras Irregulares: añada rectángulos, triángulos o círculos y obtenga su centro de gravedad
+• 🔍 Ampliar la gráfica en otra ventana
+• 🗑️ Limpiar Todo para reiniciar
 
-✨ FUNCIONES EXTRA:
-• Visualización en modo 3D
-• Ampliar la gráfica en una ventana independiente
-
-💡 CONSEJOS:
-• Empieza con casos simples (1‑2 cargas)
-• Verifica que las reacciones sumen la carga total
-• El momento máximo indica dónde la viga sufre más
-• Usa valores realistas para casos prácticos
-
-🎯 EJEMPLO BÁSICO:
-1. Viga de 10 m
-2. Carga puntual: 100 N en 4 m
-3. Calcular reacciones: RA=60 N, RB=40 N
-4. Ver diagramas para análisis completo
+🔹 PASOS BÁSICOS
+1. Configure la viga y apoyos
+2. Agregue las cargas necesarias
+3. Presione "Calcular Reacciones"
+4. Revise resultados y diagramas en la pestaña de Resultados
         """
         
         ventana_ayuda = tk.Toplevel(self.root)
