@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.animation import FuncAnimation
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -86,6 +87,16 @@ class SimuladorVigaMejorado:
         
         # Dibujar la viga inicial
         self.dibujar_viga_actual()
+
+    def on_button_click(self, button, action):
+        """Flash the button and execute its action."""
+        self.flash_button(button)
+        self.root.after(10, action)
+
+    def flash_button(self, button):
+        orig_style = button.cget("style")
+        button.configure(style="Flash.TButton")
+        self.root.after(200, lambda: button.configure(style=orig_style))
         
     
     def crear_widgets(self):
@@ -210,35 +221,41 @@ class SimuladorVigaMejorado:
         style = ttk.Style()
         style.configure("Action.TButton", font=("Arial", 10, "bold"), padding=5)
         style.configure("Warning.TButton", background="#ff9999", font=("Arial", 10, "bold"), padding=5)
+        style.configure("Flash.TButton", background="#ffd966", font=("Arial", 10, "bold"))
+        style.map("Flash.TButton", background=[('active', '#ffcc33')])
         
         # Botones principales con iconos
-        btn_calcular = ttk.Button(frame_botones, text="🧮 Calcular Reacciones", 
-                                 command=self.calcular_reacciones, style="Action.TButton")
+        btn_calcular = ttk.Button(frame_botones, text="🧮 Calcular Reacciones", style="Action.TButton")
+        btn_calcular.config(command=lambda b=btn_calcular: self.on_button_click(b, self.calcular_reacciones))
         btn_calcular.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
-        
-        btn_centro_masa = ttk.Button(frame_botones, text="📍 Calcular Centro de Masa", 
-                                    command=self.calcular_centro_masa, style="Action.TButton")
+
+        btn_centro_masa = ttk.Button(frame_botones, text="📍 Calcular Centro de Masa", style="Action.TButton")
+        btn_centro_masa.config(command=lambda b=btn_centro_masa: self.on_button_click(b, self.calcular_centro_masa))
         btn_centro_masa.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
-        
-        btn_diagramas = ttk.Button(frame_botones, text="📊 Mostrar Diagramas", 
-                                  command=self.mostrar_diagramas, style="Action.TButton")
+
+        btn_diagramas = ttk.Button(frame_botones, text="📊 Mostrar Diagramas", style="Action.TButton")
+        btn_diagramas.config(command=lambda b=btn_diagramas: self.on_button_click(b, self.mostrar_diagramas))
         btn_diagramas.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
         
         # Segunda fila de botones
-        btn_limpiar = ttk.Button(frame_botones, text="🗑️ Limpiar Todo", 
-                                command=self.limpiar_todo, style="Warning.TButton")
+        btn_limpiar = ttk.Button(frame_botones, text="🗑️ Limpiar Todo", style="Warning.TButton")
+        btn_limpiar.config(command=lambda b=btn_limpiar: self.on_button_click(b, self.limpiar_todo))
         btn_limpiar.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
-        
-        btn_ayuda = ttk.Button(frame_botones, text="❓ Ayuda", 
-                              command=self.mostrar_ayuda, style="Action.TButton")
+
+        btn_ayuda = ttk.Button(frame_botones, text="❓ Ayuda", style="Action.TButton")
+        btn_ayuda.config(command=lambda b=btn_ayuda: self.on_button_click(b, self.mostrar_ayuda))
         btn_ayuda.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
-        
-        btn_ampliar = ttk.Button(frame_botones, text="🔍 Ampliar Gráfica", 
-                                command=self.ampliar_grafica, style="Action.TButton")
+
+        btn_ampliar = ttk.Button(frame_botones, text="🔍 Ampliar Gráfica", style="Action.TButton")
+        btn_ampliar.config(command=lambda b=btn_ampliar: self.on_button_click(b, self.ampliar_grafica))
         btn_ampliar.grid(row=1, column=2, padx=5, pady=5, sticky="ew")
+
+        btn_animar_3d = ttk.Button(frame_botones, text="🎞️ Animar 3D", style="Action.TButton")
+        btn_animar_3d.config(command=lambda b=btn_animar_3d: self.on_button_click(b, self.animar_viga_3d))
+        btn_animar_3d.grid(row=1, column=3, padx=5, pady=5, sticky="ew")
         
         # Configurar el grid para que se expanda correctamente
-        for i in range(3):
+        for i in range(4):
             frame_botones.columnconfigure(i, weight=1)
     
     def mostrar_mensaje_inicial(self):
@@ -565,6 +582,72 @@ class SimuladorVigaMejorado:
         ax.set_title('Configuración de la Viga', fontsize=16, fontweight='bold')
         ax.grid(True, linestyle='--', alpha=0.7)
         ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=3, fontsize=10, frameon=True, facecolor='white', edgecolor='gray')
+
+        plt.tight_layout()
+        canvas = FigureCanvasTkAgg(fig, master=self.frame_grafico)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill="both", expand=True)
+        self.ultima_figura = fig
+
+    def animar_viga_3d(self):
+        """Muestra la viga en 3D con rotación automática."""
+        for widget in self.frame_grafico.winfo_children():
+            widget.destroy()
+
+        fig = plt.figure(figsize=(12, 8))
+        ax = fig.add_subplot(111, projection="3d")
+        L = self.longitud.get()
+
+        ax.plot([0, L], [0, 0], [0, 0], "k-", linewidth=6, label="Viga")
+        ax.scatter(0, 0, 0, marker="^", s=100, color="blue", label="Apoyo A")
+        ax.scatter(
+            L,
+            0,
+            0,
+            marker="o" if self.tipo_apoyo_b.get() == "Móvil" else "^",
+            s=100,
+            color="blue",
+            label="Apoyo B",
+        )
+
+        if self.tipo_apoyo_c.get() != "Ninguno":
+            c = self.posicion_apoyo_c.get()
+            apoyo_c = "^" if self.tipo_apoyo_c.get() == "Fijo" else "o"
+            ax.scatter(c, 0, 0, color="green", s=100, marker=apoyo_c, label="Apoyo C")
+
+        for pos, mag in self.cargas_puntuales:
+            ax.quiver(pos, 0, 0.5, 0, 0, -0.4, color="red", arrow_length_ratio=0.3)
+
+        for inicio, fin, mag in self.cargas_distribuidas:
+            x_dist = np.linspace(inicio, fin, 10)
+            for x_pos in x_dist:
+                ax.quiver(
+                    x_pos,
+                    0,
+                    0.4,
+                    0,
+                    0,
+                    -0.3,
+                    color="orange",
+                    arrow_length_ratio=0.3,
+                    alpha=0.7,
+                )
+
+        ax.set_xlim(-L * 0.15, L * 1.15)
+        ax.set_ylim(-0.8, 0.8)
+        ax.set_zlim(-0.8, 1.3)
+        ax.set_xlabel("Posición (m)", fontsize=12)
+        ax.set_ylabel("Ancho (m)", fontsize=12)
+        ax.set_zlabel("Altura (m)", fontsize=12)
+        ax.set_title("Animación 3D de la Viga", fontsize=14)
+
+        def update(angle):
+            ax.view_init(30, angle)
+            return ax,
+
+        self.animacion_3d = FuncAnimation(
+            fig, update, frames=np.linspace(0, 360, 120), interval=50
+        )
 
         plt.tight_layout()
         canvas = FigureCanvasTkAgg(fig, master=self.frame_grafico)
