@@ -43,6 +43,8 @@ El programa usa **variables `tk.DoubleVar` y `tk.StringVar`** para guardar valor
 * **Reacciones en los apoyos**, considerando todas las cargas y el par torsor.
 * **Centro de masa** de todas las cargas.
 * **Diagramas de cortante, momento flector y torsión**.
+* **Par torsor en cualquier punto** y fuerza equivalente de cargas distribuidas.
+* **Centro de masa en 3D** y cálculo de fuerza a partir de un par torsor.
 * También calcula propiedades como el **área total**, **centro de gravedad de la sección transversal**, y **momento de inercia**.
 
 ---
@@ -67,6 +69,8 @@ Usa `matplotlib` para todos estos gráficos y los incrusta dentro de la ventana 
 * Tiene una **opción de ayuda** con una guía escrita dentro del programa.
 * También incluye **mensajes de error y advertencias** si el usuario pone mal los datos.
 * Se pueden **ampliar las gráficas** y ver todo más grande en otra ventana.
+* Permite obtener el **par torsor en cualquier punto** y calcular fuerzas a partir de él.
+* Incluye funciones para el **centro de masa en 3D**.
 
 ---
 
