@@ -1108,10 +1108,16 @@ class SimuladorVigaMejorado:
         self.canvas_formas.bind("<B1-Motion>", self.arrastrar_forma)
         self.canvas_formas.bind("<ButtonRelease-1>", self.soltar_forma)
         self.canvas_formas.bind("<Motion>", self.mostrar_coordenadas)
+        self.canvas_formas.bind("<MouseWheel>", self.escalar_forma)
+        self.canvas_formas.bind("<Button-4>", self.escalar_forma)
+        self.canvas_formas.bind("<Button-5>", self.escalar_forma)
         self.dibujar_cuadricula(self.canvas_formas)
 
         self.coord_label = ttk.Label(frame_formas, text="x=0, y=0")
         self.coord_label.grid(row=7, column=0, columnspan=4, pady=2)
+
+        self.cg_label = ttk.Label(frame_formas, text="CG: -")
+        self.cg_label.grid(row=8, column=0, columnspan=4, pady=2)
 
     def agregar_forma(self):
         try:
@@ -1235,8 +1241,11 @@ class SimuladorVigaMejorado:
         # Ejes con flechas y numeración
         canvas.create_line(20, height-20, width-10, height-20, arrow=tk.LAST, tags="grid")
         canvas.create_line(20, height-20, 20, 10, arrow=tk.LAST, tags="grid")
-        for i in range(1, 6):
+        num_x = (width - 40) // self.grid_spacing
+        num_y = (height - 30) // self.grid_spacing
+        for i in range(1, num_x + 1):
             canvas.create_text(20 + i * self.grid_spacing, height-10, text=str(i), tags="grid")
+        for i in range(1, num_y + 1):
             canvas.create_text(10, height-20 - i * self.grid_spacing, text=str(i), tags="grid")
 
     def mostrar_coordenadas(self, event):
@@ -1282,12 +1291,66 @@ class SimuladorVigaMejorado:
     def soltar_forma(self, event):
         self.forma_seleccionada = None
 
+    def escalar_forma(self, event):
+        indice = self.obtener_forma_en(event.x, event.y)
+        if indice is None:
+            return
+        tipo, x, y, ancho, alto = self.formas[indice]
+        delta = getattr(event, 'delta', 0)
+        if event.num == 5 or delta < 0:
+            factor = 0.9
+        else:
+            factor = 1.1
+        if tipo == "Círculo":
+            ancho *= factor
+            alto = ancho
+        else:
+            ancho *= factor
+            alto *= factor
+        self.formas[indice] = (tipo, x, y, ancho, alto)
+        self.redibujar_formas()
+
     def redibujar_formas(self):
         for canvas in [self.canvas_formas] + ([self.canvas_ampliado] if hasattr(self, "canvas_ampliado") else []):
             canvas.delete("all")
             self.dibujar_cuadricula(canvas)
             for tipo, x, y, ancho, alto in self.formas:
                 self.dibujar_forma_canvas(canvas, tipo, x, y, ancho, alto)
+        self.actualizar_cg_label()
+
+    def actualizar_cg_label(self):
+        if not hasattr(self, "cg_label"):
+            return
+        if not self.formas:
+            self.cg_label.config(text="CG: -")
+            return
+        area_total = 0
+        cx_total = 0
+        cy_total = 0
+        for tipo, x, y, ancho, alto in self.formas:
+            if tipo == "Rectángulo":
+                area = ancho * alto
+                cx = x + ancho / 2
+                cy = y + alto / 2
+            elif tipo == "Triángulo":
+                area = ancho * alto / 2
+                cx = x + ancho / 3
+                cy = y + alto / 3
+            elif tipo == "Círculo":
+                area = np.pi * (ancho / 2) ** 2
+                cx = x
+                cy = y
+            else:
+                continue
+            area_total += area
+            cx_total += cx * area
+            cy_total += cy * area
+        if area_total == 0:
+            self.cg_label.config(text="CG: -")
+            return
+        cg_x = cx_total / area_total
+        cg_y = cy_total / area_total
+        self.cg_label.config(text=f"CG: ({cg_x:.2f}, {cg_y:.2f})")
 
     def limpiar_lienzo_formas(self):
         self.canvas_formas.delete("all")
@@ -1295,6 +1358,8 @@ class SimuladorVigaMejorado:
         if hasattr(self, "canvas_ampliado"):
             self.canvas_ampliado.delete("all")
         self.redibujar_formas()
+        if hasattr(self, "cg_label"):
+            self.cg_label.config(text="CG: -")
 
     def ampliar_lienzo_formas(self):
         self.ventana_lienzo = tk.Toplevel(self.root)
@@ -1305,6 +1370,9 @@ class SimuladorVigaMejorado:
         self.canvas_ampliado.bind("<B1-Motion>", self.arrastrar_forma)
         self.canvas_ampliado.bind("<ButtonRelease-1>", self.soltar_forma)
         self.canvas_ampliado.bind("<Motion>", self.mostrar_coordenadas_ampliado)
+        self.canvas_ampliado.bind("<MouseWheel>", self.escalar_forma)
+        self.canvas_ampliado.bind("<Button-4>", self.escalar_forma)
+        self.canvas_ampliado.bind("<Button-5>", self.escalar_forma)
         self.dibujar_cuadricula(self.canvas_ampliado)
 
         # Dibujar formas existentes en ambos lienzos
