@@ -63,6 +63,7 @@ Usa `matplotlib` para todos estos gráficos y los incrusta dentro de la ventana 
 ### 6. Extras interesantes
 
 * Tiene un **modo 3D** que rota la viga automáticamente.
+* Cuenta con un **modo oscuro** opcional para la interfaz.
 * Tiene una **opción de ayuda** con una guía escrita dentro del programa.
 * También incluye **mensajes de error y advertencias** si el usuario pone mal los datos.
 * Se pueden **ampliar las gráficas** y ver todo más grande en otra ventana.
@@ -72,5 +73,6 @@ Usa `matplotlib` para todos estos gráficos y los incrusta dentro de la ventana 
 ### 7. Estilo visual
 
 Se aplicó un **tema moderno** (`clam`) con colores claros, botones azules, tipografías limpias, y organización visual con pestañas (`Notebook`) para que sea fácil de entender y usar.
+Además se añadió un **modo oscuro** seleccionable desde los controles principales.
 
 ---
