@@ -11,26 +11,31 @@ class SimuladorVigaMejorado:
         self.root.title("Simulador de Viga Mecánica - Versión Completa")
         self.root.geometry("1200x900")  # Aumentado el tamaño de la ventana
         
-        # Configurar tema y estilo con un aspecto más moderno
+        # Configurar tema y estilo moderno
         style = ttk.Style()
-        if 'clam' in style.theme_names():  # Verificar si el tema está disponible
+        if 'clam' in style.theme_names():
             style.theme_use('clam')
 
-        # Paleta de colores oscura
-        bg_color = "#2b2b2b"
-        fg_color = "#ffffff"
+        # Paleta de colores clara y acentos azules
+        bg_color = "#f7f7f7"
+        fg_color = "#333333"
+        accent = "#007acc"
 
-        # Personalizar estilos
         style.configure("TFrame", background=bg_color)
         style.configure("TLabelframe", background=bg_color)
         style.configure("TLabelframe.Label", background=bg_color,
-                        foreground=fg_color, font=("Arial", 11, "bold"))
-        style.configure("TButton", font=("Arial", 10, "bold"))
-        style.configure("TLabel", font=("Arial", 10), background=bg_color,
-                        foreground=fg_color)
-        style.configure("TEntry", font=("Arial", 10))
+                        foreground=accent, font=("Helvetica", 11, "bold"))
+        style.configure("TButton", font=("Helvetica", 10, "bold"),
+                        background=accent, foreground="white")
+        style.map("TButton",
+                   background=[('active', '#005a9e')],
+                   foreground=[('active', 'white')])
+        style.configure("TLabel", font=("Helvetica", 10),
+                        background=bg_color, foreground=fg_color)
+        style.configure("TEntry", font=("Helvetica", 10))
+        style.configure("TNotebook", background=bg_color)
+        style.configure("TNotebook.Tab", font=("Helvetica", 10, "bold"))
 
-        # Configurar colores de la ventana principal
         self.root.configure(bg=bg_color)
         
         # Variables principales
@@ -78,51 +83,31 @@ class SimuladorVigaMejorado:
         
     
     def crear_widgets(self):
-        # Frame principal con scroll
-        main_frame = ttk.Frame(self.root)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=10)
-    
-        # Canvas para permitir scroll
-        canvas = tk.Canvas(main_frame)
-        scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
-    
-        scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(
-                scrollregion=canvas.bbox("all")
-            )
-        )
-    
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
-    
-        # Configuración de la viga
-        self.crear_seccion_configuracion_viga(scrollable_frame)
-    
-        # Sección para propiedades de la sección transversal
-        self.crear_seccion_propiedades_seccion(scrollable_frame)
-    
-        # Cargas puntuales
-        self.crear_seccion_cargas_puntuales(scrollable_frame)
-    
-        # Cargas distribuidas
-        self.crear_seccion_cargas_distribuidas(scrollable_frame)
-    
-        # Formas irregulares
-        self.crear_widgets_formas_irregulares(scrollable_frame)
-    
-        # Botones de cálculo
-        self.crear_seccion_botones_calculo(scrollable_frame)
-    
-        # Área de resultados
-        self.crear_seccion_resultados(scrollable_frame)
-    
-        # Área de gráficos
-        self.crear_seccion_graficos(scrollable_frame)
-    
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+        # Usar un Notebook para organizar mejor la interfaz
+        notebook = ttk.Notebook(self.root)
+        notebook.pack(fill="both", expand=True, padx=20, pady=10)
+
+        tab_config = ttk.Frame(notebook)
+        tab_seccion = ttk.Frame(notebook)
+        tab_result = ttk.Frame(notebook)
+
+        notebook.add(tab_config, text="Configuración y Cargas")
+        notebook.add(tab_seccion, text="Sección y Formas")
+        notebook.add(tab_result, text="Resultados")
+
+        # Sección configuración y cargas
+        self.crear_seccion_configuracion_viga(tab_config)
+        self.crear_seccion_cargas_puntuales(tab_config)
+        self.crear_seccion_cargas_distribuidas(tab_config)
+        self.crear_seccion_botones_calculo(tab_config)
+
+        # Sección propiedades de la sección y formas irregulares
+        self.crear_seccion_propiedades_seccion(tab_seccion)
+        self.crear_widgets_formas_irregulares(tab_seccion)
+
+        # Resultados y gráficos
+        self.crear_seccion_resultados(tab_result)
+        self.crear_seccion_graficos(tab_result)
     
     def crear_seccion_configuracion_viga(self, parent):
         frame_config = ttk.LabelFrame(parent, text="⚙ Configuración de la Viga")
@@ -336,16 +321,33 @@ class SimuladorVigaMejorado:
                 RB = (suma_momentos_a + par_torsor) / L
                 RA = suma_fuerzas_y - RB
                 RC = 0
+                procedimiento = [
+                    "Viga con dos apoyos:",
+                    f"ΣFy = {suma_fuerzas_y:.2f} N",
+                    f"ΣMA = {suma_momentos_a:.2f} N·m",
+                    f"RB = (ΣMA + T)/L = ({suma_momentos_a:.2f} + {par_torsor:.2f})/{L:.2f}",
+                    f"RB = {RB:.2f} N",
+                    f"RA = ΣFy - RB = {suma_fuerzas_y:.2f} - {RB:.2f} = {RA:.2f} N"
+                ]
             else:
                 c = self.posicion_apoyo_c.get()
-                # Sistema de ecuaciones para tres apoyos con par torsor
                 RB = ((suma_momentos_a + par_torsor) - c * suma_fuerzas_y / 2) / (L - c)
                 RA = RC = (suma_fuerzas_y - RB) / 2
+                procedimiento = [
+                    "Viga con tres apoyos:",
+                    f"ΣFy = {suma_fuerzas_y:.2f} N",
+                    f"ΣMA = {suma_momentos_a:.2f} N·m",
+                    f"RB = ((ΣMA + T) - c*ΣFy/2)/(L - c) = ({suma_momentos_a:.2f} + {par_torsor:.2f} - {c:.2f}*{suma_fuerzas_y:.2f}/2)/({L:.2f} - {c:.2f})",
+                    f"RB = {RB:.2f} N",
+                    f"RA = RC = (ΣFy - RB)/2 = ({suma_fuerzas_y:.2f} - {RB:.2f})/2 = {RA:.2f} N"
+                ]
             
-            # Mostrar resultados incluyendo el par torsor
+            # Mostrar procedimiento y resultados
             self.texto_resultado.insert("end", f"\n{'='*50}\n")
             self.texto_resultado.insert("end", f"⚖️ CÁLCULO DE REACCIONES:\n")
             self.texto_resultado.insert("end", f"{'='*50}\n")
+            for linea in procedimiento:
+                self.texto_resultado.insert("end", linea + "\n")
             self.texto_resultado.insert("end", f"🔺 Reacción en A (RA): {RA:.2f} N\n")
             self.texto_resultado.insert("end", f"🔺 Reacción en B (RB): {RB:.2f} N\n")
             if self.tipo_apoyo_c.get() != "Ninguno":
@@ -390,10 +392,11 @@ class SimuladorVigaMejorado:
                 suma_cargas += fuerza_total
             
             x_cm = suma_momentos / suma_cargas
-            
-            self.texto_resultado.insert("end", f"\n📍 CENTRO DE MASA:\n")
-            self.texto_resultado.insert("end", f"Posición X: {x_cm:.2f} m\n")
-            self.texto_resultado.insert("end", f"Carga total: {suma_cargas:.2f} N\n")
+
+            self.texto_resultado.insert("end", "\n📍 CÁLCULO DEL CENTRO DE MASA:\n")
+            self.texto_resultado.insert("end", f"Σ(x·F) = {suma_momentos:.2f} N·m\n")
+            self.texto_resultado.insert("end", f"ΣF = {suma_cargas:.2f} N\n")
+            self.texto_resultado.insert("end", f"x_cm = Σ(x·F) / ΣF = {x_cm:.2f} m\n")
             
             # Actualizar la visualización
             if self.modo_3d.get():
