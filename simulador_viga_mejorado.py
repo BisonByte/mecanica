@@ -203,13 +203,14 @@ class SimuladorVigaMejorado:
     
         # Longitud de la viga
         ttk.Label(frame_config, text="Longitud (m):").grid(row=0, column=0, padx=5, pady=5)
-        longitud_scale = ttk.Scale(
+        longitud_scale = tk.Scale(
             frame_config,
             variable=self.longitud,
             from_=5,
             to=30,
             orient="horizontal",
             length=200,
+            resolution=0.01,
             command=self.actualizar_longitud,
         )
         longitud_scale.grid(row=0, column=1, padx=5, pady=5)

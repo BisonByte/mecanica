@@ -21,7 +21,7 @@ La ventana está dividida en **tres pestañas principales**:
 
 ### 3. Variables y entradas del usuario
 
-El programa usa **variables `tk.DoubleVar` y `tk.StringVar`** para guardar valores como la longitud de la viga, magnitud de las cargas, tipo de apoyo, altura inicial/final, etc. Estas variables están conectadas directamente a las entradas del usuario (los campos de texto o sliders que se ven en pantalla). La longitud se redondea automáticamente a **dos decimales** para facilitar su ajuste.
+El programa usa **variables `tk.DoubleVar` y `tk.StringVar`** para guardar valores como la longitud de la viga, magnitud de las cargas, tipo de apoyo, altura inicial/final, etc. Estas variables están conectadas directamente a las entradas del usuario (los campos de texto o sliders que se ven en pantalla). La longitud se redondea automáticamente a **dos decimales** y el control deslizante avanza en pasos de **0,01 m** para facilitar su ajuste.
 
 ---
 
