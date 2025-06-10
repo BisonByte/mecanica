@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.animation import FuncAnimation
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -12,31 +13,26 @@ class SimuladorVigaMejorado:
         self.root.geometry("1200x900")  # Aumentado el tamaño de la ventana
         
         # Configurar tema y estilo moderno
-        style = ttk.Style()
-        if 'clam' in style.theme_names():
-            style.theme_use('clam')
+        self.style = ttk.Style()
+        if 'clam' in self.style.theme_names():
+            self.style.theme_use('clam')
 
-        # Paleta de colores clara y acentos azules
-        bg_color = "#f7f7f7"
-        fg_color = "#333333"
-        accent = "#007acc"
+        # Paletas de colores para modo claro y oscuro
+        self.bg_light = "#f7f7f7"
+        self.fg_light = "#333333"
+        self.accent_light = "#007acc"
+        self.active_light = "#005a9e"
 
-        style.configure("TFrame", background=bg_color)
-        style.configure("TLabelframe", background=bg_color)
-        style.configure("TLabelframe.Label", background=bg_color,
-                        foreground=accent, font=("Helvetica", 11, "bold"))
-        style.configure("TButton", font=("Helvetica", 10, "bold"),
-                        background=accent, foreground="white")
-        style.map("TButton",
-                   background=[('active', '#005a9e')],
-                   foreground=[('active', 'white')])
-        style.configure("TLabel", font=("Helvetica", 10),
-                        background=bg_color, foreground=fg_color)
-        style.configure("TEntry", font=("Helvetica", 10))
-        style.configure("TNotebook", background=bg_color)
-        style.configure("TNotebook.Tab", font=("Helvetica", 10, "bold"))
+        self.bg_dark = "#222222"
+        self.fg_dark = "#f0f0f0"
+        self.accent_dark = "#5599ff"
+        self.active_dark = "#3e70ff"
 
-        self.root.configure(bg=bg_color)
+        # Estado de tema
+        self.dark_mode = tk.BooleanVar(value=False)
+        self.texto_tema = tk.StringVar(value="🌓 Modo Oscuro")
+
+        self.apply_theme()
         
         # Variables principales
         self.longitud = tk.DoubleVar(value=10.0)
@@ -46,9 +42,19 @@ class SimuladorVigaMejorado:
         self.tipo_apoyo_b = tk.StringVar(value="Móvil")
         self.tipo_apoyo_c = tk.StringVar(value="Ninguno")
         self.posicion_apoyo_c = tk.DoubleVar(value=5.0)
-        
+
         # Nueva variable para el par torsor
         self.par_torsor = tk.DoubleVar(value=0.0)
+        # Posición para evaluar el par torsor
+        self.posicion_torsor = tk.DoubleVar(value=0.0)
+
+        # Guardar reacciones para cálculos posteriores
+        self.reaccion_a = 0.0
+        self.reaccion_b = 0.0
+        self.reaccion_c = 0.0
+
+        # Lista de puntos para centro de masa 3D (x, y, z, m)
+        self.puntos_masa_3d = []
         
         # Variables para nuevas cargas
         self.posicion_carga = tk.DoubleVar(value=0.0)
@@ -73,6 +79,18 @@ class SimuladorVigaMejorado:
         self.altura_inferior = tk.DoubleVar(value=5)
         
         self.formas = []
+        # Variables para arrastrar formas
+        self.forma_seleccionada = None
+        self.desplazamiento_x = 0
+        self.desplazamiento_y = 0
+        # Variables para escalar formas con el mouse
+        self.forma_escalando = None
+        self.inicio_escala_x = 0
+        self.inicio_escala_y = 0
+        self.ancho_inicial = 0
+        self.alto_inicial = 0
+        # Espaciado de la cuadrícula para el lienzo de formas
+        self.grid_spacing = 20
         self.crear_widgets()
         
         # Mostrar mensaje inicial
@@ -80,6 +98,64 @@ class SimuladorVigaMejorado:
         
         # Dibujar la viga inicial
         self.dibujar_viga_actual()
+
+    def on_button_click(self, button, action):
+        """Flash the button and execute its action."""
+        self.flash_button(button)
+        self.root.after(10, action)
+
+    def flash_button(self, button):
+        orig_style = button.cget("style")
+        button.configure(style="Flash.TButton")
+        self.root.after(200, lambda: button.configure(style=orig_style))
+
+    def apply_theme(self):
+        """Aplicar paleta de colores según el modo actual."""
+        if self.dark_mode.get():
+            bg_color = self.bg_dark
+            fg_color = self.fg_dark
+            accent = self.accent_dark
+            active = self.active_dark
+        else:
+            bg_color = self.bg_light
+            fg_color = self.fg_light
+            accent = self.accent_light
+            active = self.active_light
+
+        s = self.style
+        s.configure("TFrame", background=bg_color)
+        s.configure("TLabelframe", background=bg_color)
+        s.configure("TLabelframe.Label", background=bg_color,
+                    foreground=accent, font=("Helvetica", 11, "bold"))
+        s.configure("TButton", font=("Helvetica", 10, "bold"),
+                    background=accent, foreground="white")
+        s.map("TButton",
+              background=[('active', active)],
+              foreground=[('active', 'white')])
+        s.configure("Action.TButton", font=("Arial", 10, "bold"), padding=5,
+                    background=accent, foreground="white")
+        s.map("Action.TButton", background=[('active', active)],
+               foreground=[('active', 'white')])
+        s.configure("Warning.TButton", background="#ff9999", font=("Arial", 10, "bold"), padding=5)
+        s.configure("Flash.TButton", background="#ffd966", font=("Arial", 10, "bold"))
+        s.map("Flash.TButton", background=[('active', '#ffcc33')])
+        s.configure("TLabel", font=("Helvetica", 10),
+                    background=bg_color, foreground=fg_color)
+        s.configure("TEntry", font=("Helvetica", 10))
+        s.configure("TNotebook", background=bg_color)
+        s.configure("TNotebook.Tab", font=("Helvetica", 10, "bold"))
+        self.root.configure(bg=bg_color)
+
+    def toggle_dark_mode(self):
+        """Cambiar entre modo claro y oscuro."""
+        self.dark_mode.set(not self.dark_mode.get())
+        self.texto_tema.set("🌞 Modo Claro" if self.dark_mode.get() else "🌓 Modo Oscuro")
+        self.apply_theme()
+
+    def log(self, texto, tag="data"):
+        """Inserta texto en la casilla de resultados con estilo."""
+        self.texto_resultado.insert("end", texto, tag)
+        self.texto_resultado.see("end")
         
     
     def crear_widgets(self):
@@ -115,9 +191,10 @@ class SimuladorVigaMejorado:
     
         # Longitud de la viga
         ttk.Label(frame_config, text="Longitud (m):").grid(row=0, column=0, padx=5, pady=5)
-        longitud_scale = ttk.Scale(frame_config, variable=self.longitud, from_=5, to=30, orient="horizontal", length=200)
+        longitud_scale = ttk.Scale(frame_config, variable=self.longitud, from_=5, to=50, orient="horizontal", length=200)
         longitud_scale.grid(row=0, column=1, padx=5, pady=5)
-        ttk.Label(frame_config, textvariable=self.longitud).grid(row=0, column=2, padx=5, pady=5)
+        # Permitir ingreso manual de la longitud
+        ttk.Entry(frame_config, textvariable=self.longitud, width=8).grid(row=0, column=2, padx=5, pady=5)
     
         # Configuración de apoyos
         ttk.Label(frame_config, text="Apoyo A:").grid(row=1, column=0, padx=5, pady=5)
@@ -199,44 +276,55 @@ class SimuladorVigaMejorado:
         frame_botones = ttk.Frame(parent)
         frame_botones.pack(fill="x", pady=10, padx=10)
         
-        # Crear un estilo personalizado para los botones
-        style = ttk.Style()
-        style.configure("Action.TButton", font=("Arial", 10, "bold"), padding=5)
-        style.configure("Warning.TButton", background="#ff9999", font=("Arial", 10, "bold"), padding=5)
+        # Los estilos de botones se configuran en apply_theme
         
         # Botones principales con iconos
-        btn_calcular = ttk.Button(frame_botones, text="🧮 Calcular Reacciones", 
-                                 command=self.calcular_reacciones, style="Action.TButton")
+        btn_calcular = ttk.Button(frame_botones, text="🧮 Calcular Reacciones", style="Action.TButton")
+        btn_calcular.config(command=lambda b=btn_calcular: self.on_button_click(b, self.calcular_reacciones))
         btn_calcular.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
-        
-        btn_centro_masa = ttk.Button(frame_botones, text="📍 Calcular Centro de Masa", 
-                                    command=self.calcular_centro_masa, style="Action.TButton")
+
+        btn_centro_masa = ttk.Button(frame_botones, text="📍 Calcular Centro de Masa", style="Action.TButton")
+        btn_centro_masa.config(command=lambda b=btn_centro_masa: self.on_button_click(b, self.calcular_centro_masa))
         btn_centro_masa.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
-        
-        btn_diagramas = ttk.Button(frame_botones, text="📊 Mostrar Diagramas", 
-                                  command=self.mostrar_diagramas, style="Action.TButton")
+
+        btn_diagramas = ttk.Button(frame_botones, text="📊 Mostrar Diagramas", style="Action.TButton")
+        btn_diagramas.config(command=lambda b=btn_diagramas: self.on_button_click(b, self.mostrar_diagramas))
         btn_diagramas.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+
+        ttk.Entry(frame_botones, textvariable=self.posicion_torsor, width=8).grid(row=0, column=3, padx=5, pady=5)
+        btn_par_punto = ttk.Button(frame_botones, text="🌀 Par en Punto", style="Action.TButton")
+        btn_par_punto.config(command=lambda b=btn_par_punto: self.on_button_click(b, lambda: self.calcular_par_torsor_en_punto(self.posicion_torsor.get())))
+        btn_par_punto.grid(row=0, column=4, padx=5, pady=5, sticky="ew")
         
         # Segunda fila de botones
-        btn_limpiar = ttk.Button(frame_botones, text="🗑️ Limpiar Todo", 
-                                command=self.limpiar_todo, style="Warning.TButton")
+        btn_limpiar = ttk.Button(frame_botones, text="🗑️ Limpiar Todo", style="Warning.TButton")
+        btn_limpiar.config(command=lambda b=btn_limpiar: self.on_button_click(b, self.limpiar_todo))
         btn_limpiar.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
-        
-        btn_ayuda = ttk.Button(frame_botones, text="❓ Ayuda", 
-                              command=self.mostrar_ayuda, style="Action.TButton")
+
+        btn_ayuda = ttk.Button(frame_botones, text="❓ Ayuda", style="Action.TButton")
+        btn_ayuda.config(command=lambda b=btn_ayuda: self.on_button_click(b, self.mostrar_ayuda))
         btn_ayuda.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
-        
-        btn_ampliar = ttk.Button(frame_botones, text="🔍 Ampliar Gráfica", 
-                                command=self.ampliar_grafica, style="Action.TButton")
+
+        btn_ampliar = ttk.Button(frame_botones, text="🔍 Ampliar Gráfica", style="Action.TButton")
+        btn_ampliar.config(command=lambda b=btn_ampliar: self.on_button_click(b, self.ampliar_grafica))
         btn_ampliar.grid(row=1, column=2, padx=5, pady=5, sticky="ew")
+
+        btn_animar_3d = ttk.Button(frame_botones, text="🎞️ Animar 3D", style="Action.TButton")
+        btn_animar_3d.config(command=lambda b=btn_animar_3d: self.on_button_click(b, self.animar_viga_3d))
+        btn_animar_3d.grid(row=1, column=3, padx=5, pady=5, sticky="ew")
+
+        btn_tema = ttk.Button(frame_botones, textvariable=self.texto_tema, style="Action.TButton")
+        btn_tema.config(command=lambda b=btn_tema: self.on_button_click(b, self.toggle_dark_mode))
+        btn_tema.grid(row=1, column=4, padx=5, pady=5, sticky="ew")
+        self.boton_tema = btn_tema
         
         # Configurar el grid para que se expanda correctamente
-        for i in range(3):
+        for i in range(5):
             frame_botones.columnconfigure(i, weight=1)
     
     def mostrar_mensaje_inicial(self):
         mensaje = "Bienvenido al Simulador de Viga Mecánica. Use los controles para configurar la viga y las cargas."
-        self.texto_resultado.insert("1.0", mensaje)
+        self.log(mensaje, "info")
         
     def agregar_carga_puntual(self):
         try:
@@ -252,7 +340,7 @@ class SimuladorVigaMejorado:
                 return
                 
             self.cargas_puntuales.append((pos, mag))
-            self.texto_resultado.insert("end", f"✅ Carga puntual: {mag}N en {pos}m\n")
+            self.log(f"✅ Carga puntual: {mag}N en {pos}m\n", "success")
             self.dibujar_viga_actual()
             
         except Exception as e:
@@ -273,7 +361,10 @@ class SimuladorVigaMejorado:
                 return
                 
             self.cargas_distribuidas.append((inicio, fin, mag))
-            self.texto_resultado.insert("end", f"✅ Carga distribuida: {mag}N/m desde {inicio}m hasta {fin}m\n")
+            self.log(
+                f"✅ Carga distribuida: {mag}N/m desde {inicio}m hasta {fin}m\n",
+                "success",
+            )
             self.dibujar_viga_actual()
             
         except Exception as e:
@@ -309,9 +400,13 @@ class SimuladorVigaMejorado:
                 longitud_carga = fin - inicio
                 fuerza_total = mag * longitud_carga
                 centroide = inicio + longitud_carga/2
-                
+
                 suma_fuerzas_y += fuerza_total
                 suma_momentos_a += fuerza_total * centroide
+                self.log(
+                    f"🔹 Carga distribuida {inicio}-{fin} m -> F={fuerza_total:.2f} N\n",
+                    "data",
+                )
             
             # Incluir el par torsor en los cálculos
             par_torsor = self.par_torsor.get()
@@ -343,26 +438,34 @@ class SimuladorVigaMejorado:
                 ]
             
             # Mostrar procedimiento y resultados
-            self.texto_resultado.insert("end", f"\n{'='*50}\n")
-            self.texto_resultado.insert("end", f"⚖️ CÁLCULO DE REACCIONES:\n")
-            self.texto_resultado.insert("end", f"{'='*50}\n")
+            self.log(f"\n{'='*50}\n", "title")
+            self.log("⚖️ CÁLCULO DE REACCIONES:\n", "title")
+            self.log(f"{'='*50}\n", "title")
             for linea in procedimiento:
-                self.texto_resultado.insert("end", linea + "\n")
-            self.texto_resultado.insert("end", f"🔺 Reacción en A (RA): {RA:.2f} N\n")
-            self.texto_resultado.insert("end", f"🔺 Reacción en B (RB): {RB:.2f} N\n")
+                self.log(linea + "\n", "data")
+            self.log(f"🔺 Reacción en A (RA): {RA:.2f} N\n", "data")
+            self.log(f"🔺 Reacción en B (RB): {RB:.2f} N\n", "data")
             if self.tipo_apoyo_c.get() != "Ninguno":
-                self.texto_resultado.insert("end", f"🔺 Reacción en C (RC): {RC:.2f} N\n")
-            self.texto_resultado.insert("end", f"📊 Suma de fuerzas en Y: {suma_fuerzas_y:.2f} N\n")
-            self.texto_resultado.insert("end", f"📊 Suma de fuerzas en X: {suma_fuerzas_x:.2f} N\n")
-            self.texto_resultado.insert("end", f"🔄 Verificación equilibrio: {abs(RA + RB + RC - suma_fuerzas_y):.6f} N\n")
-            self.texto_resultado.insert("end", f"🔄 Par Torsor: {par_torsor:.2f} N·m\n")
-            self.texto_resultado.insert("end", f"📐 Ángulo de inclinación: {np.degrees(angulo):.2f}°\n")
-            
+                self.log(f"🔺 Reacción en C (RC): {RC:.2f} N\n", "data")
+            self.log(f"📊 Suma de fuerzas en Y: {suma_fuerzas_y:.2f} N\n", "data")
+            self.log(f"📊 Suma de fuerzas en X: {suma_fuerzas_x:.2f} N\n", "data")
+            self.log(
+                f"🔄 Verificación equilibrio: {abs(RA + RB + RC - suma_fuerzas_y):.6f} N\n",
+                "data",
+            )
+            self.log(f"🔄 Par Torsor: {par_torsor:.2f} N·m\n", "data")
+            self.log(f"📐 Ángulo de inclinación: {np.degrees(angulo):.2f}°\n", "data")
+
             if abs(RA + RB + RC - suma_fuerzas_y) < 1e-10:
-                self.texto_resultado.insert("end", f"✅ Sistema en equilibrio\n")
+                self.log("✅ Sistema en equilibrio\n", "success")
             else:
-                self.texto_resultado.insert("end", f"❌ Error en equilibrio\n")
-            
+                self.log("❌ Error en equilibrio\n", "error")
+
+            # Guardar reacciones para cálculos posteriores
+            self.reaccion_a = RA
+            self.reaccion_b = RB
+            self.reaccion_c = RC
+
             self.dibujar_viga_con_reacciones(RA, RB, RC)
             
         except Exception as e:
@@ -393,10 +496,10 @@ class SimuladorVigaMejorado:
             
             x_cm = suma_momentos / suma_cargas
 
-            self.texto_resultado.insert("end", "\n📍 CÁLCULO DEL CENTRO DE MASA:\n")
-            self.texto_resultado.insert("end", f"Σ(x·F) = {suma_momentos:.2f} N·m\n")
-            self.texto_resultado.insert("end", f"ΣF = {suma_cargas:.2f} N\n")
-            self.texto_resultado.insert("end", f"x_cm = Σ(x·F) / ΣF = {x_cm:.2f} m\n")
+            self.log("\n📍 CÁLCULO DEL CENTRO DE MASA:\n", "title")
+            self.log(f"Σ(x·F) = {suma_momentos:.2f} N·m\n", "data")
+            self.log(f"ΣF = {suma_cargas:.2f} N\n", "data")
+            self.log(f"x_cm = Σ(x·F) / ΣF = {x_cm:.2f} m\n", "data")
             
             # Actualizar la visualización
             if self.modo_3d.get():
@@ -406,6 +509,27 @@ class SimuladorVigaMejorado:
             
         except Exception as e:
             messagebox.showerror("Error", f"Error en cálculo: {e}")
+
+    def calcular_centro_masa_3d(self, puntos):
+        """Calcula el centro de masa de una colección de puntos (x, y, z, m)."""
+        if not puntos:
+            messagebox.showwarning("Advertencia", "No hay puntos 3D definidos")
+            return None
+        M = sum(m for _, _, _, m in puntos)
+        x_cm = sum(x * m for x, _, _, m in puntos) / M
+        y_cm = sum(y * m for _, y, _, m in puntos) / M
+        z_cm = sum(z * m for _, _, z, m in puntos) / M
+        self.log(f"📍 Centro de masa 3D: ({x_cm:.2f}, {y_cm:.2f}, {z_cm:.2f})\n", "data")
+        return x_cm, y_cm, z_cm
+
+    def calcular_fuerza_desde_torsor(self, torsor, distancia):
+        """Calcula la fuerza F a partir del par torsor y la distancia."""
+        if distancia == 0:
+            messagebox.showerror("Error", "La distancia no puede ser cero")
+            return None
+        F = torsor / distancia
+        self.log(f"💪 Fuerza calculada: F = {F:.2f} N\n", "data")
+        return F
             
     def mostrar_diagramas(self):
         try:
@@ -495,9 +619,49 @@ class SimuladorVigaMejorado:
                 momento[i] = M
                 
             self.dibujar_diagramas(x, cortante, momento, RA, RB, RC)
-            
+
         except Exception as e:
             messagebox.showerror("Error", f"Error en diagramas: {e}")
+
+    def calcular_par_torsor_en_punto(self, x):
+        """Calcula el par torsor interno en la posición x."""
+        if not self.cargas_puntuales and not self.cargas_distribuidas:
+            messagebox.showwarning("Advertencia", "Agrega cargas primero")
+            return None
+        if self.reaccion_a == 0 and self.reaccion_b == 0 and self.reaccion_c == 0:
+            messagebox.showwarning("Advertencia", "Calcule primero las reacciones")
+            return None
+
+        L = self.longitud.get()
+        RA = self.reaccion_a
+        RB = self.reaccion_b
+        RC = self.reaccion_c
+        c = self.posicion_apoyo_c.get()
+        T = self.par_torsor.get()
+        momento = T
+
+        if x >= 0:
+            momento += RA * x
+        if self.tipo_apoyo_c.get() != "Ninguno" and x >= c:
+            momento += RC * (x - c)
+        if x >= L:
+            momento += RB * (x - L)
+
+        for pos, mag in self.cargas_puntuales:
+            if x > pos:
+                momento -= mag * (x - pos)
+
+        for inicio, fin, mag in self.cargas_distribuidas:
+            if x > inicio:
+                if x <= fin:
+                    long_actual = x - inicio
+                    momento -= mag * long_actual * long_actual / 2
+                else:
+                    long_total = fin - inicio
+                    momento -= mag * long_total * (x - (inicio + long_total / 2))
+
+        self.log(f"🌀 Par torsor en x={x:.2f} m: {momento:.2f} N·m\n", "data")
+        return momento
             
     def dibujar_viga_actual(self, x_cm=None):
         for widget in self.frame_grafico.winfo_children():
@@ -558,6 +722,72 @@ class SimuladorVigaMejorado:
         ax.set_title('Configuración de la Viga', fontsize=16, fontweight='bold')
         ax.grid(True, linestyle='--', alpha=0.7)
         ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=3, fontsize=10, frameon=True, facecolor='white', edgecolor='gray')
+
+
+        canvas = FigureCanvasTkAgg(fig, master=self.frame_grafico)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill="both", expand=True)
+        self.ultima_figura = fig
+
+    def animar_viga_3d(self):
+        """Muestra la viga en 3D con rotación automática."""
+        for widget in self.frame_grafico.winfo_children():
+            widget.destroy()
+
+        fig = plt.figure(figsize=(12, 8))
+        ax = fig.add_subplot(111, projection="3d")
+        L = self.longitud.get()
+
+        ax.plot([0, L], [0, 0], [0, 0], "k-", linewidth=6, label="Viga")
+        ax.scatter(0, 0, 0, marker="^", s=100, color="blue", label="Apoyo A")
+        ax.scatter(
+            L,
+            0,
+            0,
+            marker="o" if self.tipo_apoyo_b.get() == "Móvil" else "^",
+            s=100,
+            color="blue",
+            label="Apoyo B",
+        )
+
+        if self.tipo_apoyo_c.get() != "Ninguno":
+            c = self.posicion_apoyo_c.get()
+            apoyo_c = "^" if self.tipo_apoyo_c.get() == "Fijo" else "o"
+            ax.scatter(c, 0, 0, color="green", s=100, marker=apoyo_c, label="Apoyo C")
+
+        for pos, mag in self.cargas_puntuales:
+            ax.quiver(pos, 0, 0.5, 0, 0, -0.4, color="red", arrow_length_ratio=0.3)
+
+        for inicio, fin, mag in self.cargas_distribuidas:
+            x_dist = np.linspace(inicio, fin, 10)
+            for x_pos in x_dist:
+                ax.quiver(
+                    x_pos,
+                    0,
+                    0.4,
+                    0,
+                    0,
+                    -0.3,
+                    color="orange",
+                    arrow_length_ratio=0.3,
+                    alpha=0.7,
+                )
+
+        ax.set_xlim(-L * 0.15, L * 1.15)
+        ax.set_ylim(-0.8, 0.8)
+        ax.set_zlim(-0.8, 1.3)
+        ax.set_xlabel("Posición (m)", fontsize=12)
+        ax.set_ylabel("Ancho (m)", fontsize=12)
+        ax.set_zlabel("Altura (m)", fontsize=12)
+        ax.set_title("Animación 3D de la Viga", fontsize=14)
+
+        def update(angle):
+            ax.view_init(30, angle)
+            return ax,
+
+        self.animacion_3d = FuncAnimation(
+            fig, update, frames=np.linspace(0, 360, 120), interval=50
+        )
 
         plt.tight_layout()
         canvas = FigureCanvasTkAgg(fig, master=self.frame_grafico)
@@ -687,12 +917,9 @@ class SimuladorVigaMejorado:
         for widget in self.frame_grafico.winfo_children():
             widget.destroy()
             
-        fig = plt.figure(figsize=(12, 24))
-        gs = fig.add_gridspec(4, 1, height_ratios=[1, 1, 1, 1], hspace=0.4)
-        ax1 = fig.add_subplot(gs[0])
-        ax2 = fig.add_subplot(gs[1])
-        ax3 = fig.add_subplot(gs[2])
-        ax4 = fig.add_subplot(gs[3])
+        fig, (ax1, ax2, ax3, ax4) = plt.subplots(
+            4, 1, figsize=(12, 24), constrained_layout=True
+        )
         
         L = self.longitud.get()
         
@@ -779,30 +1006,33 @@ class SimuladorVigaMejorado:
         # Añadir valor del par torsor al diagrama de torsión
         ax4.text(L*1.05, par_torsor, f'T: {par_torsor:.2f}N·m', va='center', ha='left', fontsize=8)
         
-        plt.tight_layout()
-        
+
         canvas = FigureCanvasTkAgg(fig, master=self.frame_grafico)
         canvas.draw()
         canvas.get_tk_widget().pack(fill="both", expand=True)
         self.ultima_figura = fig
         
         # Mostrar valores máximos en el área de resultados
-        self.texto_resultado.insert("end", f"\n📈 VALORES MÁXIMOS:\n")
-        self.texto_resultado.insert("end", f"Cortante máximo: +{cortante_max:.2f} N\n")
-        self.texto_resultado.insert("end", f"Cortante mínimo: {cortante_min:.2f} N\n")
-        self.texto_resultado.insert("end", f"Momento máximo: +{momento_max:.2f} N·m\n")
-        self.texto_resultado.insert("end", f"Momento mínimo: {momento_min:.2f} N·m\n")
-        self.texto_resultado.insert("end", f"Par Torsor: {par_torsor:.2f} N·m\n")
+        self.log("\n📈 VALORES MÁXIMOS:\n", "title")
+        self.log(f"Cortante máximo: +{cortante_max:.2f} N\n", "data")
+        self.log(f"Cortante mínimo: {cortante_min:.2f} N\n", "data")
+        self.log(f"Momento máximo: +{momento_max:.2f} N·m\n", "data")
+        self.log(f"Momento mínimo: {momento_min:.2f} N·m\n", "data")
+        self.log(f"Par Torsor: {par_torsor:.2f} N·m\n", "data")
         
     def limpiar_cargas_puntuales(self):
         self.cargas_puntuales.clear()
-        self.texto_resultado.insert("end", "🗑️ Cargas puntuales eliminadas\n")
+        self.log("🗑️ Cargas puntuales eliminadas\n", "warning")
         self.dibujar_viga_actual()
         
     def limpiar_cargas_distribuidas(self):
         self.cargas_distribuidas.clear()
-        self.texto_resultado.insert("end", "🗑️ Cargas distribuidas eliminadas\n")
+        self.log("🗑️ Cargas distribuidas eliminadas\n", "warning")
         self.dibujar_viga_actual()
+
+    def limpiar_resultados(self):
+        """Borra el contenido de la casilla de resultados."""
+        self.texto_resultado.delete(1.0, tk.END)
         
     def limpiar_todo(self):
         # Limpiar listas de cargas
@@ -825,6 +1055,12 @@ class SimuladorVigaMejorado:
         self.altura_inicial.set(0.0)
         self.altura_final.set(0.0)
 
+        # Reiniciar reacciones y puntos de masa 3D
+        self.reaccion_a = 0.0
+        self.reaccion_b = 0.0
+        self.reaccion_c = 0.0
+        self.puntos_masa_3d.clear()
+
         # Restablecer variables de la sección transversal
         self.ancho_superior.set(20)
         self.altura_superior.set(5)
@@ -834,7 +1070,7 @@ class SimuladorVigaMejorado:
         self.altura_inferior.set(5)
 
         # Limpiar área de resultados
-        self.texto_resultado.delete(1.0, tk.END)
+        self.limpiar_resultados()
 
         # Limpiar área gráfica
         for widget in self.frame_grafico.winfo_children():
@@ -848,46 +1084,32 @@ class SimuladorVigaMejorado:
         
     def mostrar_ayuda(self):
         ayuda = """
-🎓 GUÍA COMPLETA DEL SIMULADOR DE VIGA
+🎓 GUÍA RÁPIDA DEL SIMULADOR DE VIGA
 
-📐 CONCEPTOS BÁSICOS:
-• Viga: Elemento estructural horizontal que soporta cargas
-• Reacciones: Fuerzas en los apoyos que equilibran las cargas
-• Cortante: Fuerza interna perpendicular al eje de la viga
-• Momento: Tendencia a causar rotación en la viga
-
-🔧 CONFIGURACIÓN:
-• Longitud (5-30 m)
-• Apoyos: Fijo (impide movimiento) y Móvil (permite deslizamiento)
+🔹 CONFIGURACIÓN
+• Longitud entre 5 y 50 m
+• Apoyos A y B (Fijo/Móvil) y apoyo C opcional con posición
 • Altura inicial y final para vigas inclinadas
-• Par torsor opcional
+• Par torsor y modo 3D opcionales
 
-⬇️ TIPOS DE CARGAS:
-• Puntuales: Fuerza concentrada en un punto específico
-• Distribuidas: Fuerza repartida uniformemente en un tramo
+🔹 CARGAS
+• Puntuales: posición y magnitud
+• Distribuidas: inicio, fin y magnitud (N/m)
 
-📊 CÁLCULOS:
-• Reacciones usando ΣF=0 y ΣM=0
-• Centro de masa de las cargas
-• Diagramas de cortante y momento
-• Propiedades de la sección transversal
-• Cálculo del centro de gravedad de figuras irregulares (clic en el lienzo para agregarlas)
+🔹 QUÉ PUEDE HACER
+• 🧮 Calcular Reacciones
+• 📍 Calcular Centro de Masa de las cargas
+• 📊 Mostrar Diagramas de cortante y momento
+• Calcular Propiedades de la Sección (área, CG e inercia)
+• Figuras Irregulares: añada rectángulos, triángulos o círculos y obtenga su centro de gravedad
+• 🔍 Ampliar la gráfica en otra ventana
+• 🗑️ Limpiar Todo para reiniciar
 
-✨ FUNCIONES EXTRA:
-• Visualización en modo 3D
-• Ampliar la gráfica en una ventana independiente
-
-💡 CONSEJOS:
-• Empieza con casos simples (1‑2 cargas)
-• Verifica que las reacciones sumen la carga total
-• El momento máximo indica dónde la viga sufre más
-• Usa valores realistas para casos prácticos
-
-🎯 EJEMPLO BÁSICO:
-1. Viga de 10 m
-2. Carga puntual: 100 N en 4 m
-3. Calcular reacciones: RA=60 N, RB=40 N
-4. Ver diagramas para análisis completo
+🔹 PASOS BÁSICOS
+1. Configure la viga y apoyos
+2. Agregue las cargas necesarias
+3. Presione "Calcular Reacciones"
+4. Revise resultados y diagramas en la pestaña de Resultados
         """
         
         ventana_ayuda = tk.Toplevel(self.root)
@@ -942,12 +1164,15 @@ class SimuladorVigaMejorado:
             I_total = I_superior + I_alma + I_inferior
 
             # Mostrar resultados
-            self.texto_resultado.insert("end", f"\n{'='*50}\n")
-            self.texto_resultado.insert("end", f"PROPIEDADES DE LA SECCIÓN TRANSVERSAL:\n")
-            self.texto_resultado.insert("end", f"{'='*50}\n")
-            self.texto_resultado.insert("end", f"Área total: {area_total:.2f} cm²\n")
-            self.texto_resultado.insert("end", f"Centro de gravedad (desde la base): {y_cg:.2f} cm\n")
-            self.texto_resultado.insert("end", f"Momento de inercia: {I_total:.2f} cm⁴\n")
+            self.log(f"\n{'='*50}\n", "title")
+            self.log("PROPIEDADES DE LA SECCIÓN TRANSVERSAL:\n", "title")
+            self.log(f"{'='*50}\n", "title")
+            self.log(f"Área total: {area_total:.2f} cm²\n", "data")
+            self.log(
+                f"Centro de gravedad (desde la base): {y_cg:.2f} cm\n",
+                "data",
+            )
+            self.log(f"Momento de inercia: {I_total:.2f} cm⁴\n", "data")
 
             # Dibujar la sección
             self.dibujar_seccion_transversal(b1, h1, b2, h2, b3, h3, y_cg)
@@ -1022,11 +1247,29 @@ class SimuladorVigaMejorado:
 
         ttk.Button(frame_formas, text="Agregar Forma", command=self.agregar_forma).grid(row=3, column=0, columnspan=2, pady=5)
         ttk.Button(frame_formas, text="Calcular CG", command=self.calcular_cg_formas).grid(row=3, column=2, columnspan=2, pady=5)
+        ttk.Button(frame_formas, text="Limpiar Lienzo", command=self.limpiar_lienzo_formas).grid(row=4, column=0, columnspan=2, pady=5)
+        ttk.Button(frame_formas, text="Ampliar Lienzo", command=self.ampliar_lienzo_formas).grid(row=4, column=2, columnspan=2, pady=5)
 
-        ttk.Label(frame_formas, text="⚡ También puede hacer clic en el lienzo para agregar").grid(row=4, column=0, columnspan=4, pady=2)
+        ttk.Label(frame_formas, text="⚡ También puede hacer clic en el lienzo para agregar").grid(row=5, column=0, columnspan=4, pady=2)
         self.canvas_formas = tk.Canvas(frame_formas, width=400, height=300, bg="white")
-        self.canvas_formas.grid(row=5, column=0, columnspan=4, pady=5)
-        self.canvas_formas.bind("<Button-1>", self.colocar_forma)
+        self.canvas_formas.grid(row=6, column=0, columnspan=4, pady=5)
+        self.canvas_formas.bind("<Button-1>", self.iniciar_accion_formas)
+        self.canvas_formas.bind("<B1-Motion>", self.arrastrar_forma)
+        self.canvas_formas.bind("<ButtonRelease-1>", self.soltar_forma)
+        self.canvas_formas.bind("<Button-3>", self.iniciar_escalado_forma)
+        self.canvas_formas.bind("<B3-Motion>", self.escalar_forma_drag)
+        self.canvas_formas.bind("<ButtonRelease-3>", self.finalizar_escalado_forma)
+        self.canvas_formas.bind("<Motion>", self.mostrar_coordenadas)
+        self.canvas_formas.bind("<MouseWheel>", self.escalar_forma)
+        self.canvas_formas.bind("<Button-4>", self.escalar_forma)
+        self.canvas_formas.bind("<Button-5>", self.escalar_forma)
+        self.dibujar_cuadricula(self.canvas_formas)
+
+        self.coord_label = ttk.Label(frame_formas, text="x=0, y=0")
+        self.coord_label.grid(row=7, column=0, columnspan=4, pady=2)
+
+        self.cg_label = ttk.Label(frame_formas, text="CG: -")
+        self.cg_label.grid(row=8, column=0, columnspan=4, pady=2)
 
     def agregar_forma(self):
         try:
@@ -1040,7 +1283,8 @@ class SimuladorVigaMejorado:
                 raise ValueError("Tipo de forma no válido")
             
             self.formas.append((tipo, x, y, ancho, alto))
-            self.texto_resultado.insert("end", f"Forma agregada: {tipo} en ({x}, {y})\n")
+            self.redibujar_formas()
+            self.log(f"Forma agregada: {tipo} en ({x}, {y})\n", "data")
         except ValueError as e:
             messagebox.showerror("Error", f"Valores inválidos: {e}")
 
@@ -1054,17 +1298,11 @@ class SimuladorVigaMejorado:
             x = event.x
             y = event.y
 
-            if tipo == "Rectángulo":
-                self.canvas_formas.create_rectangle(x, y, x + ancho, y + alto, outline="black")
-            elif tipo == "Triángulo":
-                self.canvas_formas.create_polygon(x, y + alto, x + ancho / 2, y, x + ancho, y + alto, outline="black", fill="")
-            elif tipo == "Círculo":
-                self.canvas_formas.create_oval(x - ancho / 2, y - ancho / 2, x + ancho / 2, y + ancho / 2, outline="black")
-            else:
-                raise ValueError("Tipo de forma no válido")
+            canvas = event.widget
 
             self.formas.append((tipo, x, y, ancho, alto))
-            self.texto_resultado.insert("end", f"Forma agregada: {tipo} en ({x}, {y})\n")
+            self.redibujar_formas()
+            self.log(f"Forma agregada: {tipo} en ({x}, {y})\n", "data")
         except ValueError as e:
             messagebox.showerror("Error", f"Valores inválidos: {e}")
 
@@ -1105,7 +1343,7 @@ class SimuladorVigaMejorado:
         cg_x = cx_total / area_total
         cg_y = cy_total / area_total
         
-        self.texto_resultado.insert("end", f"\nCentro de Gravedad: ({cg_x:.2f}, {cg_y:.2f})\n")
+        self.log(f"\nCentro de Gravedad: ({cg_x:.2f}, {cg_y:.2f})\n", "data")
         self.dibujar_formas_irregulares(cg_x, cg_y)
 
     def dibujar_formas_irregulares(self, cg_x, cg_y):
@@ -1134,17 +1372,240 @@ class SimuladorVigaMejorado:
         canvas.get_tk_widget().pack(fill="both", expand=True)
         self.ultima_figura = fig
 
+    def dibujar_forma_canvas(self, canvas, tipo, x, y, ancho, alto):
+        """Dibuja una forma en el canvas indicado."""
+        if tipo == "Rectángulo":
+            canvas.create_rectangle(x, y, x + ancho, y + alto, outline="black")
+        elif tipo == "Triángulo":
+            canvas.create_polygon(x, y + alto, x + ancho / 2, y, x + ancho, y + alto, outline="black", fill="")
+        elif tipo == "Círculo":
+            canvas.create_oval(x - ancho / 2, y - ancho / 2, x + ancho / 2, y + ancho / 2, outline="black")
+
+    def dibujar_cuadricula(self, canvas):
+        """Dibuja una cuadrícula de fondo en el canvas."""
+        canvas.delete("grid")
+        width = int(canvas["width"])
+        height = int(canvas["height"])
+        for x in range(0, width, self.grid_spacing):
+            canvas.create_line(x, 0, x, height, fill="#e0e0e0", tags="grid")
+        for y in range(0, height, self.grid_spacing):
+            canvas.create_line(0, y, width, y, fill="#e0e0e0", tags="grid")
+        # Ejes con flechas y numeración
+        canvas.create_line(20, height-20, width-10, height-20, arrow=tk.LAST, tags="grid")
+        canvas.create_line(20, height-20, 20, 10, arrow=tk.LAST, tags="grid")
+        num_x = (width - 40) // self.grid_spacing
+        num_y = (height - 30) // self.grid_spacing
+        for i in range(1, num_x + 1):
+            canvas.create_text(20 + i * self.grid_spacing, height-10, text=str(i), tags="grid")
+        for i in range(1, num_y + 1):
+            canvas.create_text(10, height-20 - i * self.grid_spacing, text=str(i), tags="grid")
+
+    def mostrar_coordenadas(self, event):
+        self.coord_label.config(text=f"x={event.x}, y={event.y}")
+
+    def mostrar_coordenadas_ampliado(self, event):
+        if hasattr(self, "coord_label_ampliado"):
+            self.coord_label_ampliado.config(text=f"x={event.x}, y={event.y}")
+
+    def obtener_forma_en(self, x, y):
+        """Devuelve el índice de la forma que contiene el punto (x, y) o None."""
+        for i, (tipo, fx, fy, ancho, alto) in enumerate(self.formas):
+            if tipo == "Rectángulo":
+                if fx <= x <= fx + ancho and fy <= y <= fy + alto:
+                    return i
+            elif tipo == "Triángulo":
+                if fx <= x <= fx + ancho and fy <= y <= fy + alto:
+                    return i
+            elif tipo == "Círculo":
+                if (x - fx)**2 + (y - fy)**2 <= (ancho/2)**2:
+                    return i
+        return None
+
+    def iniciar_accion_formas(self, event):
+        indice = self.obtener_forma_en(event.x, event.y)
+        if indice is not None:
+            self.forma_seleccionada = indice
+            _, fx, fy, _, _ = self.formas[indice]
+            self.desplazamiento_x = event.x - fx
+            self.desplazamiento_y = event.y - fy
+        else:
+            self.colocar_forma(event)
+
+    def arrastrar_forma(self, event):
+        if self.forma_seleccionada is None:
+            return
+        tipo, _, _, ancho, alto = self.formas[self.forma_seleccionada]
+        nuevo_x = event.x - self.desplazamiento_x
+        nuevo_y = event.y - self.desplazamiento_y
+        self.formas[self.forma_seleccionada] = (tipo, nuevo_x, nuevo_y, ancho, alto)
+        self.redibujar_formas()
+
+    def soltar_forma(self, event):
+        self.forma_seleccionada = None
+
+    def escalar_forma(self, event):
+        indice = self.obtener_forma_en(event.x, event.y)
+        if indice is None:
+            return
+        tipo, x, y, ancho, alto = self.formas[indice]
+        delta = getattr(event, 'delta', 0)
+        if event.num == 5 or delta < 0:
+            factor = 0.9
+        else:
+            factor = 1.1
+        if tipo == "Círculo":
+            ancho *= factor
+            alto = ancho
+        else:
+            ancho *= factor
+            alto *= factor
+        self.formas[indice] = (tipo, x, y, ancho, alto)
+        self.redibujar_formas()
+
+    def iniciar_escalado_forma(self, event):
+        indice = self.obtener_forma_en(event.x, event.y)
+        if indice is None:
+            return
+        self.forma_escalando = indice
+        tipo, x, y, ancho, alto = self.formas[indice]
+        self.inicio_escala_x = event.x
+        self.inicio_escala_y = event.y
+        self.ancho_inicial = ancho
+        self.alto_inicial = alto
+        event.widget.delete("tooltip")
+        event.widget.create_text(event.x + 10, event.y - 10,
+                                 text=f"{ancho:.1f} x {alto:.1f}",
+                                 anchor="nw", fill="blue", tags="tooltip")
+
+    def escalar_forma_drag(self, event):
+        if self.forma_escalando is None:
+            return
+        tipo, x, y, ancho, alto = self.formas[self.forma_escalando]
+        nuevo_ancho = max(1, self.ancho_inicial + (event.x - self.inicio_escala_x))
+        nuevo_alto = max(1, self.alto_inicial + (event.y - self.inicio_escala_y))
+        if tipo == "Círculo":
+            nuevo_tam = max(nuevo_ancho, nuevo_alto)
+            nuevo_ancho = nuevo_tam
+            nuevo_alto = nuevo_tam
+        self.formas[self.forma_escalando] = (tipo, x, y, nuevo_ancho, nuevo_alto)
+        self.redibujar_formas()
+        event.widget.delete("tooltip")
+        event.widget.create_text(event.x + 10, event.y - 10,
+                                 text=f"{nuevo_ancho:.1f} x {nuevo_alto:.1f}",
+                                 anchor="nw", fill="blue", tags="tooltip")
+
+    def finalizar_escalado_forma(self, event):
+        if self.forma_escalando is not None:
+            event.widget.delete("tooltip")
+        self.forma_escalando = None
+
+    def redibujar_formas(self):
+        for canvas in [self.canvas_formas] + ([self.canvas_ampliado] if hasattr(self, "canvas_ampliado") else []):
+            canvas.delete("all")
+            self.dibujar_cuadricula(canvas)
+            for tipo, x, y, ancho, alto in self.formas:
+                self.dibujar_forma_canvas(canvas, tipo, x, y, ancho, alto)
+        self.actualizar_cg_label()
+
+    def actualizar_cg_label(self):
+        if not hasattr(self, "cg_label"):
+            return
+        if not self.formas:
+            self.cg_label.config(text="CG: -")
+            return
+        area_total = 0
+        cx_total = 0
+        cy_total = 0
+        for tipo, x, y, ancho, alto in self.formas:
+            if tipo == "Rectángulo":
+                area = ancho * alto
+                cx = x + ancho / 2
+                cy = y + alto / 2
+            elif tipo == "Triángulo":
+                area = ancho * alto / 2
+                cx = x + ancho / 3
+                cy = y + alto / 3
+            elif tipo == "Círculo":
+                area = np.pi * (ancho / 2) ** 2
+                cx = x
+                cy = y
+            else:
+                continue
+            area_total += area
+            cx_total += cx * area
+            cy_total += cy * area
+        if area_total == 0:
+            self.cg_label.config(text="CG: -")
+            return
+        cg_x = cx_total / area_total
+        cg_y = cy_total / area_total
+        self.cg_label.config(text=f"CG: ({cg_x:.2f}, {cg_y:.2f})")
+
+    def limpiar_lienzo_formas(self):
+        self.canvas_formas.delete("all")
+        self.formas.clear()
+        if hasattr(self, "canvas_ampliado"):
+            self.canvas_ampliado.delete("all")
+        self.redibujar_formas()
+        if hasattr(self, "cg_label"):
+            self.cg_label.config(text="CG: -")
+
+    def ampliar_lienzo_formas(self):
+        self.ventana_lienzo = tk.Toplevel(self.root)
+        self.ventana_lienzo.title("Lienzo Ampliado")
+        self.canvas_ampliado = tk.Canvas(self.ventana_lienzo, width=800, height=600, bg="white")
+        self.canvas_ampliado.pack(fill="both", expand=True)
+        self.canvas_ampliado.bind("<Button-1>", self.iniciar_accion_formas)
+        self.canvas_ampliado.bind("<B1-Motion>", self.arrastrar_forma)
+        self.canvas_ampliado.bind("<ButtonRelease-1>", self.soltar_forma)
+        self.canvas_ampliado.bind("<Button-3>", self.iniciar_escalado_forma)
+        self.canvas_ampliado.bind("<B3-Motion>", self.escalar_forma_drag)
+        self.canvas_ampliado.bind("<ButtonRelease-3>", self.finalizar_escalado_forma)
+        self.canvas_ampliado.bind("<Motion>", self.mostrar_coordenadas_ampliado)
+        self.canvas_ampliado.bind("<MouseWheel>", self.escalar_forma)
+        self.canvas_ampliado.bind("<Button-4>", self.escalar_forma)
+        self.canvas_ampliado.bind("<Button-5>", self.escalar_forma)
+        self.dibujar_cuadricula(self.canvas_ampliado)
+
+        # Dibujar formas existentes en ambos lienzos
+        self.redibujar_formas()
+
+        self.coord_label_ampliado = ttk.Label(self.ventana_lienzo, text="x=0, y=0")
+        self.coord_label_ampliado.pack()
+
     def crear_seccion_resultados(self, parent):
         frame_resultados = ttk.LabelFrame(parent, text="Resultados")
-        frame_resultados.pack(fill="x", pady=10, padx=10)
+        frame_resultados.pack(fill="both", pady=10, padx=10)
 
-        self.texto_resultado = tk.Text(frame_resultados, height=10, wrap="word")
+        btn_clear = ttk.Button(
+            frame_resultados, text="Limpiar Resultados", command=self.limpiar_resultados
+        )
+        btn_clear.pack(anchor="ne", padx=5, pady=5)
+
+        self.texto_resultado = tk.Text(
+            frame_resultados,
+            height=12,
+            wrap="word",
+            font=("Consolas", 10),
+            background="#ffffff",
+            foreground="#333333",
+            relief="solid",
+            borderwidth=1,
+        )
         self.texto_resultado.pack(fill="both", expand=True)
 
         scrollbar = ttk.Scrollbar(frame_resultados, orient="vertical", command=self.texto_resultado.yview)
         scrollbar.pack(side="right", fill="y")
 
         self.texto_resultado.configure(yscrollcommand=scrollbar.set)
+
+        # Configurar estilos de texto
+        self.texto_resultado.tag_config("title", font=("Consolas", 10, "bold"), foreground="#005a9e")
+        self.texto_resultado.tag_config("success", foreground="green")
+        self.texto_resultado.tag_config("error", foreground="red")
+        self.texto_resultado.tag_config("warning", foreground="#a06000")
+        self.texto_resultado.tag_config("data", foreground="#333333")
+        self.texto_resultado.tag_config("info", foreground="#333333")
 
     def crear_seccion_graficos(self, parent):
         self.frame_grafico = ttk.Frame(parent)
