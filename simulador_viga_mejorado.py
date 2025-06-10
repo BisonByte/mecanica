@@ -11,19 +11,27 @@ class SimuladorVigaMejorado:
         self.root.title("Simulador de Viga Mecánica - Versión Completa")
         self.root.geometry("1200x900")  # Aumentado el tamaño de la ventana
         
-        # Configurar tema y estilo
+        # Configurar tema y estilo con un aspecto más moderno
         style = ttk.Style()
         if 'clam' in style.theme_names():  # Verificar si el tema está disponible
             style.theme_use('clam')
-        
+
+        # Paleta de colores oscura
+        bg_color = "#2b2b2b"
+        fg_color = "#ffffff"
+
         # Personalizar estilos
-        style.configure("TLabelframe.Label", font=("Arial", 11, "bold"))
-        style.configure("TButton", font=("Arial", 10))
-        style.configure("TLabel", font=("Arial", 10))
+        style.configure("TFrame", background=bg_color)
+        style.configure("TLabelframe", background=bg_color)
+        style.configure("TLabelframe.Label", background=bg_color,
+                        foreground=fg_color, font=("Arial", 11, "bold"))
+        style.configure("TButton", font=("Arial", 10, "bold"))
+        style.configure("TLabel", font=("Arial", 10), background=bg_color,
+                        foreground=fg_color)
         style.configure("TEntry", font=("Arial", 10))
-        
-        # Configurar colores
-        self.root.configure(bg="#f0f0f0")
+
+        # Configurar colores de la ventana principal
+        self.root.configure(bg=bg_color)
         
         # Variables principales
         self.longitud = tk.DoubleVar(value=10.0)
@@ -832,28 +840,36 @@ class SimuladorVigaMejorado:
 • Momento: Tendencia a causar rotación en la viga
 
 🔧 CONFIGURACIÓN:
-• Longitud: Define el largo de la viga (5-30m)
-• Apoyos: Fijo (impide movimiento), Móvil (permite deslizamiento)
+• Longitud (5-30 m)
+• Apoyos: Fijo (impide movimiento) y Móvil (permite deslizamiento)
+• Altura inicial y final para vigas inclinadas
+• Par torsor opcional
 
 ⬇️ TIPOS DE CARGAS:
 • Puntuales: Fuerza concentrada en un punto específico
 • Distribuidas: Fuerza repartida uniformemente en un tramo
 
 📊 CÁLCULOS:
-• Reacciones: Usa equilibrio estático (ΣF=0, ΣM=0)
-• Centro de masa: Punto donde se concentra el peso total
-• Diagramas: Visualizan cortante y momento a lo largo de la viga
+• Reacciones usando ΣF=0 y ΣM=0
+• Centro de masa de las cargas
+• Diagramas de cortante y momento
+• Propiedades de la sección transversal
+• Cálculo del centro de gravedad de figuras irregulares (clic en el lienzo para agregarlas)
+
+✨ FUNCIONES EXTRA:
+• Visualización en modo 3D
+• Ampliar la gráfica en una ventana independiente
 
 💡 CONSEJOS:
-• Empieza con casos simples (1-2 cargas)
+• Empieza con casos simples (1‑2 cargas)
 • Verifica que las reacciones sumen la carga total
-• El momento máximo indica donde la viga sufre más
+• El momento máximo indica dónde la viga sufre más
 • Usa valores realistas para casos prácticos
 
 🎯 EJEMPLO BÁSICO:
-1. Viga de 10m
-2. Carga puntual: 100N en 4m
-3. Calcular reacciones: RA=60N, RB=40N
+1. Viga de 10 m
+2. Carga puntual: 100 N en 4 m
+3. Calcular reacciones: RA=60 N, RB=40 N
 4. Ver diagramas para análisis completo
         """
         
@@ -990,6 +1006,11 @@ class SimuladorVigaMejorado:
         ttk.Button(frame_formas, text="Agregar Forma", command=self.agregar_forma).grid(row=3, column=0, columnspan=2, pady=5)
         ttk.Button(frame_formas, text="Calcular CG", command=self.calcular_cg_formas).grid(row=3, column=2, columnspan=2, pady=5)
 
+        ttk.Label(frame_formas, text="⚡ También puede hacer clic en el lienzo para agregar").grid(row=4, column=0, columnspan=4, pady=2)
+        self.canvas_formas = tk.Canvas(frame_formas, width=400, height=300, bg="white")
+        self.canvas_formas.grid(row=5, column=0, columnspan=4, pady=5)
+        self.canvas_formas.bind("<Button-1>", self.colocar_forma)
+
     def agregar_forma(self):
         try:
             tipo = self.tipo_forma.get()
@@ -1001,6 +1022,30 @@ class SimuladorVigaMejorado:
             if tipo not in ["Rectángulo", "Triángulo", "Círculo"]:
                 raise ValueError("Tipo de forma no válido")
             
+            self.formas.append((tipo, x, y, ancho, alto))
+            self.texto_resultado.insert("end", f"Forma agregada: {tipo} en ({x}, {y})\n")
+        except ValueError as e:
+            messagebox.showerror("Error", f"Valores inválidos: {e}")
+
+    def colocar_forma(self, event):
+        """Permite agregar una forma haciendo clic en el lienzo."""
+        try:
+            tipo = self.tipo_forma.get()
+            ancho = float(self.ancho_forma.get())
+            alto = float(self.alto_forma.get())
+
+            x = event.x
+            y = event.y
+
+            if tipo == "Rectángulo":
+                self.canvas_formas.create_rectangle(x, y, x + ancho, y + alto, outline="black")
+            elif tipo == "Triángulo":
+                self.canvas_formas.create_polygon(x, y + alto, x + ancho / 2, y, x + ancho, y + alto, outline="black", fill="")
+            elif tipo == "Círculo":
+                self.canvas_formas.create_oval(x - ancho / 2, y - ancho / 2, x + ancho / 2, y + ancho / 2, outline="black")
+            else:
+                raise ValueError("Tipo de forma no válido")
+
             self.formas.append((tipo, x, y, ancho, alto))
             self.texto_resultado.insert("end", f"Forma agregada: {tipo} en ({x}, {y})\n")
         except ValueError as e:
