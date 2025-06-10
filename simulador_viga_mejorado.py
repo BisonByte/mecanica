@@ -295,6 +295,9 @@ class SimuladorVigaMejorado:
             L = self.longitud.get()
             h_inicial = self.altura_inicial.get()
             h_final = self.altura_final.get()
+            # Para cargas verticales no es necesario proyectar con el ángulo de
+            # la viga. Se conserva para posibles extensiones, pero las
+            # sumatorias solo consideran el componente vertical.
             angulo = np.arctan((h_final - h_inicial) / L)
             
             # Calcular fuerzas totales y momentos
@@ -304,9 +307,9 @@ class SimuladorVigaMejorado:
             
             # Cargas puntuales
             for pos, mag in self.cargas_puntuales:
-                suma_fuerzas_y += mag * np.cos(angulo)
-                suma_fuerzas_x += mag * np.sin(angulo)
-                suma_momentos_a += mag * np.cos(angulo) * pos
+                # Las cargas puntuales se consideran verticales
+                suma_fuerzas_y += mag
+                suma_momentos_a += mag * pos
                 
             # Cargas distribuidas
             for inicio, fin, mag in self.cargas_distribuidas:
@@ -314,9 +317,8 @@ class SimuladorVigaMejorado:
                 fuerza_total = mag * longitud_carga
                 centroide = inicio + longitud_carga/2
                 
-                suma_fuerzas_y += fuerza_total * np.cos(angulo)
-                suma_fuerzas_x += fuerza_total * np.sin(angulo)
-                suma_momentos_a += fuerza_total * np.cos(angulo) * centroide
+                suma_fuerzas_y += fuerza_total
+                suma_momentos_a += fuerza_total * centroide
             
             # Incluir el par torsor en los cálculos
             par_torsor = self.par_torsor.get()
@@ -412,27 +414,27 @@ class SimuladorVigaMejorado:
             suma_momentos_a = 0
 
             for pos, mag in self.cargas_puntuales:
-                suma_fuerzas_y += mag * np.cos(angulo)
-                suma_fuerzas_x += mag * np.sin(angulo)
-                suma_momentos_a += mag * np.cos(angulo) * pos
+                # Considerar cargas puntuales verticales
+                suma_fuerzas_y += mag
+                suma_momentos_a += mag * pos
 
             for inicio, fin, mag in self.cargas_distribuidas:
                 longitud_carga = fin - inicio
                 fuerza_total = mag * longitud_carga
                 centroide = inicio + longitud_carga/2
 
-                suma_fuerzas_y += fuerza_total * np.cos(angulo)
-                suma_fuerzas_x += fuerza_total * np.sin(angulo)
-                suma_momentos_a += fuerza_total * np.cos(angulo) * centroide
+                # Las cargas distribuidas son verticales
+                suma_fuerzas_y += fuerza_total
+                suma_momentos_a += fuerza_total * centroide
 
             par_torsor = self.par_torsor.get()
+            c = self.posicion_apoyo_c.get()
 
             if self.tipo_apoyo_c.get() == "Ninguno":
                 RB = (suma_momentos_a + par_torsor) / L
                 RA = suma_fuerzas_y - RB
                 RC = 0
             else:
-                c = self.posicion_apoyo_c.get()
                 RB = ((suma_momentos_a + par_torsor) - c * suma_fuerzas_y / 2) / (L - c)
                 RA = RC = (suma_fuerzas_y - RB) / 2
 
@@ -443,8 +445,20 @@ class SimuladorVigaMejorado:
             
             # Calcular cortante y momento
             for i, xi in enumerate(x):
-                V = RA  # Empezar con RA
+                V = 0
                 M = 0
+
+                # Reacciones
+                V += RA
+                M += RA * xi
+
+                if self.tipo_apoyo_c.get() != "Ninguno" and xi >= c:
+                    V += RC
+                    M += RC * (xi - c)
+
+                if xi >= L:
+                    V += RB
+                    M += RB * (xi - L)
                 
                 # Contribución de cargas puntuales
                 for pos, mag in self.cargas_puntuales:
