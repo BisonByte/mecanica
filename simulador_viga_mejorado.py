@@ -400,25 +400,42 @@ class SimuladorVigaMejorado:
                 messagebox.showwarning("Advertencia", "Agrega cargas primero")
                 return
                 
-            # Primero calcular reacciones
+            # Primero calcular reacciones usando el mismo algoritmo que
+            # la función calcular_reacciones para mantener consistencia
             L = self.longitud.get()
-            suma_fuerzas = 0
+            h_inicial = self.altura_inicial.get()
+            h_final = self.altura_final.get()
+            angulo = np.arctan((h_final - h_inicial) / L)
+
+            suma_fuerzas_x = 0
+            suma_fuerzas_y = 0
             suma_momentos_a = 0
-            
+
             for pos, mag in self.cargas_puntuales:
-                suma_fuerzas += mag
-                suma_momentos_a += mag * pos
-                
+                suma_fuerzas_y += mag * np.cos(angulo)
+                suma_fuerzas_x += mag * np.sin(angulo)
+                suma_momentos_a += mag * np.cos(angulo) * pos
+
             for inicio, fin, mag in self.cargas_distribuidas:
                 longitud_carga = fin - inicio
                 fuerza_total = mag * longitud_carga
                 centroide = inicio + longitud_carga/2
-                suma_fuerzas += fuerza_total
-                suma_momentos_a += fuerza_total * centroide
-                
-            RB = suma_momentos_a / L
-            RA = suma_fuerzas - RB
-            
+
+                suma_fuerzas_y += fuerza_total * np.cos(angulo)
+                suma_fuerzas_x += fuerza_total * np.sin(angulo)
+                suma_momentos_a += fuerza_total * np.cos(angulo) * centroide
+
+            par_torsor = self.par_torsor.get()
+
+            if self.tipo_apoyo_c.get() == "Ninguno":
+                RB = (suma_momentos_a + par_torsor) / L
+                RA = suma_fuerzas_y - RB
+                RC = 0
+            else:
+                c = self.posicion_apoyo_c.get()
+                RB = ((suma_momentos_a + par_torsor) - c * suma_fuerzas_y / 2) / (L - c)
+                RA = RC = (suma_fuerzas_y - RB) / 2
+
             # Crear puntos para diagramas
             x = np.linspace(0, L, 1000)
             cortante = np.zeros_like(x)
@@ -452,7 +469,7 @@ class SimuladorVigaMejorado:
                 cortante[i] = V
                 momento[i] = M
                 
-            self.dibujar_diagramas(x, cortante, momento, RA, RB)
+            self.dibujar_diagramas(x, cortante, momento, RA, RB, RC)
             
         except Exception as e:
             messagebox.showerror("Error", f"Error en diagramas: {e}")
@@ -641,7 +658,7 @@ class SimuladorVigaMejorado:
         canvas.get_tk_widget().pack(fill="both", expand=True)
         self.ultima_figura = fig
         
-    def dibujar_diagramas(self, x, cortante, momento, RA, RB):
+    def dibujar_diagramas(self, x, cortante, momento, RA, RB, RC):
         for widget in self.frame_grafico.winfo_children():
             widget.destroy()
             
@@ -670,7 +687,7 @@ class SimuladorVigaMejorado:
             apoyo_c = '^' if self.tipo_apoyo_c.get() == 'Fijo' else 'o'
             pos_c = self.posicion_apoyo_c.get()
             ax1.plot(pos_c, 0, apoyo_c, markersize=12, color='green')
-            ax1.text(pos_c, -0.25, f'RC=?N', ha='center', va='top', fontsize=8, color='green')
+            ax1.text(pos_c, -0.25, f'RC={RC:.2f}N', ha='center', va='top', fontsize=8, color='green')
         
         for pos, mag in self.cargas_puntuales:
             ax1.arrow(pos, 0.3, 0, -0.25, head_width=L*0.015, head_length=0.03, fc='red', ec='red', width=0.002)
