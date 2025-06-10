@@ -73,6 +73,10 @@ class SimuladorVigaMejorado:
         self.altura_inferior = tk.DoubleVar(value=5)
         
         self.formas = []
+        # Variables para arrastrar formas
+        self.forma_seleccionada = None
+        self.desplazamiento_x = 0
+        self.desplazamiento_y = 0
         # Espaciado de la cuadrícula para el lienzo de formas
         self.grid_spacing = 20
         self.crear_widgets()
@@ -1017,7 +1021,9 @@ class SimuladorVigaMejorado:
         ttk.Label(frame_formas, text="⚡ También puede hacer clic en el lienzo para agregar").grid(row=5, column=0, columnspan=4, pady=2)
         self.canvas_formas = tk.Canvas(frame_formas, width=400, height=300, bg="white")
         self.canvas_formas.grid(row=6, column=0, columnspan=4, pady=5)
-        self.canvas_formas.bind("<Button-1>", self.colocar_forma)
+        self.canvas_formas.bind("<Button-1>", self.iniciar_accion_formas)
+        self.canvas_formas.bind("<B1-Motion>", self.arrastrar_forma)
+        self.canvas_formas.bind("<ButtonRelease-1>", self.soltar_forma)
         self.canvas_formas.bind("<Motion>", self.mostrar_coordenadas)
         self.dibujar_cuadricula(self.canvas_formas)
 
@@ -1035,11 +1041,8 @@ class SimuladorVigaMejorado:
             if tipo not in ["Rectángulo", "Triángulo", "Círculo"]:
                 raise ValueError("Tipo de forma no válido")
             
-            self.dibujar_forma_canvas(self.canvas_formas, tipo, x, y, ancho, alto)
-            if hasattr(self, "canvas_ampliado"):
-                self.dibujar_forma_canvas(self.canvas_ampliado, tipo, x, y, ancho, alto)
-
             self.formas.append((tipo, x, y, ancho, alto))
+            self.redibujar_formas()
             self.texto_resultado.insert("end", f"Forma agregada: {tipo} en ({x}, {y})\n")
         except ValueError as e:
             messagebox.showerror("Error", f"Valores inválidos: {e}")
@@ -1056,13 +1059,8 @@ class SimuladorVigaMejorado:
 
             canvas = event.widget
 
-            self.dibujar_forma_canvas(canvas, tipo, x, y, ancho, alto)
-
-            if canvas is not self.canvas_formas:
-                # Reflejar forma también en el lienzo principal
-                self.dibujar_forma_canvas(self.canvas_formas, tipo, x, y, ancho, alto)
-
             self.formas.append((tipo, x, y, ancho, alto))
+            self.redibujar_formas()
             self.texto_resultado.insert("end", f"Forma agregada: {tipo} en ({x}, {y})\n")
         except ValueError as e:
             messagebox.showerror("Error", f"Valores inválidos: {e}")
@@ -1151,6 +1149,12 @@ class SimuladorVigaMejorado:
             canvas.create_line(x, 0, x, height, fill="#e0e0e0", tags="grid")
         for y in range(0, height, self.grid_spacing):
             canvas.create_line(0, y, width, y, fill="#e0e0e0", tags="grid")
+        # Ejes con flechas y numeración
+        canvas.create_line(20, height-20, width-10, height-20, arrow=tk.LAST, tags="grid")
+        canvas.create_line(20, height-20, 20, 10, arrow=tk.LAST, tags="grid")
+        for i in range(1, 6):
+            canvas.create_text(20 + i * self.grid_spacing, height-10, text=str(i), tags="grid")
+            canvas.create_text(10, height-20 - i * self.grid_spacing, text=str(i), tags="grid")
 
     def mostrar_coordenadas(self, event):
         self.coord_label.config(text=f"x={event.x}, y={event.y}")
@@ -1159,27 +1163,69 @@ class SimuladorVigaMejorado:
         if hasattr(self, "coord_label_ampliado"):
             self.coord_label_ampliado.config(text=f"x={event.x}, y={event.y}")
 
+    def obtener_forma_en(self, x, y):
+        """Devuelve el índice de la forma que contiene el punto (x, y) o None."""
+        for i, (tipo, fx, fy, ancho, alto) in enumerate(self.formas):
+            if tipo == "Rectángulo":
+                if fx <= x <= fx + ancho and fy <= y <= fy + alto:
+                    return i
+            elif tipo == "Triángulo":
+                if fx <= x <= fx + ancho and fy <= y <= fy + alto:
+                    return i
+            elif tipo == "Círculo":
+                if (x - fx)**2 + (y - fy)**2 <= (ancho/2)**2:
+                    return i
+        return None
+
+    def iniciar_accion_formas(self, event):
+        indice = self.obtener_forma_en(event.x, event.y)
+        if indice is not None:
+            self.forma_seleccionada = indice
+            _, fx, fy, _, _ = self.formas[indice]
+            self.desplazamiento_x = event.x - fx
+            self.desplazamiento_y = event.y - fy
+        else:
+            self.colocar_forma(event)
+
+    def arrastrar_forma(self, event):
+        if self.forma_seleccionada is None:
+            return
+        tipo, _, _, ancho, alto = self.formas[self.forma_seleccionada]
+        nuevo_x = event.x - self.desplazamiento_x
+        nuevo_y = event.y - self.desplazamiento_y
+        self.formas[self.forma_seleccionada] = (tipo, nuevo_x, nuevo_y, ancho, alto)
+        self.redibujar_formas()
+
+    def soltar_forma(self, event):
+        self.forma_seleccionada = None
+
+    def redibujar_formas(self):
+        for canvas in [self.canvas_formas] + ([self.canvas_ampliado] if hasattr(self, "canvas_ampliado") else []):
+            canvas.delete("all")
+            self.dibujar_cuadricula(canvas)
+            for tipo, x, y, ancho, alto in self.formas:
+                self.dibujar_forma_canvas(canvas, tipo, x, y, ancho, alto)
+
     def limpiar_lienzo_formas(self):
         self.canvas_formas.delete("all")
-        self.dibujar_cuadricula(self.canvas_formas)
         self.formas.clear()
         if hasattr(self, "canvas_ampliado"):
             self.canvas_ampliado.delete("all")
-            self.dibujar_cuadricula(self.canvas_ampliado)
+        self.redibujar_formas()
 
     def ampliar_lienzo_formas(self):
         self.ventana_lienzo = tk.Toplevel(self.root)
         self.ventana_lienzo.title("Lienzo Ampliado")
         self.canvas_ampliado = tk.Canvas(self.ventana_lienzo, width=800, height=600, bg="white")
         self.canvas_ampliado.pack(fill="both", expand=True)
-        self.canvas_ampliado.bind("<Button-1>", self.colocar_forma)
+        self.canvas_ampliado.bind("<Button-1>", self.iniciar_accion_formas)
+        self.canvas_ampliado.bind("<B1-Motion>", self.arrastrar_forma)
+        self.canvas_ampliado.bind("<ButtonRelease-1>", self.soltar_forma)
         self.canvas_ampliado.bind("<Motion>", self.mostrar_coordenadas_ampliado)
         self.dibujar_cuadricula(self.canvas_ampliado)
 
-        # Dibujar formas existentes
-        for forma in self.formas:
-            tipo, x, y, ancho, alto = forma
-            self.dibujar_forma_canvas(self.canvas_ampliado, tipo, x, y, ancho, alto)
+        # Dibujar formas existentes en ambos lienzos
+        self.redibujar_formas()
 
         self.coord_label_ampliado = ttk.Label(self.ventana_lienzo, text="x=0, y=0")
         self.coord_label_ampliado.pack()
