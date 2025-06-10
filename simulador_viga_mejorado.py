@@ -191,7 +191,7 @@ class SimuladorVigaMejorado:
     
         # Longitud de la viga
         ttk.Label(frame_config, text="Longitud (m):").grid(row=0, column=0, padx=5, pady=5)
-        longitud_scale = ttk.Scale(frame_config, variable=self.longitud, from_=5, to=30, orient="horizontal", length=200)
+        longitud_scale = ttk.Scale(frame_config, variable=self.longitud, from_=5, to=50, orient="horizontal", length=200)
         longitud_scale.grid(row=0, column=1, padx=5, pady=5)
         # Permitir ingreso manual de la longitud
         ttk.Entry(frame_config, textvariable=self.longitud, width=8).grid(row=0, column=2, padx=5, pady=5)
@@ -1091,7 +1091,7 @@ class SimuladorVigaMejorado:
 🎓 GUÍA RÁPIDA DEL SIMULADOR DE VIGA
 
 🔹 CONFIGURACIÓN
-• Longitud entre 5 y 30 m
+• Longitud entre 5 y 50 m
 • Apoyos A y B (Fijo/Móvil) y apoyo C opcional con posición
 • Altura inicial y final para vigas inclinadas
 • Par torsor y modo 3D opcionales
