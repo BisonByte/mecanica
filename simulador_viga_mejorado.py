@@ -78,6 +78,12 @@ class SimuladorVigaMejorado:
         self.forma_seleccionada = None
         self.desplazamiento_x = 0
         self.desplazamiento_y = 0
+        # Variables para escalar formas con el mouse
+        self.forma_escalando = None
+        self.inicio_escala_x = 0
+        self.inicio_escala_y = 0
+        self.ancho_inicial = 0
+        self.alto_inicial = 0
         # Espaciado de la cuadrícula para el lienzo de formas
         self.grid_spacing = 20
         self.crear_widgets()
@@ -1125,6 +1131,9 @@ class SimuladorVigaMejorado:
         self.canvas_formas.bind("<Button-1>", self.iniciar_accion_formas)
         self.canvas_formas.bind("<B1-Motion>", self.arrastrar_forma)
         self.canvas_formas.bind("<ButtonRelease-1>", self.soltar_forma)
+        self.canvas_formas.bind("<Button-3>", self.iniciar_escalado_forma)
+        self.canvas_formas.bind("<B3-Motion>", self.escalar_forma_drag)
+        self.canvas_formas.bind("<ButtonRelease-3>", self.finalizar_escalado_forma)
         self.canvas_formas.bind("<Motion>", self.mostrar_coordenadas)
         self.canvas_formas.bind("<MouseWheel>", self.escalar_forma)
         self.canvas_formas.bind("<Button-4>", self.escalar_forma)
@@ -1328,6 +1337,43 @@ class SimuladorVigaMejorado:
         self.formas[indice] = (tipo, x, y, ancho, alto)
         self.redibujar_formas()
 
+    def iniciar_escalado_forma(self, event):
+        indice = self.obtener_forma_en(event.x, event.y)
+        if indice is None:
+            return
+        self.forma_escalando = indice
+        tipo, x, y, ancho, alto = self.formas[indice]
+        self.inicio_escala_x = event.x
+        self.inicio_escala_y = event.y
+        self.ancho_inicial = ancho
+        self.alto_inicial = alto
+        event.widget.delete("tooltip")
+        event.widget.create_text(event.x + 10, event.y - 10,
+                                 text=f"{ancho:.1f} x {alto:.1f}",
+                                 anchor="nw", fill="blue", tags="tooltip")
+
+    def escalar_forma_drag(self, event):
+        if self.forma_escalando is None:
+            return
+        tipo, x, y, ancho, alto = self.formas[self.forma_escalando]
+        nuevo_ancho = max(1, self.ancho_inicial + (event.x - self.inicio_escala_x))
+        nuevo_alto = max(1, self.alto_inicial + (event.y - self.inicio_escala_y))
+        if tipo == "Círculo":
+            nuevo_tam = max(nuevo_ancho, nuevo_alto)
+            nuevo_ancho = nuevo_tam
+            nuevo_alto = nuevo_tam
+        self.formas[self.forma_escalando] = (tipo, x, y, nuevo_ancho, nuevo_alto)
+        self.redibujar_formas()
+        event.widget.delete("tooltip")
+        event.widget.create_text(event.x + 10, event.y - 10,
+                                 text=f"{nuevo_ancho:.1f} x {nuevo_alto:.1f}",
+                                 anchor="nw", fill="blue", tags="tooltip")
+
+    def finalizar_escalado_forma(self, event):
+        if self.forma_escalando is not None:
+            event.widget.delete("tooltip")
+        self.forma_escalando = None
+
     def redibujar_formas(self):
         for canvas in [self.canvas_formas] + ([self.canvas_ampliado] if hasattr(self, "canvas_ampliado") else []):
             canvas.delete("all")
@@ -1387,6 +1433,9 @@ class SimuladorVigaMejorado:
         self.canvas_ampliado.bind("<Button-1>", self.iniciar_accion_formas)
         self.canvas_ampliado.bind("<B1-Motion>", self.arrastrar_forma)
         self.canvas_ampliado.bind("<ButtonRelease-1>", self.soltar_forma)
+        self.canvas_ampliado.bind("<Button-3>", self.iniciar_escalado_forma)
+        self.canvas_ampliado.bind("<B3-Motion>", self.escalar_forma_drag)
+        self.canvas_ampliado.bind("<ButtonRelease-3>", self.finalizar_escalado_forma)
         self.canvas_ampliado.bind("<Motion>", self.mostrar_coordenadas_ampliado)
         self.canvas_ampliado.bind("<MouseWheel>", self.escalar_forma)
         self.canvas_ampliado.bind("<Button-4>", self.escalar_forma)
