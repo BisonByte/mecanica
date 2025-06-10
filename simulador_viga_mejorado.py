@@ -11,19 +11,32 @@ class SimuladorVigaMejorado:
         self.root.title("Simulador de Viga Mecánica - Versión Completa")
         self.root.geometry("1200x900")  # Aumentado el tamaño de la ventana
         
-        # Configurar tema y estilo
+        # Configurar tema y estilo moderno
         style = ttk.Style()
-        if 'clam' in style.theme_names():  # Verificar si el tema está disponible
+        if 'clam' in style.theme_names():
             style.theme_use('clam')
-        
-        # Personalizar estilos
-        style.configure("TLabelframe.Label", font=("Arial", 11, "bold"))
-        style.configure("TButton", font=("Arial", 10))
-        style.configure("TLabel", font=("Arial", 10))
-        style.configure("TEntry", font=("Arial", 10))
-        
-        # Configurar colores
-        self.root.configure(bg="#f0f0f0")
+
+        # Paleta de colores clara y acentos azules
+        bg_color = "#f7f7f7"
+        fg_color = "#333333"
+        accent = "#007acc"
+
+        style.configure("TFrame", background=bg_color)
+        style.configure("TLabelframe", background=bg_color)
+        style.configure("TLabelframe.Label", background=bg_color,
+                        foreground=accent, font=("Helvetica", 11, "bold"))
+        style.configure("TButton", font=("Helvetica", 10, "bold"),
+                        background=accent, foreground="white")
+        style.map("TButton",
+                   background=[('active', '#005a9e')],
+                   foreground=[('active', 'white')])
+        style.configure("TLabel", font=("Helvetica", 10),
+                        background=bg_color, foreground=fg_color)
+        style.configure("TEntry", font=("Helvetica", 10))
+        style.configure("TNotebook", background=bg_color)
+        style.configure("TNotebook.Tab", font=("Helvetica", 10, "bold"))
+
+        self.root.configure(bg=bg_color)
         
         # Variables principales
         self.longitud = tk.DoubleVar(value=10.0)
@@ -70,51 +83,31 @@ class SimuladorVigaMejorado:
         
     
     def crear_widgets(self):
-        # Frame principal con scroll
-        main_frame = ttk.Frame(self.root)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=10)
-    
-        # Canvas para permitir scroll
-        canvas = tk.Canvas(main_frame)
-        scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
-    
-        scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(
-                scrollregion=canvas.bbox("all")
-            )
-        )
-    
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
-    
-        # Configuración de la viga
-        self.crear_seccion_configuracion_viga(scrollable_frame)
-    
-        # Sección para propiedades de la sección transversal
-        self.crear_seccion_propiedades_seccion(scrollable_frame)
-    
-        # Cargas puntuales
-        self.crear_seccion_cargas_puntuales(scrollable_frame)
-    
-        # Cargas distribuidas
-        self.crear_seccion_cargas_distribuidas(scrollable_frame)
-    
-        # Formas irregulares
-        self.crear_widgets_formas_irregulares(scrollable_frame)
-    
-        # Botones de cálculo
-        self.crear_seccion_botones_calculo(scrollable_frame)
-    
-        # Área de resultados
-        self.crear_seccion_resultados(scrollable_frame)
-    
-        # Área de gráficos
-        self.crear_seccion_graficos(scrollable_frame)
-    
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+        # Usar un Notebook para organizar mejor la interfaz
+        notebook = ttk.Notebook(self.root)
+        notebook.pack(fill="both", expand=True, padx=20, pady=10)
+
+        tab_config = ttk.Frame(notebook)
+        tab_seccion = ttk.Frame(notebook)
+        tab_result = ttk.Frame(notebook)
+
+        notebook.add(tab_config, text="Configuración y Cargas")
+        notebook.add(tab_seccion, text="Sección y Formas")
+        notebook.add(tab_result, text="Resultados")
+
+        # Sección configuración y cargas
+        self.crear_seccion_configuracion_viga(tab_config)
+        self.crear_seccion_cargas_puntuales(tab_config)
+        self.crear_seccion_cargas_distribuidas(tab_config)
+        self.crear_seccion_botones_calculo(tab_config)
+
+        # Sección propiedades de la sección y formas irregulares
+        self.crear_seccion_propiedades_seccion(tab_seccion)
+        self.crear_widgets_formas_irregulares(tab_seccion)
+
+        # Resultados y gráficos
+        self.crear_seccion_resultados(tab_result)
+        self.crear_seccion_graficos(tab_result)
     
     def crear_seccion_configuracion_viga(self, parent):
         frame_config = ttk.LabelFrame(parent, text="⚙ Configuración de la Viga")
@@ -295,6 +288,9 @@ class SimuladorVigaMejorado:
             L = self.longitud.get()
             h_inicial = self.altura_inicial.get()
             h_final = self.altura_final.get()
+            # Para cargas verticales no es necesario proyectar con el ángulo de
+            # la viga. Se conserva para posibles extensiones, pero las
+            # sumatorias solo consideran el componente vertical.
             angulo = np.arctan((h_final - h_inicial) / L)
             
             # Calcular fuerzas totales y momentos
@@ -304,9 +300,9 @@ class SimuladorVigaMejorado:
             
             # Cargas puntuales
             for pos, mag in self.cargas_puntuales:
-                suma_fuerzas_y += mag * np.cos(angulo)
-                suma_fuerzas_x += mag * np.sin(angulo)
-                suma_momentos_a += mag * np.cos(angulo) * pos
+                # Las cargas puntuales se consideran verticales
+                suma_fuerzas_y += mag
+                suma_momentos_a += mag * pos
                 
             # Cargas distribuidas
             for inicio, fin, mag in self.cargas_distribuidas:
@@ -314,9 +310,8 @@ class SimuladorVigaMejorado:
                 fuerza_total = mag * longitud_carga
                 centroide = inicio + longitud_carga/2
                 
-                suma_fuerzas_y += fuerza_total * np.cos(angulo)
-                suma_fuerzas_x += fuerza_total * np.sin(angulo)
-                suma_momentos_a += fuerza_total * np.cos(angulo) * centroide
+                suma_fuerzas_y += fuerza_total
+                suma_momentos_a += fuerza_total * centroide
             
             # Incluir el par torsor en los cálculos
             par_torsor = self.par_torsor.get()
@@ -326,16 +321,33 @@ class SimuladorVigaMejorado:
                 RB = (suma_momentos_a + par_torsor) / L
                 RA = suma_fuerzas_y - RB
                 RC = 0
+                procedimiento = [
+                    "Viga con dos apoyos:",
+                    f"ΣFy = {suma_fuerzas_y:.2f} N",
+                    f"ΣMA = {suma_momentos_a:.2f} N·m",
+                    f"RB = (ΣMA + T)/L = ({suma_momentos_a:.2f} + {par_torsor:.2f})/{L:.2f}",
+                    f"RB = {RB:.2f} N",
+                    f"RA = ΣFy - RB = {suma_fuerzas_y:.2f} - {RB:.2f} = {RA:.2f} N"
+                ]
             else:
                 c = self.posicion_apoyo_c.get()
-                # Sistema de ecuaciones para tres apoyos con par torsor
                 RB = ((suma_momentos_a + par_torsor) - c * suma_fuerzas_y / 2) / (L - c)
                 RA = RC = (suma_fuerzas_y - RB) / 2
+                procedimiento = [
+                    "Viga con tres apoyos:",
+                    f"ΣFy = {suma_fuerzas_y:.2f} N",
+                    f"ΣMA = {suma_momentos_a:.2f} N·m",
+                    f"RB = ((ΣMA + T) - c*ΣFy/2)/(L - c) = ({suma_momentos_a:.2f} + {par_torsor:.2f} - {c:.2f}*{suma_fuerzas_y:.2f}/2)/({L:.2f} - {c:.2f})",
+                    f"RB = {RB:.2f} N",
+                    f"RA = RC = (ΣFy - RB)/2 = ({suma_fuerzas_y:.2f} - {RB:.2f})/2 = {RA:.2f} N"
+                ]
             
-            # Mostrar resultados incluyendo el par torsor
+            # Mostrar procedimiento y resultados
             self.texto_resultado.insert("end", f"\n{'='*50}\n")
             self.texto_resultado.insert("end", f"⚖️ CÁLCULO DE REACCIONES:\n")
             self.texto_resultado.insert("end", f"{'='*50}\n")
+            for linea in procedimiento:
+                self.texto_resultado.insert("end", linea + "\n")
             self.texto_resultado.insert("end", f"🔺 Reacción en A (RA): {RA:.2f} N\n")
             self.texto_resultado.insert("end", f"🔺 Reacción en B (RB): {RB:.2f} N\n")
             if self.tipo_apoyo_c.get() != "Ninguno":
@@ -380,10 +392,11 @@ class SimuladorVigaMejorado:
                 suma_cargas += fuerza_total
             
             x_cm = suma_momentos / suma_cargas
-            
-            self.texto_resultado.insert("end", f"\n📍 CENTRO DE MASA:\n")
-            self.texto_resultado.insert("end", f"Posición X: {x_cm:.2f} m\n")
-            self.texto_resultado.insert("end", f"Carga total: {suma_cargas:.2f} N\n")
+
+            self.texto_resultado.insert("end", "\n📍 CÁLCULO DEL CENTRO DE MASA:\n")
+            self.texto_resultado.insert("end", f"Σ(x·F) = {suma_momentos:.2f} N·m\n")
+            self.texto_resultado.insert("end", f"ΣF = {suma_cargas:.2f} N\n")
+            self.texto_resultado.insert("end", f"x_cm = Σ(x·F) / ΣF = {x_cm:.2f} m\n")
             
             # Actualizar la visualización
             if self.modo_3d.get():
@@ -400,25 +413,42 @@ class SimuladorVigaMejorado:
                 messagebox.showwarning("Advertencia", "Agrega cargas primero")
                 return
                 
-            # Primero calcular reacciones
+            # Primero calcular reacciones usando el mismo algoritmo que
+            # la función calcular_reacciones para mantener consistencia
             L = self.longitud.get()
-            suma_fuerzas = 0
+            h_inicial = self.altura_inicial.get()
+            h_final = self.altura_final.get()
+            angulo = np.arctan((h_final - h_inicial) / L)
+
+            suma_fuerzas_x = 0
+            suma_fuerzas_y = 0
             suma_momentos_a = 0
-            
+
             for pos, mag in self.cargas_puntuales:
-                suma_fuerzas += mag
+                # Considerar cargas puntuales verticales
+                suma_fuerzas_y += mag
                 suma_momentos_a += mag * pos
-                
+
             for inicio, fin, mag in self.cargas_distribuidas:
                 longitud_carga = fin - inicio
                 fuerza_total = mag * longitud_carga
                 centroide = inicio + longitud_carga/2
-                suma_fuerzas += fuerza_total
+
+                # Las cargas distribuidas son verticales
+                suma_fuerzas_y += fuerza_total
                 suma_momentos_a += fuerza_total * centroide
-                
-            RB = suma_momentos_a / L
-            RA = suma_fuerzas - RB
-            
+
+            par_torsor = self.par_torsor.get()
+            c = self.posicion_apoyo_c.get()
+
+            if self.tipo_apoyo_c.get() == "Ninguno":
+                RB = (suma_momentos_a + par_torsor) / L
+                RA = suma_fuerzas_y - RB
+                RC = 0
+            else:
+                RB = ((suma_momentos_a + par_torsor) - c * suma_fuerzas_y / 2) / (L - c)
+                RA = RC = (suma_fuerzas_y - RB) / 2
+
             # Crear puntos para diagramas
             x = np.linspace(0, L, 1000)
             cortante = np.zeros_like(x)
@@ -426,8 +456,20 @@ class SimuladorVigaMejorado:
             
             # Calcular cortante y momento
             for i, xi in enumerate(x):
-                V = RA  # Empezar con RA
+                V = 0
                 M = 0
+
+                # Reacciones
+                V += RA
+                M += RA * xi
+
+                if self.tipo_apoyo_c.get() != "Ninguno" and xi >= c:
+                    V += RC
+                    M += RC * (xi - c)
+
+                if xi >= L:
+                    V += RB
+                    M += RB * (xi - L)
                 
                 # Contribución de cargas puntuales
                 for pos, mag in self.cargas_puntuales:
@@ -452,7 +494,7 @@ class SimuladorVigaMejorado:
                 cortante[i] = V
                 momento[i] = M
                 
-            self.dibujar_diagramas(x, cortante, momento, RA, RB)
+            self.dibujar_diagramas(x, cortante, momento, RA, RB, RC)
             
         except Exception as e:
             messagebox.showerror("Error", f"Error en diagramas: {e}")
@@ -641,7 +683,7 @@ class SimuladorVigaMejorado:
         canvas.get_tk_widget().pack(fill="both", expand=True)
         self.ultima_figura = fig
         
-    def dibujar_diagramas(self, x, cortante, momento, RA, RB):
+    def dibujar_diagramas(self, x, cortante, momento, RA, RB, RC):
         for widget in self.frame_grafico.winfo_children():
             widget.destroy()
             
@@ -670,7 +712,7 @@ class SimuladorVigaMejorado:
             apoyo_c = '^' if self.tipo_apoyo_c.get() == 'Fijo' else 'o'
             pos_c = self.posicion_apoyo_c.get()
             ax1.plot(pos_c, 0, apoyo_c, markersize=12, color='green')
-            ax1.text(pos_c, -0.25, f'RC=?N', ha='center', va='top', fontsize=8, color='green')
+            ax1.text(pos_c, -0.25, f'RC={RC:.2f}N', ha='center', va='top', fontsize=8, color='green')
         
         for pos, mag in self.cargas_puntuales:
             ax1.arrow(pos, 0.3, 0, -0.25, head_width=L*0.015, head_length=0.03, fc='red', ec='red', width=0.002)
@@ -815,28 +857,36 @@ class SimuladorVigaMejorado:
 • Momento: Tendencia a causar rotación en la viga
 
 🔧 CONFIGURACIÓN:
-• Longitud: Define el largo de la viga (5-30m)
-• Apoyos: Fijo (impide movimiento), Móvil (permite deslizamiento)
+• Longitud (5-30 m)
+• Apoyos: Fijo (impide movimiento) y Móvil (permite deslizamiento)
+• Altura inicial y final para vigas inclinadas
+• Par torsor opcional
 
 ⬇️ TIPOS DE CARGAS:
 • Puntuales: Fuerza concentrada en un punto específico
 • Distribuidas: Fuerza repartida uniformemente en un tramo
 
 📊 CÁLCULOS:
-• Reacciones: Usa equilibrio estático (ΣF=0, ΣM=0)
-• Centro de masa: Punto donde se concentra el peso total
-• Diagramas: Visualizan cortante y momento a lo largo de la viga
+• Reacciones usando ΣF=0 y ΣM=0
+• Centro de masa de las cargas
+• Diagramas de cortante y momento
+• Propiedades de la sección transversal
+• Cálculo del centro de gravedad de figuras irregulares (clic en el lienzo para agregarlas)
+
+✨ FUNCIONES EXTRA:
+• Visualización en modo 3D
+• Ampliar la gráfica en una ventana independiente
 
 💡 CONSEJOS:
-• Empieza con casos simples (1-2 cargas)
+• Empieza con casos simples (1‑2 cargas)
 • Verifica que las reacciones sumen la carga total
-• El momento máximo indica donde la viga sufre más
+• El momento máximo indica dónde la viga sufre más
 • Usa valores realistas para casos prácticos
 
 🎯 EJEMPLO BÁSICO:
-1. Viga de 10m
-2. Carga puntual: 100N en 4m
-3. Calcular reacciones: RA=60N, RB=40N
+1. Viga de 10 m
+2. Carga puntual: 100 N en 4 m
+3. Calcular reacciones: RA=60 N, RB=40 N
 4. Ver diagramas para análisis completo
         """
         
@@ -973,6 +1023,11 @@ class SimuladorVigaMejorado:
         ttk.Button(frame_formas, text="Agregar Forma", command=self.agregar_forma).grid(row=3, column=0, columnspan=2, pady=5)
         ttk.Button(frame_formas, text="Calcular CG", command=self.calcular_cg_formas).grid(row=3, column=2, columnspan=2, pady=5)
 
+        ttk.Label(frame_formas, text="⚡ También puede hacer clic en el lienzo para agregar").grid(row=4, column=0, columnspan=4, pady=2)
+        self.canvas_formas = tk.Canvas(frame_formas, width=400, height=300, bg="white")
+        self.canvas_formas.grid(row=5, column=0, columnspan=4, pady=5)
+        self.canvas_formas.bind("<Button-1>", self.colocar_forma)
+
     def agregar_forma(self):
         try:
             tipo = self.tipo_forma.get()
@@ -984,6 +1039,30 @@ class SimuladorVigaMejorado:
             if tipo not in ["Rectángulo", "Triángulo", "Círculo"]:
                 raise ValueError("Tipo de forma no válido")
             
+            self.formas.append((tipo, x, y, ancho, alto))
+            self.texto_resultado.insert("end", f"Forma agregada: {tipo} en ({x}, {y})\n")
+        except ValueError as e:
+            messagebox.showerror("Error", f"Valores inválidos: {e}")
+
+    def colocar_forma(self, event):
+        """Permite agregar una forma haciendo clic en el lienzo."""
+        try:
+            tipo = self.tipo_forma.get()
+            ancho = float(self.ancho_forma.get())
+            alto = float(self.alto_forma.get())
+
+            x = event.x
+            y = event.y
+
+            if tipo == "Rectángulo":
+                self.canvas_formas.create_rectangle(x, y, x + ancho, y + alto, outline="black")
+            elif tipo == "Triángulo":
+                self.canvas_formas.create_polygon(x, y + alto, x + ancho / 2, y, x + ancho, y + alto, outline="black", fill="")
+            elif tipo == "Círculo":
+                self.canvas_formas.create_oval(x - ancho / 2, y - ancho / 2, x + ancho / 2, y + ancho / 2, outline="black")
+            else:
+                raise ValueError("Tipo de forma no válido")
+
             self.formas.append((tipo, x, y, ancho, alto))
             self.texto_resultado.insert("end", f"Forma agregada: {tipo} en ({x}, {y})\n")
         except ValueError as e:
