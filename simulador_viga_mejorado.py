@@ -42,9 +42,19 @@ class SimuladorVigaMejorado:
         self.tipo_apoyo_b = tk.StringVar(value="Móvil")
         self.tipo_apoyo_c = tk.StringVar(value="Ninguno")
         self.posicion_apoyo_c = tk.DoubleVar(value=5.0)
-        
+
         # Nueva variable para el par torsor
         self.par_torsor = tk.DoubleVar(value=0.0)
+        # Posición para evaluar el par torsor
+        self.posicion_torsor = tk.DoubleVar(value=0.0)
+
+        # Guardar reacciones para cálculos posteriores
+        self.reaccion_a = 0.0
+        self.reaccion_b = 0.0
+        self.reaccion_c = 0.0
+
+        # Lista de puntos para centro de masa 3D (x, y, z, m)
+        self.puntos_masa_3d = []
         
         # Variables para nuevas cargas
         self.posicion_carga = tk.DoubleVar(value=0.0)
@@ -280,6 +290,11 @@ class SimuladorVigaMejorado:
         btn_diagramas = ttk.Button(frame_botones, text="📊 Mostrar Diagramas", style="Action.TButton")
         btn_diagramas.config(command=lambda b=btn_diagramas: self.on_button_click(b, self.mostrar_diagramas))
         btn_diagramas.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+
+        ttk.Entry(frame_botones, textvariable=self.posicion_torsor, width=8).grid(row=0, column=3, padx=5, pady=5)
+        btn_par_punto = ttk.Button(frame_botones, text="🌀 Par en Punto", style="Action.TButton")
+        btn_par_punto.config(command=lambda b=btn_par_punto: self.on_button_click(b, lambda: self.calcular_par_torsor_en_punto(self.posicion_torsor.get())))
+        btn_par_punto.grid(row=0, column=4, padx=5, pady=5, sticky="ew")
         
         # Segunda fila de botones
         btn_limpiar = ttk.Button(frame_botones, text="🗑️ Limpiar Todo", style="Warning.TButton")
@@ -385,9 +400,13 @@ class SimuladorVigaMejorado:
                 longitud_carga = fin - inicio
                 fuerza_total = mag * longitud_carga
                 centroide = inicio + longitud_carga/2
-                
+
                 suma_fuerzas_y += fuerza_total
                 suma_momentos_a += fuerza_total * centroide
+                self.log(
+                    f"🔹 Carga distribuida {inicio}-{fin} m -> F={fuerza_total:.2f} N\n",
+                    "data",
+                )
             
             # Incluir el par torsor en los cálculos
             par_torsor = self.par_torsor.get()
@@ -441,7 +460,12 @@ class SimuladorVigaMejorado:
                 self.log("✅ Sistema en equilibrio\n", "success")
             else:
                 self.log("❌ Error en equilibrio\n", "error")
-            
+
+            # Guardar reacciones para cálculos posteriores
+            self.reaccion_a = RA
+            self.reaccion_b = RB
+            self.reaccion_c = RC
+
             self.dibujar_viga_con_reacciones(RA, RB, RC)
             
         except Exception as e:
@@ -485,6 +509,27 @@ class SimuladorVigaMejorado:
             
         except Exception as e:
             messagebox.showerror("Error", f"Error en cálculo: {e}")
+
+    def calcular_centro_masa_3d(self, puntos):
+        """Calcula el centro de masa de una colección de puntos (x, y, z, m)."""
+        if not puntos:
+            messagebox.showwarning("Advertencia", "No hay puntos 3D definidos")
+            return None
+        M = sum(m for _, _, _, m in puntos)
+        x_cm = sum(x * m for x, _, _, m in puntos) / M
+        y_cm = sum(y * m for _, y, _, m in puntos) / M
+        z_cm = sum(z * m for _, _, z, m in puntos) / M
+        self.log(f"📍 Centro de masa 3D: ({x_cm:.2f}, {y_cm:.2f}, {z_cm:.2f})\n", "data")
+        return x_cm, y_cm, z_cm
+
+    def calcular_fuerza_desde_torsor(self, torsor, distancia):
+        """Calcula la fuerza F a partir del par torsor y la distancia."""
+        if distancia == 0:
+            messagebox.showerror("Error", "La distancia no puede ser cero")
+            return None
+        F = torsor / distancia
+        self.log(f"💪 Fuerza calculada: F = {F:.2f} N\n", "data")
+        return F
             
     def mostrar_diagramas(self):
         try:
@@ -574,9 +619,49 @@ class SimuladorVigaMejorado:
                 momento[i] = M
                 
             self.dibujar_diagramas(x, cortante, momento, RA, RB, RC)
-            
+
         except Exception as e:
             messagebox.showerror("Error", f"Error en diagramas: {e}")
+
+    def calcular_par_torsor_en_punto(self, x):
+        """Calcula el par torsor interno en la posición x."""
+        if not self.cargas_puntuales and not self.cargas_distribuidas:
+            messagebox.showwarning("Advertencia", "Agrega cargas primero")
+            return None
+        if self.reaccion_a == 0 and self.reaccion_b == 0 and self.reaccion_c == 0:
+            messagebox.showwarning("Advertencia", "Calcule primero las reacciones")
+            return None
+
+        L = self.longitud.get()
+        RA = self.reaccion_a
+        RB = self.reaccion_b
+        RC = self.reaccion_c
+        c = self.posicion_apoyo_c.get()
+        T = self.par_torsor.get()
+        momento = T
+
+        if x >= 0:
+            momento += RA * x
+        if self.tipo_apoyo_c.get() != "Ninguno" and x >= c:
+            momento += RC * (x - c)
+        if x >= L:
+            momento += RB * (x - L)
+
+        for pos, mag in self.cargas_puntuales:
+            if x > pos:
+                momento -= mag * (x - pos)
+
+        for inicio, fin, mag in self.cargas_distribuidas:
+            if x > inicio:
+                if x <= fin:
+                    long_actual = x - inicio
+                    momento -= mag * long_actual * long_actual / 2
+                else:
+                    long_total = fin - inicio
+                    momento -= mag * long_total * (x - (inicio + long_total / 2))
+
+        self.log(f"🌀 Par torsor en x={x:.2f} m: {momento:.2f} N·m\n", "data")
+        return momento
             
     def dibujar_viga_actual(self, x_cm=None):
         for widget in self.frame_grafico.winfo_children():
@@ -973,6 +1058,12 @@ class SimuladorVigaMejorado:
         self.modo_3d.set(False)
         self.altura_inicial.set(0.0)
         self.altura_final.set(0.0)
+
+        # Reiniciar reacciones y puntos de masa 3D
+        self.reaccion_a = 0.0
+        self.reaccion_b = 0.0
+        self.reaccion_c = 0.0
+        self.puntos_masa_3d.clear()
 
         # Restablecer variables de la sección transversal
         self.ancho_superior.set(20)
