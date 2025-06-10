@@ -73,6 +73,8 @@ class SimuladorVigaMejorado:
         self.altura_inferior = tk.DoubleVar(value=5)
         
         self.formas = []
+        # Espaciado de la cuadrícula para el lienzo de formas
+        self.grid_spacing = 20
         self.crear_widgets()
         
         # Mostrar mensaje inicial
@@ -1023,11 +1025,18 @@ class SimuladorVigaMejorado:
 
         ttk.Button(frame_formas, text="Agregar Forma", command=self.agregar_forma).grid(row=3, column=0, columnspan=2, pady=5)
         ttk.Button(frame_formas, text="Calcular CG", command=self.calcular_cg_formas).grid(row=3, column=2, columnspan=2, pady=5)
+        ttk.Button(frame_formas, text="Limpiar Lienzo", command=self.limpiar_lienzo_formas).grid(row=4, column=0, columnspan=2, pady=5)
+        ttk.Button(frame_formas, text="Ampliar Lienzo", command=self.ampliar_lienzo_formas).grid(row=4, column=2, columnspan=2, pady=5)
 
-        ttk.Label(frame_formas, text="⚡ También puede hacer clic en el lienzo para agregar").grid(row=4, column=0, columnspan=4, pady=2)
+        ttk.Label(frame_formas, text="⚡ También puede hacer clic en el lienzo para agregar").grid(row=5, column=0, columnspan=4, pady=2)
         self.canvas_formas = tk.Canvas(frame_formas, width=400, height=300, bg="white")
-        self.canvas_formas.grid(row=5, column=0, columnspan=4, pady=5)
+        self.canvas_formas.grid(row=6, column=0, columnspan=4, pady=5)
         self.canvas_formas.bind("<Button-1>", self.colocar_forma)
+        self.canvas_formas.bind("<Motion>", self.mostrar_coordenadas)
+        self.dibujar_cuadricula(self.canvas_formas)
+
+        self.coord_label = ttk.Label(frame_formas, text="x=0, y=0")
+        self.coord_label.grid(row=7, column=0, columnspan=4, pady=2)
 
     def agregar_forma(self):
         try:
@@ -1040,6 +1049,10 @@ class SimuladorVigaMejorado:
             if tipo not in ["Rectángulo", "Triángulo", "Círculo"]:
                 raise ValueError("Tipo de forma no válido")
             
+            self.dibujar_forma_canvas(self.canvas_formas, tipo, x, y, ancho, alto)
+            if hasattr(self, "canvas_ampliado"):
+                self.dibujar_forma_canvas(self.canvas_ampliado, tipo, x, y, ancho, alto)
+
             self.formas.append((tipo, x, y, ancho, alto))
             self.texto_resultado.insert("end", f"Forma agregada: {tipo} en ({x}, {y})\n")
         except ValueError as e:
@@ -1055,14 +1068,13 @@ class SimuladorVigaMejorado:
             x = event.x
             y = event.y
 
-            if tipo == "Rectángulo":
-                self.canvas_formas.create_rectangle(x, y, x + ancho, y + alto, outline="black")
-            elif tipo == "Triángulo":
-                self.canvas_formas.create_polygon(x, y + alto, x + ancho / 2, y, x + ancho, y + alto, outline="black", fill="")
-            elif tipo == "Círculo":
-                self.canvas_formas.create_oval(x - ancho / 2, y - ancho / 2, x + ancho / 2, y + ancho / 2, outline="black")
-            else:
-                raise ValueError("Tipo de forma no válido")
+            canvas = event.widget
+
+            self.dibujar_forma_canvas(canvas, tipo, x, y, ancho, alto)
+
+            if canvas is not self.canvas_formas:
+                # Reflejar forma también en el lienzo principal
+                self.dibujar_forma_canvas(self.canvas_formas, tipo, x, y, ancho, alto)
 
             self.formas.append((tipo, x, y, ancho, alto))
             self.texto_resultado.insert("end", f"Forma agregada: {tipo} en ({x}, {y})\n")
@@ -1134,6 +1146,57 @@ class SimuladorVigaMejorado:
         canvas.draw()
         canvas.get_tk_widget().pack(fill="both", expand=True)
         self.ultima_figura = fig
+
+    def dibujar_forma_canvas(self, canvas, tipo, x, y, ancho, alto):
+        """Dibuja una forma en el canvas indicado."""
+        if tipo == "Rectángulo":
+            canvas.create_rectangle(x, y, x + ancho, y + alto, outline="black")
+        elif tipo == "Triángulo":
+            canvas.create_polygon(x, y + alto, x + ancho / 2, y, x + ancho, y + alto, outline="black", fill="")
+        elif tipo == "Círculo":
+            canvas.create_oval(x - ancho / 2, y - ancho / 2, x + ancho / 2, y + ancho / 2, outline="black")
+
+    def dibujar_cuadricula(self, canvas):
+        """Dibuja una cuadrícula de fondo en el canvas."""
+        canvas.delete("grid")
+        width = int(canvas["width"])
+        height = int(canvas["height"])
+        for x in range(0, width, self.grid_spacing):
+            canvas.create_line(x, 0, x, height, fill="#e0e0e0", tags="grid")
+        for y in range(0, height, self.grid_spacing):
+            canvas.create_line(0, y, width, y, fill="#e0e0e0", tags="grid")
+
+    def mostrar_coordenadas(self, event):
+        self.coord_label.config(text=f"x={event.x}, y={event.y}")
+
+    def mostrar_coordenadas_ampliado(self, event):
+        if hasattr(self, "coord_label_ampliado"):
+            self.coord_label_ampliado.config(text=f"x={event.x}, y={event.y}")
+
+    def limpiar_lienzo_formas(self):
+        self.canvas_formas.delete("all")
+        self.dibujar_cuadricula(self.canvas_formas)
+        self.formas.clear()
+        if hasattr(self, "canvas_ampliado"):
+            self.canvas_ampliado.delete("all")
+            self.dibujar_cuadricula(self.canvas_ampliado)
+
+    def ampliar_lienzo_formas(self):
+        self.ventana_lienzo = tk.Toplevel(self.root)
+        self.ventana_lienzo.title("Lienzo Ampliado")
+        self.canvas_ampliado = tk.Canvas(self.ventana_lienzo, width=800, height=600, bg="white")
+        self.canvas_ampliado.pack(fill="both", expand=True)
+        self.canvas_ampliado.bind("<Button-1>", self.colocar_forma)
+        self.canvas_ampliado.bind("<Motion>", self.mostrar_coordenadas_ampliado)
+        self.dibujar_cuadricula(self.canvas_ampliado)
+
+        # Dibujar formas existentes
+        for forma in self.formas:
+            tipo, x, y, ancho, alto = forma
+            self.dibujar_forma_canvas(self.canvas_ampliado, tipo, x, y, ancho, alto)
+
+        self.coord_label_ampliado = ttk.Label(self.ventana_lienzo, text="x=0, y=0")
+        self.coord_label_ampliado.pack()
 
     def crear_seccion_resultados(self, parent):
         frame_resultados = ttk.LabelFrame(parent, text="Resultados")
