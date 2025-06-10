@@ -72,7 +72,12 @@ class SimuladorVigaMejorado:
         self.ancho_inferior = tk.DoubleVar(value=15)
         self.altura_inferior = tk.DoubleVar(value=5)
         
+        # Estructura para almacenar formas dibujadas
+        # Cada elemento es un diccionario con las claves:
+        # tipo, x, y, ancho, alto y los identificadores de canvas
         self.formas = []
+        self.id_to_forma = {}
+        self.selected_shape_id = None
         # Espaciado de la cuadrícula para el lienzo de formas
         self.grid_spacing = 20
         self.crear_widgets()
@@ -1045,16 +1050,11 @@ class SimuladorVigaMejorado:
             y = float(self.y_forma.get())
             ancho = float(self.ancho_forma.get())
             alto = float(self.alto_forma.get())
-            
+
             if tipo not in ["Rectángulo", "Triángulo", "Círculo"]:
                 raise ValueError("Tipo de forma no válido")
-            
-            self.dibujar_forma_canvas(self.canvas_formas, tipo, x, y, ancho, alto)
-            if hasattr(self, "canvas_ampliado"):
-                self.dibujar_forma_canvas(self.canvas_ampliado, tipo, x, y, ancho, alto)
 
-            self.formas.append((tipo, x, y, ancho, alto))
-            self.texto_resultado.insert("end", f"Forma agregada: {tipo} en ({x}, {y})\n")
+            self.crear_y_guardar_forma(tipo, x, y, ancho, alto)
         except ValueError as e:
             messagebox.showerror("Error", f"Valores inválidos: {e}")
 
@@ -1068,16 +1068,7 @@ class SimuladorVigaMejorado:
             x = event.x
             y = event.y
 
-            canvas = event.widget
-
-            self.dibujar_forma_canvas(canvas, tipo, x, y, ancho, alto)
-
-            if canvas is not self.canvas_formas:
-                # Reflejar forma también en el lienzo principal
-                self.dibujar_forma_canvas(self.canvas_formas, tipo, x, y, ancho, alto)
-
-            self.formas.append((tipo, x, y, ancho, alto))
-            self.texto_resultado.insert("end", f"Forma agregada: {tipo} en ({x}, {y})\n")
+            self.crear_y_guardar_forma(tipo, x, y, ancho, alto)
         except ValueError as e:
             messagebox.showerror("Error", f"Valores inválidos: {e}")
 
@@ -1091,7 +1082,11 @@ class SimuladorVigaMejorado:
         cy_total = 0
         
         for forma in self.formas:
-            tipo, x, y, ancho, alto = forma
+            tipo = forma["tipo"]
+            x = forma["x"]
+            y = forma["y"]
+            ancho = forma["ancho"]
+            alto = forma["alto"]
             if tipo == "Rectángulo":
                 area = ancho * alto
                 cx = x + ancho/2
@@ -1125,7 +1120,11 @@ class SimuladorVigaMejorado:
         fig, ax = plt.subplots(figsize=(8, 8))
         
         for forma in self.formas:
-            tipo, x, y, ancho, alto = forma
+            tipo = forma["tipo"]
+            x = forma["x"]
+            y = forma["y"]
+            ancho = forma["ancho"]
+            alto = forma["alto"]
             if tipo == "Rectángulo":
                 ax.add_patch(plt.Rectangle((x, y), ancho, alto, fill=False))
             elif tipo == "Triángulo":
@@ -1137,8 +1136,10 @@ class SimuladorVigaMejorado:
         ax.text(cg_x, cg_y, f'CG ({cg_x:.2f}, {cg_y:.2f})', ha='right', va='bottom')
         
         ax.set_aspect('equal', 'box')
-        ax.set_xlim(min(forma[1] for forma in self.formas)-1, max(forma[1]+forma[3] for forma in self.formas)+1)
-        ax.set_ylim(min(forma[2] for forma in self.formas)-1, max(forma[2]+forma[4] for forma in self.formas)+1)
+        ax.set_xlim(min(f["x"] for f in self.formas)-1,
+                    max(f["x"] + f["ancho"] for f in self.formas)+1)
+        ax.set_ylim(min(f["y"] for f in self.formas)-1,
+                    max(f["y"] + f["alto"] for f in self.formas)+1)
         ax.set_title('Formas Irregulares y Centro de Gravedad')
         
         plt.tight_layout()
@@ -1148,13 +1149,21 @@ class SimuladorVigaMejorado:
         self.ultima_figura = fig
 
     def dibujar_forma_canvas(self, canvas, tipo, x, y, ancho, alto):
-        """Dibuja una forma en el canvas indicado."""
+        """Dibuja una forma en el canvas indicado y retorna el ID y el ID de la etiqueta."""
         if tipo == "Rectángulo":
-            canvas.create_rectangle(x, y, x + ancho, y + alto, outline="black")
+            shape_id = canvas.create_rectangle(x, y, x + ancho, y + alto, outline="black")
         elif tipo == "Triángulo":
-            canvas.create_polygon(x, y + alto, x + ancho / 2, y, x + ancho, y + alto, outline="black", fill="")
+            shape_id = canvas.create_polygon(x, y + alto, x + ancho / 2, y, x + ancho, y + alto, outline="black", fill="")
         elif tipo == "Círculo":
-            canvas.create_oval(x - ancho / 2, y - ancho / 2, x + ancho / 2, y + ancho / 2, outline="black")
+            shape_id = canvas.create_oval(x - ancho / 2, y - ancho / 2, x + ancho / 2, y + ancho / 2, outline="black")
+        else:
+            shape_id = None
+
+        label_id = canvas.create_text(
+            x + ancho/2, y - 10,
+            text=f"({int(x)}, {int(y)}) {int(ancho)}x{int(alto)}",
+            font=("Helvetica", 8), tags="label", state="disabled")
+        return shape_id, label_id
 
     def dibujar_cuadricula(self, canvas):
         """Dibuja una cuadrícula de fondo en el canvas."""
@@ -1173,10 +1182,135 @@ class SimuladorVigaMejorado:
         if hasattr(self, "coord_label_ampliado"):
             self.coord_label_ampliado.config(text=f"x={event.x}, y={event.y}")
 
+    def crear_y_guardar_forma(self, tipo, x, y, ancho, alto):
+        """Crea la forma en el(los) canvas y la almacena."""
+        main_ids = self.dibujar_forma_canvas(self.canvas_formas, tipo, x, y, ancho, alto)
+        ampliado_ids = None
+        if hasattr(self, "canvas_ampliado"):
+            ampliado_ids = self.dibujar_forma_canvas(self.canvas_ampliado, tipo, x, y, ancho, alto)
+
+        forma = {
+            "tipo": tipo,
+            "x": x,
+            "y": y,
+            "ancho": ancho,
+            "alto": alto,
+            "main_id": main_ids[0],
+            "main_label": main_ids[1],
+            "ampliado_id": ampliado_ids[0] if ampliado_ids else None,
+            "ampliado_label": ampliado_ids[1] if ampliado_ids else None,
+        }
+        self.formas.append(forma)
+        self.id_to_forma[forma["main_id"]] = forma
+        if forma["ampliado_id"] is not None:
+            self.id_to_forma[forma["ampliado_id"]] = forma
+
+        self.bind_forma_events(self.canvas_formas, forma["main_id"])
+        if forma["ampliado_id"] is not None:
+            self.bind_forma_events(self.canvas_ampliado, forma["ampliado_id"])
+        self.texto_resultado.insert("end", f"Forma agregada: {tipo} en ({x}, {y})\n")
+        self.actualizar_entradas(forma)
+
+    def bind_forma_events(self, canvas, item_id):
+        canvas.tag_bind(item_id, "<Enter>", lambda e: e.widget.config(cursor="hand2"))
+        canvas.tag_bind(item_id, "<Leave>", lambda e: e.widget.config(cursor=""))
+        canvas.tag_bind(item_id, "<Button-1>", self.iniciar_mover_forma)
+        canvas.tag_bind(item_id, "<B1-Motion>", self.mover_forma)
+        canvas.tag_bind(item_id, "<ButtonRelease-1>", self.finalizar_mover_forma)
+        canvas.tag_bind(item_id, "<Button-3>", self.iniciar_redimensionar_forma)
+        canvas.tag_bind(item_id, "<B3-Motion>", self.redimensionar_forma)
+        canvas.tag_bind(item_id, "<ButtonRelease-3>", self.finalizar_redimensionar_forma)
+
+    def actualizar_entradas(self, forma):
+        """Muestra en las entradas la información de la forma"""
+        for entry, value in ((self.x_forma, forma["x"]),
+                             (self.y_forma, forma["y"]),
+                             (self.ancho_forma, forma["ancho"]),
+                             (self.alto_forma, forma["alto"])):
+            entry.delete(0, tk.END)
+            entry.insert(0, f"{value:.1f}")
+
+    def actualizar_forma_en_canvas(self, forma):
+        """Actualiza la forma en ambos canvas."""
+        coords = None
+        if forma["tipo"] == "Rectángulo":
+            coords = (forma["x"], forma["y"], forma["x"] + forma["ancho"], forma["y"] + forma["alto"])
+        elif forma["tipo"] == "Triángulo":
+            coords = (forma["x"], forma["y"] + forma["alto"],
+                      forma["x"] + forma["ancho"] / 2, forma["y"],
+                      forma["x"] + forma["ancho"], forma["y"] + forma["alto"])
+        elif forma["tipo"] == "Círculo":
+            coords = (forma["x"] - forma["ancho"] / 2, forma["y"] - forma["ancho"] / 2,
+                      forma["x"] + forma["ancho"] / 2, forma["y"] + forma["ancho"] / 2)
+
+        if coords:
+            self.canvas_formas.coords(forma["main_id"], *coords)
+            self.canvas_formas.coords(forma["main_label"], forma["x"] + forma["ancho"]/2, forma["y"] - 10)
+            self.canvas_formas.itemconfig(forma["main_label"],
+                                          text=f"({int(forma['x'])}, {int(forma['y'])}) {int(forma['ancho'])}x{int(forma['alto'])}")
+            if forma["ampliado_id"] is not None:
+                self.canvas_ampliado.coords(forma["ampliado_id"], *coords)
+                self.canvas_ampliado.coords(forma["ampliado_label"], forma["x"] + forma["ancho"]/2, forma["y"] - 10)
+                self.canvas_ampliado.itemconfig(forma["ampliado_label"],
+                                                text=f"({int(forma['x'])}, {int(forma['y'])}) {int(forma['ancho'])}x{int(forma['alto'])}")
+
+    def iniciar_mover_forma(self, event):
+        self.selected_shape_id = event.widget.find_withtag("current")[0]
+        forma = self.id_to_forma.get(self.selected_shape_id)
+        if forma:
+            self.move_start = (event.x, event.y)
+            event.widget.config(cursor="fleur")
+            self.actualizar_entradas(forma)
+
+    def mover_forma(self, event):
+        if self.selected_shape_id is None:
+            return
+        forma = self.id_to_forma.get(self.selected_shape_id)
+        if not forma:
+            return
+        dx = event.x - self.move_start[0]
+        dy = event.y - self.move_start[1]
+        forma["x"] += dx
+        forma["y"] += dy
+        self.move_start = (event.x, event.y)
+        self.actualizar_forma_en_canvas(forma)
+        self.actualizar_entradas(forma)
+
+    def finalizar_mover_forma(self, event):
+        event.widget.config(cursor="")
+        self.selected_shape_id = None
+
+    def iniciar_redimensionar_forma(self, event):
+        self.selected_shape_id = event.widget.find_withtag("current")[0]
+        forma = self.id_to_forma.get(self.selected_shape_id)
+        if forma:
+            self.resize_start = (event.x, event.y)
+            event.widget.config(cursor="sizing")
+            self.actualizar_entradas(forma)
+
+    def redimensionar_forma(self, event):
+        if self.selected_shape_id is None:
+            return
+        forma = self.id_to_forma.get(self.selected_shape_id)
+        if not forma:
+            return
+        dx = event.x - self.resize_start[0]
+        dy = event.y - self.resize_start[1]
+        forma["ancho"] += dx
+        forma["alto"] += dy
+        self.resize_start = (event.x, event.y)
+        self.actualizar_forma_en_canvas(forma)
+        self.actualizar_entradas(forma)
+
+    def finalizar_redimensionar_forma(self, event):
+        event.widget.config(cursor="")
+        self.selected_shape_id = None
+
     def limpiar_lienzo_formas(self):
         self.canvas_formas.delete("all")
         self.dibujar_cuadricula(self.canvas_formas)
         self.formas.clear()
+        self.id_to_forma.clear()
         if hasattr(self, "canvas_ampliado"):
             self.canvas_ampliado.delete("all")
             self.dibujar_cuadricula(self.canvas_ampliado)
@@ -1192,8 +1326,14 @@ class SimuladorVigaMejorado:
 
         # Dibujar formas existentes
         for forma in self.formas:
-            tipo, x, y, ancho, alto = forma
-            self.dibujar_forma_canvas(self.canvas_ampliado, tipo, x, y, ancho, alto)
+            ids = self.dibujar_forma_canvas(
+                self.canvas_ampliado,
+                forma["tipo"], forma["x"], forma["y"], forma["ancho"], forma["alto"])
+            forma["ampliado_id"] = ids[0]
+            forma["ampliado_label"] = ids[1]
+            self.id_to_forma[ids[0]] = forma
+            self.id_to_forma[ids[1]] = forma
+            self.bind_forma_events(self.canvas_ampliado, ids[0])
 
         self.coord_label_ampliado = ttk.Label(self.ventana_lienzo, text="x=0, y=0")
         self.coord_label_ampliado.pack()
