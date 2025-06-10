@@ -97,6 +97,11 @@ class SimuladorVigaMejorado:
         orig_style = button.cget("style")
         button.configure(style="Flash.TButton")
         self.root.after(200, lambda: button.configure(style=orig_style))
+
+    def log(self, texto, tag="data"):
+        """Inserta texto en la casilla de resultados con estilo."""
+        self.texto_resultado.insert("end", texto, tag)
+        self.texto_resultado.see("end")
         
     
     def crear_widgets(self):
@@ -260,7 +265,7 @@ class SimuladorVigaMejorado:
     
     def mostrar_mensaje_inicial(self):
         mensaje = "Bienvenido al Simulador de Viga Mecánica. Use los controles para configurar la viga y las cargas."
-        self.texto_resultado.insert("1.0", mensaje)
+        self.log(mensaje, "info")
         
     def agregar_carga_puntual(self):
         try:
@@ -276,7 +281,7 @@ class SimuladorVigaMejorado:
                 return
                 
             self.cargas_puntuales.append((pos, mag))
-            self.texto_resultado.insert("end", f"✅ Carga puntual: {mag}N en {pos}m\n")
+            self.log(f"✅ Carga puntual: {mag}N en {pos}m\n", "success")
             self.dibujar_viga_actual()
             
         except Exception as e:
@@ -297,7 +302,10 @@ class SimuladorVigaMejorado:
                 return
                 
             self.cargas_distribuidas.append((inicio, fin, mag))
-            self.texto_resultado.insert("end", f"✅ Carga distribuida: {mag}N/m desde {inicio}m hasta {fin}m\n")
+            self.log(
+                f"✅ Carga distribuida: {mag}N/m desde {inicio}m hasta {fin}m\n",
+                "success",
+            )
             self.dibujar_viga_actual()
             
         except Exception as e:
@@ -367,25 +375,28 @@ class SimuladorVigaMejorado:
                 ]
             
             # Mostrar procedimiento y resultados
-            self.texto_resultado.insert("end", f"\n{'='*50}\n")
-            self.texto_resultado.insert("end", f"⚖️ CÁLCULO DE REACCIONES:\n")
-            self.texto_resultado.insert("end", f"{'='*50}\n")
+            self.log(f"\n{'='*50}\n", "title")
+            self.log("⚖️ CÁLCULO DE REACCIONES:\n", "title")
+            self.log(f"{'='*50}\n", "title")
             for linea in procedimiento:
-                self.texto_resultado.insert("end", linea + "\n")
-            self.texto_resultado.insert("end", f"🔺 Reacción en A (RA): {RA:.2f} N\n")
-            self.texto_resultado.insert("end", f"🔺 Reacción en B (RB): {RB:.2f} N\n")
+                self.log(linea + "\n", "data")
+            self.log(f"🔺 Reacción en A (RA): {RA:.2f} N\n", "data")
+            self.log(f"🔺 Reacción en B (RB): {RB:.2f} N\n", "data")
             if self.tipo_apoyo_c.get() != "Ninguno":
-                self.texto_resultado.insert("end", f"🔺 Reacción en C (RC): {RC:.2f} N\n")
-            self.texto_resultado.insert("end", f"📊 Suma de fuerzas en Y: {suma_fuerzas_y:.2f} N\n")
-            self.texto_resultado.insert("end", f"📊 Suma de fuerzas en X: {suma_fuerzas_x:.2f} N\n")
-            self.texto_resultado.insert("end", f"🔄 Verificación equilibrio: {abs(RA + RB + RC - suma_fuerzas_y):.6f} N\n")
-            self.texto_resultado.insert("end", f"🔄 Par Torsor: {par_torsor:.2f} N·m\n")
-            self.texto_resultado.insert("end", f"📐 Ángulo de inclinación: {np.degrees(angulo):.2f}°\n")
-            
+                self.log(f"🔺 Reacción en C (RC): {RC:.2f} N\n", "data")
+            self.log(f"📊 Suma de fuerzas en Y: {suma_fuerzas_y:.2f} N\n", "data")
+            self.log(f"📊 Suma de fuerzas en X: {suma_fuerzas_x:.2f} N\n", "data")
+            self.log(
+                f"🔄 Verificación equilibrio: {abs(RA + RB + RC - suma_fuerzas_y):.6f} N\n",
+                "data",
+            )
+            self.log(f"🔄 Par Torsor: {par_torsor:.2f} N·m\n", "data")
+            self.log(f"📐 Ángulo de inclinación: {np.degrees(angulo):.2f}°\n", "data")
+
             if abs(RA + RB + RC - suma_fuerzas_y) < 1e-10:
-                self.texto_resultado.insert("end", f"✅ Sistema en equilibrio\n")
+                self.log("✅ Sistema en equilibrio\n", "success")
             else:
-                self.texto_resultado.insert("end", f"❌ Error en equilibrio\n")
+                self.log("❌ Error en equilibrio\n", "error")
             
             self.dibujar_viga_con_reacciones(RA, RB, RC)
             
@@ -417,10 +428,10 @@ class SimuladorVigaMejorado:
             
             x_cm = suma_momentos / suma_cargas
 
-            self.texto_resultado.insert("end", "\n📍 CÁLCULO DEL CENTRO DE MASA:\n")
-            self.texto_resultado.insert("end", f"Σ(x·F) = {suma_momentos:.2f} N·m\n")
-            self.texto_resultado.insert("end", f"ΣF = {suma_cargas:.2f} N\n")
-            self.texto_resultado.insert("end", f"x_cm = Σ(x·F) / ΣF = {x_cm:.2f} m\n")
+            self.log("\n📍 CÁLCULO DEL CENTRO DE MASA:\n", "title")
+            self.log(f"Σ(x·F) = {suma_momentos:.2f} N·m\n", "data")
+            self.log(f"ΣF = {suma_cargas:.2f} N\n", "data")
+            self.log(f"x_cm = Σ(x·F) / ΣF = {x_cm:.2f} m\n", "data")
             
             # Actualizar la visualización
             if self.modo_3d.get():
@@ -877,22 +888,26 @@ class SimuladorVigaMejorado:
         self.ultima_figura = fig
         
         # Mostrar valores máximos en el área de resultados
-        self.texto_resultado.insert("end", f"\n📈 VALORES MÁXIMOS:\n")
-        self.texto_resultado.insert("end", f"Cortante máximo: +{cortante_max:.2f} N\n")
-        self.texto_resultado.insert("end", f"Cortante mínimo: {cortante_min:.2f} N\n")
-        self.texto_resultado.insert("end", f"Momento máximo: +{momento_max:.2f} N·m\n")
-        self.texto_resultado.insert("end", f"Momento mínimo: {momento_min:.2f} N·m\n")
-        self.texto_resultado.insert("end", f"Par Torsor: {par_torsor:.2f} N·m\n")
+        self.log("\n📈 VALORES MÁXIMOS:\n", "title")
+        self.log(f"Cortante máximo: +{cortante_max:.2f} N\n", "data")
+        self.log(f"Cortante mínimo: {cortante_min:.2f} N\n", "data")
+        self.log(f"Momento máximo: +{momento_max:.2f} N·m\n", "data")
+        self.log(f"Momento mínimo: {momento_min:.2f} N·m\n", "data")
+        self.log(f"Par Torsor: {par_torsor:.2f} N·m\n", "data")
         
     def limpiar_cargas_puntuales(self):
         self.cargas_puntuales.clear()
-        self.texto_resultado.insert("end", "🗑️ Cargas puntuales eliminadas\n")
+        self.log("🗑️ Cargas puntuales eliminadas\n", "warning")
         self.dibujar_viga_actual()
         
     def limpiar_cargas_distribuidas(self):
         self.cargas_distribuidas.clear()
-        self.texto_resultado.insert("end", "🗑️ Cargas distribuidas eliminadas\n")
+        self.log("🗑️ Cargas distribuidas eliminadas\n", "warning")
         self.dibujar_viga_actual()
+
+    def limpiar_resultados(self):
+        """Borra el contenido de la casilla de resultados."""
+        self.texto_resultado.delete(1.0, tk.END)
         
     def limpiar_todo(self):
         # Limpiar listas de cargas
@@ -924,7 +939,7 @@ class SimuladorVigaMejorado:
         self.altura_inferior.set(5)
 
         # Limpiar área de resultados
-        self.texto_resultado.delete(1.0, tk.END)
+        self.limpiar_resultados()
 
         # Limpiar área gráfica
         for widget in self.frame_grafico.winfo_children():
@@ -1018,12 +1033,15 @@ class SimuladorVigaMejorado:
             I_total = I_superior + I_alma + I_inferior
 
             # Mostrar resultados
-            self.texto_resultado.insert("end", f"\n{'='*50}\n")
-            self.texto_resultado.insert("end", f"PROPIEDADES DE LA SECCIÓN TRANSVERSAL:\n")
-            self.texto_resultado.insert("end", f"{'='*50}\n")
-            self.texto_resultado.insert("end", f"Área total: {area_total:.2f} cm²\n")
-            self.texto_resultado.insert("end", f"Centro de gravedad (desde la base): {y_cg:.2f} cm\n")
-            self.texto_resultado.insert("end", f"Momento de inercia: {I_total:.2f} cm⁴\n")
+            self.log(f"\n{'='*50}\n", "title")
+            self.log("PROPIEDADES DE LA SECCIÓN TRANSVERSAL:\n", "title")
+            self.log(f"{'='*50}\n", "title")
+            self.log(f"Área total: {area_total:.2f} cm²\n", "data")
+            self.log(
+                f"Centro de gravedad (desde la base): {y_cg:.2f} cm\n",
+                "data",
+            )
+            self.log(f"Momento de inercia: {I_total:.2f} cm⁴\n", "data")
 
             # Dibujar la sección
             self.dibujar_seccion_transversal(b1, h1, b2, h2, b3, h3, y_cg)
@@ -1132,7 +1150,7 @@ class SimuladorVigaMejorado:
             
             self.formas.append((tipo, x, y, ancho, alto))
             self.redibujar_formas()
-            self.texto_resultado.insert("end", f"Forma agregada: {tipo} en ({x}, {y})\n")
+            self.log(f"Forma agregada: {tipo} en ({x}, {y})\n", "data")
         except ValueError as e:
             messagebox.showerror("Error", f"Valores inválidos: {e}")
 
@@ -1150,7 +1168,7 @@ class SimuladorVigaMejorado:
 
             self.formas.append((tipo, x, y, ancho, alto))
             self.redibujar_formas()
-            self.texto_resultado.insert("end", f"Forma agregada: {tipo} en ({x}, {y})\n")
+            self.log(f"Forma agregada: {tipo} en ({x}, {y})\n", "data")
         except ValueError as e:
             messagebox.showerror("Error", f"Valores inválidos: {e}")
 
@@ -1191,7 +1209,7 @@ class SimuladorVigaMejorado:
         cg_x = cx_total / area_total
         cg_y = cy_total / area_total
         
-        self.texto_resultado.insert("end", f"\nCentro de Gravedad: ({cg_x:.2f}, {cg_y:.2f})\n")
+        self.log(f"\nCentro de Gravedad: ({cg_x:.2f}, {cg_y:.2f})\n", "data")
         self.dibujar_formas_irregulares(cg_x, cg_y)
 
     def dibujar_formas_irregulares(self, cg_x, cg_y):
@@ -1383,15 +1401,37 @@ class SimuladorVigaMejorado:
 
     def crear_seccion_resultados(self, parent):
         frame_resultados = ttk.LabelFrame(parent, text="Resultados")
-        frame_resultados.pack(fill="x", pady=10, padx=10)
+        frame_resultados.pack(fill="both", pady=10, padx=10)
 
-        self.texto_resultado = tk.Text(frame_resultados, height=10, wrap="word")
+        btn_clear = ttk.Button(
+            frame_resultados, text="Limpiar Resultados", command=self.limpiar_resultados
+        )
+        btn_clear.pack(anchor="ne", padx=5, pady=5)
+
+        self.texto_resultado = tk.Text(
+            frame_resultados,
+            height=12,
+            wrap="word",
+            font=("Consolas", 10),
+            background="#ffffff",
+            foreground="#333333",
+            relief="solid",
+            borderwidth=1,
+        )
         self.texto_resultado.pack(fill="both", expand=True)
 
         scrollbar = ttk.Scrollbar(frame_resultados, orient="vertical", command=self.texto_resultado.yview)
         scrollbar.pack(side="right", fill="y")
 
         self.texto_resultado.configure(yscrollcommand=scrollbar.set)
+
+        # Configurar estilos de texto
+        self.texto_resultado.tag_config("title", font=("Consolas", 10, "bold"), foreground="#005a9e")
+        self.texto_resultado.tag_config("success", foreground="green")
+        self.texto_resultado.tag_config("error", foreground="red")
+        self.texto_resultado.tag_config("warning", foreground="#a06000")
+        self.texto_resultado.tag_config("data", foreground="#333333")
+        self.texto_resultado.tag_config("info", foreground="#333333")
 
     def crear_seccion_graficos(self, parent):
         self.frame_grafico = ttk.Frame(parent)
