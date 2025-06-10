@@ -13,31 +13,26 @@ class SimuladorVigaMejorado:
         self.root.geometry("1200x900")  # Aumentado el tamaño de la ventana
         
         # Configurar tema y estilo moderno
-        style = ttk.Style()
-        if 'clam' in style.theme_names():
-            style.theme_use('clam')
+        self.style = ttk.Style()
+        if 'clam' in self.style.theme_names():
+            self.style.theme_use('clam')
 
-        # Paleta de colores clara y acentos azules
-        bg_color = "#f7f7f7"
-        fg_color = "#333333"
-        accent = "#007acc"
+        # Paletas de colores para modo claro y oscuro
+        self.bg_light = "#f7f7f7"
+        self.fg_light = "#333333"
+        self.accent_light = "#007acc"
+        self.active_light = "#005a9e"
 
-        style.configure("TFrame", background=bg_color)
-        style.configure("TLabelframe", background=bg_color)
-        style.configure("TLabelframe.Label", background=bg_color,
-                        foreground=accent, font=("Helvetica", 11, "bold"))
-        style.configure("TButton", font=("Helvetica", 10, "bold"),
-                        background=accent, foreground="white")
-        style.map("TButton",
-                   background=[('active', '#005a9e')],
-                   foreground=[('active', 'white')])
-        style.configure("TLabel", font=("Helvetica", 10),
-                        background=bg_color, foreground=fg_color)
-        style.configure("TEntry", font=("Helvetica", 10))
-        style.configure("TNotebook", background=bg_color)
-        style.configure("TNotebook.Tab", font=("Helvetica", 10, "bold"))
+        self.bg_dark = "#222222"
+        self.fg_dark = "#f0f0f0"
+        self.accent_dark = "#5599ff"
+        self.active_dark = "#3e70ff"
 
-        self.root.configure(bg=bg_color)
+        # Estado de tema
+        self.dark_mode = tk.BooleanVar(value=False)
+        self.texto_tema = tk.StringVar(value="🌓 Modo Oscuro")
+
+        self.apply_theme()
         
         # Variables principales
         self.longitud = tk.DoubleVar(value=10.0)
@@ -103,6 +98,49 @@ class SimuladorVigaMejorado:
         orig_style = button.cget("style")
         button.configure(style="Flash.TButton")
         self.root.after(200, lambda: button.configure(style=orig_style))
+
+    def apply_theme(self):
+        """Aplicar paleta de colores según el modo actual."""
+        if self.dark_mode.get():
+            bg_color = self.bg_dark
+            fg_color = self.fg_dark
+            accent = self.accent_dark
+            active = self.active_dark
+        else:
+            bg_color = self.bg_light
+            fg_color = self.fg_light
+            accent = self.accent_light
+            active = self.active_light
+
+        s = self.style
+        s.configure("TFrame", background=bg_color)
+        s.configure("TLabelframe", background=bg_color)
+        s.configure("TLabelframe.Label", background=bg_color,
+                    foreground=accent, font=("Helvetica", 11, "bold"))
+        s.configure("TButton", font=("Helvetica", 10, "bold"),
+                    background=accent, foreground="white")
+        s.map("TButton",
+              background=[('active', active)],
+              foreground=[('active', 'white')])
+        s.configure("Action.TButton", font=("Arial", 10, "bold"), padding=5,
+                    background=accent, foreground="white")
+        s.map("Action.TButton", background=[('active', active)],
+               foreground=[('active', 'white')])
+        s.configure("Warning.TButton", background="#ff9999", font=("Arial", 10, "bold"), padding=5)
+        s.configure("Flash.TButton", background="#ffd966", font=("Arial", 10, "bold"))
+        s.map("Flash.TButton", background=[('active', '#ffcc33')])
+        s.configure("TLabel", font=("Helvetica", 10),
+                    background=bg_color, foreground=fg_color)
+        s.configure("TEntry", font=("Helvetica", 10))
+        s.configure("TNotebook", background=bg_color)
+        s.configure("TNotebook.Tab", font=("Helvetica", 10, "bold"))
+        self.root.configure(bg=bg_color)
+
+    def toggle_dark_mode(self):
+        """Cambiar entre modo claro y oscuro."""
+        self.dark_mode.set(not self.dark_mode.get())
+        self.texto_tema.set("🌞 Modo Claro" if self.dark_mode.get() else "🌓 Modo Oscuro")
+        self.apply_theme()
 
     def log(self, texto, tag="data"):
         """Inserta texto en la casilla de resultados con estilo."""
@@ -228,12 +266,7 @@ class SimuladorVigaMejorado:
         frame_botones = ttk.Frame(parent)
         frame_botones.pack(fill="x", pady=10, padx=10)
         
-        # Crear un estilo personalizado para los botones
-        style = ttk.Style()
-        style.configure("Action.TButton", font=("Arial", 10, "bold"), padding=5)
-        style.configure("Warning.TButton", background="#ff9999", font=("Arial", 10, "bold"), padding=5)
-        style.configure("Flash.TButton", background="#ffd966", font=("Arial", 10, "bold"))
-        style.map("Flash.TButton", background=[('active', '#ffcc33')])
+        # Los estilos de botones se configuran en apply_theme
         
         # Botones principales con iconos
         btn_calcular = ttk.Button(frame_botones, text="🧮 Calcular Reacciones", style="Action.TButton")
@@ -264,9 +297,14 @@ class SimuladorVigaMejorado:
         btn_animar_3d = ttk.Button(frame_botones, text="🎞️ Animar 3D", style="Action.TButton")
         btn_animar_3d.config(command=lambda b=btn_animar_3d: self.on_button_click(b, self.animar_viga_3d))
         btn_animar_3d.grid(row=1, column=3, padx=5, pady=5, sticky="ew")
+
+        btn_tema = ttk.Button(frame_botones, textvariable=self.texto_tema, style="Action.TButton")
+        btn_tema.config(command=lambda b=btn_tema: self.on_button_click(b, self.toggle_dark_mode))
+        btn_tema.grid(row=1, column=4, padx=5, pady=5, sticky="ew")
+        self.boton_tema = btn_tema
         
         # Configurar el grid para que se expanda correctamente
-        for i in range(4):
+        for i in range(5):
             frame_botones.columnconfigure(i, weight=1)
     
     def mostrar_mensaje_inicial(self):
