@@ -1,7 +1,7 @@
 
 # Cómo está hecho el simulador de viga mecánica
 
-Este simulador fue hecho completamente en **Python**, usando como base principal la librería **Tkinter** para crear la interfaz gráfica (la ventana que ve el usuario), junto con otras librerías como `matplotlib` para los gráficos, `numpy` para los cálculos matemáticos y `mpl_toolkits` para hacer la vista en 3D.
+Este repositorio contiene un programa escrito en **Python** para analizar y visualizar el comportamiento de una viga mecánica. Utiliza **Tkinter** para la interfaz gráfica, `matplotlib` para las gráficas, `numpy` para los cálculos y `mpl_toolkits` para la vista en 3D.
 
 ### 1. Estructura del código
 
@@ -69,7 +69,6 @@ Usa `matplotlib` para todos estos gráficos y los incrusta dentro de la ventana 
 * Tiene una **opción de ayuda** con una guía escrita dentro del programa.
 * También incluye **mensajes de error y advertencias** si el usuario pone mal los datos.
 * Se pueden **ampliar las gráficas** y ver todo más grande en otra ventana.
-* Permite obtener el **par torsor en cualquier punto** y calcular fuerzas a partir de él.
 * Incluye funciones para el **centro de masa en 3D**.
 
 ---
@@ -80,3 +79,18 @@ Se aplicó un **tema moderno** (`clam`) con colores claros, botones azules, tipo
 Además se añadió un **modo oscuro** seleccionable desde los controles principales.
 
 ---
+
+### 8. Par torsor en un punto
+
+Esta función permite obtener el momento torsor interno en una posición específica de la viga.
+Solo escribe la coordenada en metros en el cuadro **Par en Punto** y presiona el botón del mismo nombre.
+El valor se mostrará en el registro y en los diagramas.
+
+### 9. Uso
+
+1. Clona este repositorio o descarga el código.
+2. Asegúrate de tener **Python 3**, `tkinter`, `matplotlib` y `numpy` instalados.
+3. Ejecuta `python3 simulador_viga_mejorado.py`.
+4. Configura la viga y agrega las cargas necesarias.
+5. Usa **Par en Punto** para consultar el momento torsor si lo necesitas.
+6. Revisa los resultados en la pestaña de **Resultados**.
