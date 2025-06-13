@@ -1090,11 +1090,14 @@ class SimuladorVigaMejorado:
 • Longitud entre 5 y 50 m
 • Apoyos A y B (Fijo/Móvil) y apoyo C opcional con posición
 • Altura inicial y final para vigas inclinadas
-• Par torsor y modo 3D opcionales
+• Par torsor opcional y modo 3D
 
 🔹 CARGAS
 • Puntuales: posición y magnitud
-• Distribuidas: inicio, fin y magnitud (N/m)
+• Distribuidas: inicio y fin (dos puntos) y magnitud (N/m)
+
+🔹 PAR EN PUNTO
+• Escribe la posición x y presiona "Par en Punto" para conocer el momento torsor interno
 
 🔹 QUÉ PUEDE HACER
 • 🧮 Calcular Reacciones
@@ -1109,7 +1112,8 @@ class SimuladorVigaMejorado:
 1. Configure la viga y apoyos
 2. Agregue las cargas necesarias
 3. Presione "Calcular Reacciones"
-4. Revise resultados y diagramas en la pestaña de Resultados
+4. (Opcional) use "Par en Punto" para consultar el momento torsor
+5. Revise resultados y diagramas en la pestaña de Resultados
         """
         
         ventana_ayuda = tk.Toplevel(self.root)
