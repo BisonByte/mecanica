@@ -43,7 +43,7 @@ El programa usa **variables `tk.DoubleVar` y `tk.StringVar`** para guardar valor
 * **Reacciones en los apoyos**, considerando todas las cargas y el par torsor.
 * **Centro de masa** de todas las cargas.
 * **Diagramas de cortante, momento flector y torsión**.
-* **Par torsor en cualquier punto** y fuerza equivalente de cargas distribuidas.
+* **Par torsor (torque) en cualquier punto** y fuerza equivalente de cargas distribuidas.
 * **Centro de masa en 3D** y cálculo de fuerza a partir de un par torsor.
 * También calcula propiedades como el **área total**, **centro de gravedad de la sección transversal**, y **momento de inercia**.
 
@@ -54,6 +54,7 @@ El programa usa **variables `tk.DoubleVar` y `tk.StringVar`** para guardar valor
 El simulador puede dibujar:
 
 * La **viga con sus cargas** y sus **reacciones**.
+* Las **cargas distribuidas** también se muestran con su **vector equivalente** y magnitud en el diagrama de cuerpo libre.
 * **Diagramas de fuerza cortante y momento flector**.
 * **Vista 3D rotativa** de la viga con cargas y apoyos.
 * **Vista de la sección transversal** y el centro de gravedad de figuras combinadas.
@@ -82,7 +83,7 @@ Además se añadió un **modo oscuro** seleccionable desde los controles princip
 
 ### 8. Par torsor en un punto
 
-Esta función permite obtener el momento torsor interno en una posición específica de la viga.
+Esta función permite obtener el momento torsor (torque interno) en una posición específica de la viga.
 Solo escribe la coordenada en metros en el cuadro **Par en Punto** y presiona el botón del mismo nombre.
 El valor se mostrará en el registro y en los diagramas.
 
