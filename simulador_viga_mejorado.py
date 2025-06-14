@@ -691,7 +691,7 @@ class SimuladorVigaMejorado:
         h_final = self.altura_final.get()
 
         # Configuración del estilo
-        plt.style.use('default')  # Cambiado de 'seaborn-whitegrid' a 'default'
+        plt.style.use('ggplot')  # Estilo más atractivo para las gráficas
         ax.set_facecolor('#f0f0f0')
         fig.patch.set_facecolor('#ffffff')
 
@@ -741,6 +741,7 @@ class SimuladorVigaMejorado:
         ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=3, fontsize=10, frameon=True, facecolor='white', edgecolor='gray')
 
 
+        plt.tight_layout()
         canvas = FigureCanvasTkAgg(fig, master=self.frame_grafico)
         canvas.draw()
         canvas.get_tk_widget().pack(fill="both", expand=True)
@@ -1332,8 +1333,8 @@ class SimuladorVigaMejorado:
                 cy = y + alto/3
             elif tipo == "Círculo":
                 area = np.pi * (ancho/2)**2
-                cx = x + ancho/2
-                cy = y + ancho/2
+                cx = x
+                cy = y
             else:
                 continue  # Saltar formas no reconocidas
             
@@ -1361,7 +1362,7 @@ class SimuladorVigaMejorado:
             elif tipo == "Triángulo":
                 ax.add_patch(plt.Polygon([(x, y), (x+ancho, y), (x, y+alto)], fill=False))
             elif tipo == "Círculo":
-                ax.add_patch(plt.Circle((x+ancho/2, y+ancho/2), ancho/2, fill=False))
+                ax.add_patch(plt.Circle((x, y), ancho/2, fill=False))
         
         ax.plot(cg_x, cg_y, 'ro', markersize=10)
         ax.text(cg_x, cg_y, f'CG ({cg_x:.2f}, {cg_y:.2f})', ha='right', va='bottom')
