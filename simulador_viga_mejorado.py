@@ -121,6 +121,13 @@ class SimuladorVigaMejorado:
         button.configure(style="Flash.TButton")
         self.root.after(200, lambda: button.configure(style=orig_style))
 
+    def add_hover_effect(self, widget):
+        """Apply a simple hover style to a button."""
+        default = widget.cget("style") or "TButton"
+        widget.default_style = default
+        widget.bind("<Enter>", lambda e: widget.configure(style="Hover.TButton"))
+        widget.bind("<Leave>", lambda e: widget.configure(style=widget.default_style))
+
     def apply_theme(self):
         """Aplicar paleta de colores según el modo actual."""
         if self.bootstrap:
@@ -144,22 +151,24 @@ class SimuladorVigaMejorado:
         s.configure("TFrame", background=bg_color)
         s.configure("TLabelframe", background=bg_color)
         s.configure("TLabelframe.Label", background=bg_color,
-                    foreground=accent, font=("Helvetica", 11, "bold"))
-        s.configure("TButton", font=("Helvetica", 10, "bold"),
+                    foreground=accent, font=("Helvetica", 12, "bold"))
+        s.configure("TButton", font=("Helvetica", 11, "bold"),
                     background=accent, foreground="white")
         s.map("TButton",
               background=[('active', active)],
               foreground=[('active', 'white')])
-        s.configure("Action.TButton", font=("Arial", 10, "bold"), padding=5,
+        s.configure("Action.TButton", font=("Arial", 11, "bold"), padding=5,
                     background=accent, foreground="white")
         s.map("Action.TButton", background=[('active', active)],
                foreground=[('active', 'white')])
-        s.configure("Warning.TButton", background="#ff9999", font=("Arial", 10, "bold"), padding=5)
-        s.configure("Flash.TButton", background="#ffd966", font=("Arial", 10, "bold"))
+        s.configure("Warning.TButton", background="#ff9999", font=("Arial", 11, "bold"), padding=5)
+        s.configure("Flash.TButton", background="#ffd966", font=("Arial", 11, "bold"))
+        s.configure("Hover.TButton", font=("Arial", 11, "bold"), background=active, foreground="white")
+        s.map("Hover.TButton", background=[('active', accent)])
         s.map("Flash.TButton", background=[('active', '#ffcc33')])
-        s.configure("TLabel", font=("Helvetica", 10),
+        s.configure("TLabel", font=("Helvetica", 11),
                     background=bg_color, foreground=fg_color)
-        s.configure("TEntry", font=("Helvetica", 10))
+        s.configure("TEntry", font=("Helvetica", 11))
         s.configure("TNotebook", background=bg_color)
         s.configure("TNotebook.Tab", font=("Helvetica", 10, "bold"))
         self.root.configure(bg=bg_color)
@@ -190,10 +199,20 @@ class SimuladorVigaMejorado:
         notebook.add(tab_result, text="Resultados")
 
         # Sección configuración y cargas
-        self.crear_seccion_configuracion_viga(tab_config)
-        self.crear_seccion_cargas_puntuales(tab_config)
-        self.crear_seccion_cargas_distribuidas(tab_config)
-        self.crear_seccion_botones_calculo(tab_config)
+        tab_config.columnconfigure(0, weight=1)
+        tab_config.columnconfigure(1, weight=1)
+        for i in range(3):
+            tab_config.rowconfigure(i, weight=1)
+
+        frame_config = self.crear_seccion_configuracion_viga(tab_config)
+        frame_puntual = self.crear_seccion_cargas_puntuales(tab_config)
+        frame_dist = self.crear_seccion_cargas_distribuidas(tab_config)
+        frame_botones = self.crear_seccion_botones_calculo(tab_config)
+
+        frame_config.grid(row=0, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
+        frame_puntual.grid(row=1, column=0, sticky="nsew", padx=10, pady=5)
+        frame_dist.grid(row=1, column=1, sticky="nsew", padx=10, pady=5)
+        frame_botones.grid(row=2, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
 
         # Sección propiedades de la sección y formas irregulares
         self.crear_seccion_propiedades_seccion(tab_seccion)
@@ -205,7 +224,8 @@ class SimuladorVigaMejorado:
     
     def crear_seccion_configuracion_viga(self, parent):
         frame_config = ttk.LabelFrame(parent, text="⚙ Configuración de la Viga")
-        frame_config.pack(fill="x", pady=10, padx=10)
+        for i in range(4):
+            frame_config.columnconfigure(i, weight=1)
     
         # Longitud de la viga
         ttk.Label(frame_config, text="Longitud (m):").grid(row=0, column=0, padx=5, pady=5)
@@ -236,6 +256,8 @@ class SimuladorVigaMejorado:
         ttk.Entry(frame_config, textvariable=self.altura_inicial, width=10).grid(row=4, column=1, padx=5, pady=5)
         ttk.Label(frame_config, text="Altura final (m):").grid(row=4, column=2, padx=5, pady=5)
         ttk.Entry(frame_config, textvariable=self.altura_final, width=10).grid(row=4, column=3, padx=5, pady=5)
+
+        return frame_config
     
     def crear_seccion_propiedades_seccion(self, parent):
         frame_seccion = ttk.LabelFrame(parent, text="Propiedades de la Sección Transversal")
@@ -263,7 +285,8 @@ class SimuladorVigaMejorado:
     
     def crear_seccion_cargas_puntuales(self, parent):
         frame_puntuales = ttk.LabelFrame(parent, text="⬇️ Cargas Puntuales")
-        frame_puntuales.pack(fill="x", pady=10, padx=10)
+        for i in range(4):
+            frame_puntuales.columnconfigure(i, weight=1)
     
         ttk.Label(frame_puntuales, text="Posición (m):").grid(row=0, column=0, padx=5, pady=5)
         ttk.Entry(frame_puntuales, textvariable=self.posicion_carga, width=10).grid(row=0, column=1, padx=5, pady=5)
@@ -271,12 +294,19 @@ class SimuladorVigaMejorado:
         ttk.Label(frame_puntuales, text="Magnitud (N):").grid(row=0, column=2, padx=5, pady=5)
         ttk.Entry(frame_puntuales, textvariable=self.magnitud_carga, width=10).grid(row=0, column=3, padx=5, pady=5)
     
-        ttk.Button(frame_puntuales, text="➕ Agregar", command=self.agregar_carga_puntual).grid(row=1, column=0, columnspan=2, padx=5, pady=5)
-        ttk.Button(frame_puntuales, text="🗑️ Limpiar", command=self.limpiar_cargas_puntuales).grid(row=1, column=2, columnspan=2, padx=5, pady=5)
+        btn_agregar_p = ttk.Button(frame_puntuales, text="➕ Agregar", command=self.agregar_carga_puntual)
+        btn_agregar_p.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
+        self.add_hover_effect(btn_agregar_p)
+        btn_limpiar_p = ttk.Button(frame_puntuales, text="🗑️ Limpiar", command=self.limpiar_cargas_puntuales)
+        btn_limpiar_p.grid(row=1, column=2, columnspan=2, padx=5, pady=5)
+        self.add_hover_effect(btn_limpiar_p)
+
+        return frame_puntuales
     
     def crear_seccion_cargas_distribuidas(self, parent):
         frame_distribuidas = ttk.LabelFrame(parent, text="📅 Cargas Distribuidas")
-        frame_distribuidas.pack(fill="x", pady=10, padx=10)
+        for i in range(4):
+            frame_distribuidas.columnconfigure(i, weight=1)
     
         ttk.Label(frame_distribuidas, text="Inicio (m):").grid(row=0, column=0, padx=5, pady=5)
         ttk.Entry(frame_distribuidas, textvariable=self.inicio_dist, width=10).grid(row=0, column=1, padx=5, pady=5)
@@ -287,12 +317,17 @@ class SimuladorVigaMejorado:
         ttk.Label(frame_distribuidas, text="Magnitud (N/m):").grid(row=1, column=0, padx=5, pady=5)
         ttk.Entry(frame_distribuidas, textvariable=self.magnitud_dist, width=10).grid(row=1, column=1, padx=5, pady=5)
     
-        ttk.Button(frame_distribuidas, text="➕ Agregar", command=self.agregar_carga_distribuida).grid(row=2, column=0, columnspan=2, padx=5, pady=5)
-        ttk.Button(frame_distribuidas, text="🗑️ Limpiar", command=self.limpiar_cargas_distribuidas).grid(row=2, column=2, columnspan=2, padx=5, pady=5)
+        btn_agregar_d = ttk.Button(frame_distribuidas, text="➕ Agregar", command=self.agregar_carga_distribuida)
+        btn_agregar_d.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
+        self.add_hover_effect(btn_agregar_d)
+        btn_limpiar_d = ttk.Button(frame_distribuidas, text="🗑️ Limpiar", command=self.limpiar_cargas_distribuidas)
+        btn_limpiar_d.grid(row=2, column=2, columnspan=2, padx=5, pady=5)
+        self.add_hover_effect(btn_limpiar_d)
+
+        return frame_distribuidas
     
     def crear_seccion_botones_calculo(self, parent):
         frame_botones = ttk.Frame(parent)
-        frame_botones.pack(fill="x", pady=10, padx=10)
         
         # Los estilos de botones se configuran en apply_theme
         
@@ -300,45 +335,61 @@ class SimuladorVigaMejorado:
         btn_calcular = ttk.Button(frame_botones, text="🧮 Calcular Reacciones", style="Action.TButton")
         btn_calcular.config(command=lambda b=btn_calcular: self.on_button_click(b, self.calcular_reacciones))
         btn_calcular.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+        self.add_hover_effect(btn_calcular)
 
         btn_centro_masa = ttk.Button(frame_botones, text="📍 Calcular Centro de Masa", style="Action.TButton")
         btn_centro_masa.config(command=lambda b=btn_centro_masa: self.on_button_click(b, self.calcular_centro_masa))
         btn_centro_masa.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        self.add_hover_effect(btn_centro_masa)
 
         btn_diagramas = ttk.Button(frame_botones, text="📊 Mostrar Diagramas", style="Action.TButton")
         btn_diagramas.config(command=lambda b=btn_diagramas: self.on_button_click(b, self.mostrar_diagramas))
         btn_diagramas.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+        self.add_hover_effect(btn_diagramas)
 
-        ttk.Entry(frame_botones, textvariable=self.posicion_torsor, width=8).grid(row=0, column=3, padx=5, pady=5)
-        btn_par_punto = ttk.Button(frame_botones, text="🌀 Par en Punto", style="Action.TButton")
+        par_frame = ttk.Frame(frame_botones)
+        ttk.Label(par_frame, text="x (m):").pack(side="left", padx=(0, 2))
+        ttk.Entry(par_frame, textvariable=self.posicion_torsor, width=6).pack(side="left")
+        btn_par_punto = ttk.Button(par_frame, text="🌀 Par en Punto", style="Action.TButton")
+        btn_par_punto.pack(side="left", padx=2)
         btn_par_punto.config(command=lambda b=btn_par_punto: self.on_button_click(b, lambda: self.calcular_par_torsor_en_punto(self.posicion_torsor.get())))
-        btn_par_punto.grid(row=0, column=4, padx=5, pady=5, sticky="ew")
+        self.add_hover_effect(btn_par_punto)
+        par_frame.grid(row=0, column=3, columnspan=2, padx=5, pady=5, sticky="ew")
         
         # Segunda fila de botones
         btn_limpiar = ttk.Button(frame_botones, text="🗑️ Limpiar Todo", style="Warning.TButton")
         btn_limpiar.config(command=lambda b=btn_limpiar: self.on_button_click(b, self.limpiar_todo))
         btn_limpiar.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
+        self.add_hover_effect(btn_limpiar)
 
         btn_ayuda = ttk.Button(frame_botones, text="❓ Ayuda", style="Action.TButton")
         btn_ayuda.config(command=lambda b=btn_ayuda: self.on_button_click(b, self.mostrar_ayuda))
         btn_ayuda.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+        self.add_hover_effect(btn_ayuda)
 
         btn_ampliar = ttk.Button(frame_botones, text="🔍 Ampliar Gráfica", style="Action.TButton")
         btn_ampliar.config(command=lambda b=btn_ampliar: self.on_button_click(b, self.ampliar_grafica))
         btn_ampliar.grid(row=1, column=2, padx=5, pady=5, sticky="ew")
+        self.add_hover_effect(btn_ampliar)
 
         btn_animar_3d = ttk.Button(frame_botones, text="🎞️ Animar 3D", style="Action.TButton")
         btn_animar_3d.config(command=lambda b=btn_animar_3d: self.on_button_click(b, self.animar_viga_3d))
         btn_animar_3d.grid(row=1, column=3, padx=5, pady=5, sticky="ew")
+        self.add_hover_effect(btn_animar_3d)
 
         btn_tema = ttk.Button(frame_botones, textvariable=self.texto_tema, style="Action.TButton")
         btn_tema.config(command=lambda b=btn_tema: self.on_button_click(b, self.toggle_dark_mode))
         btn_tema.grid(row=1, column=4, padx=5, pady=5, sticky="ew")
+        self.add_hover_effect(btn_tema)
         self.boton_tema = btn_tema
         
         # Configurar el grid para que se expanda correctamente
         for i in range(5):
             frame_botones.columnconfigure(i, weight=1)
+        for i in range(2):
+            frame_botones.rowconfigure(i, weight=1)
+
+        return frame_botones
     
     def mostrar_mensaje_inicial(self):
         mensaje = "Bienvenido al Simulador de Viga Mecánica. Use los controles para configurar la viga y las cargas."
