@@ -190,10 +190,18 @@ class SimuladorVigaMejorado:
         notebook.add(tab_result, text="Resultados")
 
         # Sección configuración y cargas
-        self.crear_seccion_configuracion_viga(tab_config)
-        self.crear_seccion_cargas_puntuales(tab_config)
-        self.crear_seccion_cargas_distribuidas(tab_config)
-        self.crear_seccion_botones_calculo(tab_config)
+        tab_config.columnconfigure(0, weight=1)
+        tab_config.columnconfigure(1, weight=1)
+
+        frame_config = self.crear_seccion_configuracion_viga(tab_config)
+        frame_puntual = self.crear_seccion_cargas_puntuales(tab_config)
+        frame_dist = self.crear_seccion_cargas_distribuidas(tab_config)
+        frame_botones = self.crear_seccion_botones_calculo(tab_config)
+
+        frame_config.grid(row=0, column=0, columnspan=2, sticky="ew", padx=10, pady=10)
+        frame_puntual.grid(row=1, column=0, sticky="nsew", padx=10, pady=5)
+        frame_dist.grid(row=1, column=1, sticky="nsew", padx=10, pady=5)
+        frame_botones.grid(row=2, column=0, columnspan=2, sticky="ew", padx=10, pady=10)
 
         # Sección propiedades de la sección y formas irregulares
         self.crear_seccion_propiedades_seccion(tab_seccion)
@@ -205,7 +213,6 @@ class SimuladorVigaMejorado:
     
     def crear_seccion_configuracion_viga(self, parent):
         frame_config = ttk.LabelFrame(parent, text="⚙ Configuración de la Viga")
-        frame_config.pack(fill="x", pady=10, padx=10)
     
         # Longitud de la viga
         ttk.Label(frame_config, text="Longitud (m):").grid(row=0, column=0, padx=5, pady=5)
@@ -236,6 +243,8 @@ class SimuladorVigaMejorado:
         ttk.Entry(frame_config, textvariable=self.altura_inicial, width=10).grid(row=4, column=1, padx=5, pady=5)
         ttk.Label(frame_config, text="Altura final (m):").grid(row=4, column=2, padx=5, pady=5)
         ttk.Entry(frame_config, textvariable=self.altura_final, width=10).grid(row=4, column=3, padx=5, pady=5)
+
+        return frame_config
     
     def crear_seccion_propiedades_seccion(self, parent):
         frame_seccion = ttk.LabelFrame(parent, text="Propiedades de la Sección Transversal")
@@ -263,7 +272,6 @@ class SimuladorVigaMejorado:
     
     def crear_seccion_cargas_puntuales(self, parent):
         frame_puntuales = ttk.LabelFrame(parent, text="⬇️ Cargas Puntuales")
-        frame_puntuales.pack(fill="x", pady=10, padx=10)
     
         ttk.Label(frame_puntuales, text="Posición (m):").grid(row=0, column=0, padx=5, pady=5)
         ttk.Entry(frame_puntuales, textvariable=self.posicion_carga, width=10).grid(row=0, column=1, padx=5, pady=5)
@@ -273,10 +281,11 @@ class SimuladorVigaMejorado:
     
         ttk.Button(frame_puntuales, text="➕ Agregar", command=self.agregar_carga_puntual).grid(row=1, column=0, columnspan=2, padx=5, pady=5)
         ttk.Button(frame_puntuales, text="🗑️ Limpiar", command=self.limpiar_cargas_puntuales).grid(row=1, column=2, columnspan=2, padx=5, pady=5)
+
+        return frame_puntuales
     
     def crear_seccion_cargas_distribuidas(self, parent):
         frame_distribuidas = ttk.LabelFrame(parent, text="📅 Cargas Distribuidas")
-        frame_distribuidas.pack(fill="x", pady=10, padx=10)
     
         ttk.Label(frame_distribuidas, text="Inicio (m):").grid(row=0, column=0, padx=5, pady=5)
         ttk.Entry(frame_distribuidas, textvariable=self.inicio_dist, width=10).grid(row=0, column=1, padx=5, pady=5)
@@ -289,10 +298,11 @@ class SimuladorVigaMejorado:
     
         ttk.Button(frame_distribuidas, text="➕ Agregar", command=self.agregar_carga_distribuida).grid(row=2, column=0, columnspan=2, padx=5, pady=5)
         ttk.Button(frame_distribuidas, text="🗑️ Limpiar", command=self.limpiar_cargas_distribuidas).grid(row=2, column=2, columnspan=2, padx=5, pady=5)
+
+        return frame_distribuidas
     
     def crear_seccion_botones_calculo(self, parent):
         frame_botones = ttk.Frame(parent)
-        frame_botones.pack(fill="x", pady=10, padx=10)
         
         # Los estilos de botones se configuran en apply_theme
         
@@ -309,10 +319,13 @@ class SimuladorVigaMejorado:
         btn_diagramas.config(command=lambda b=btn_diagramas: self.on_button_click(b, self.mostrar_diagramas))
         btn_diagramas.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
 
-        ttk.Entry(frame_botones, textvariable=self.posicion_torsor, width=8).grid(row=0, column=3, padx=5, pady=5)
-        btn_par_punto = ttk.Button(frame_botones, text="🌀 Par en Punto", style="Action.TButton")
+        par_frame = ttk.Frame(frame_botones)
+        ttk.Label(par_frame, text="x (m):").pack(side="left", padx=(0, 2))
+        ttk.Entry(par_frame, textvariable=self.posicion_torsor, width=6).pack(side="left")
+        btn_par_punto = ttk.Button(par_frame, text="🌀 Par en Punto", style="Action.TButton")
+        btn_par_punto.pack(side="left", padx=2)
         btn_par_punto.config(command=lambda b=btn_par_punto: self.on_button_click(b, lambda: self.calcular_par_torsor_en_punto(self.posicion_torsor.get())))
-        btn_par_punto.grid(row=0, column=4, padx=5, pady=5, sticky="ew")
+        par_frame.grid(row=0, column=3, columnspan=2, padx=5, pady=5, sticky="ew")
         
         # Segunda fila de botones
         btn_limpiar = ttk.Button(frame_botones, text="🗑️ Limpiar Todo", style="Warning.TButton")
@@ -339,6 +352,8 @@ class SimuladorVigaMejorado:
         # Configurar el grid para que se expanda correctamente
         for i in range(5):
             frame_botones.columnconfigure(i, weight=1)
+
+        return frame_botones
     
     def mostrar_mensaje_inicial(self):
         mensaje = "Bienvenido al Simulador de Viga Mecánica. Use los controles para configurar la viga y las cargas."
