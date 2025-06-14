@@ -1,5 +1,12 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+
+try:
+    import ttkbootstrap as ttkb
+    BOOTSTRAP_AVAILABLE = True
+except ImportError:
+    ttkb = None
+    BOOTSTRAP_AVAILABLE = False
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.animation import FuncAnimation
@@ -7,15 +14,20 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 
 class SimuladorVigaMejorado:
-    def __init__(self, root):
+    def __init__(self, root, bootstrap=False):
         self.root = root
+        self.bootstrap = bootstrap
         self.root.title("Simulador de Viga Mecánica - Versión Completa")
         self.root.geometry("1200x900")  # Aumentado el tamaño de la ventana
-        
+
         # Configurar tema y estilo moderno
-        self.style = ttk.Style()
-        if 'clam' in self.style.theme_names():
-            self.style.theme_use('clam')
+        if self.bootstrap:
+            # En ttkbootstrap la instancia de estilo ya existe
+            self.style = self.root.style
+        else:
+            self.style = ttk.Style()
+            if 'clam' in self.style.theme_names():
+                self.style.theme_use('clam')
 
         # Paletas de colores para modo claro y oscuro
         self.bg_light = "#f7f7f7"
@@ -111,6 +123,12 @@ class SimuladorVigaMejorado:
 
     def apply_theme(self):
         """Aplicar paleta de colores según el modo actual."""
+        if self.bootstrap:
+            theme = "darkly" if self.dark_mode.get() else "flatly"
+            # ttkbootstrap usa el estilo del root
+            self.root.style.theme_use(theme)
+            return
+
         if self.dark_mode.get():
             bg_color = self.bg_dark
             fg_color = self.fg_dark
@@ -1602,8 +1620,12 @@ class SimuladorVigaMejorado:
         self.root.mainloop()
 
 def main():
-    root = tk.Tk()
-    app = SimuladorVigaMejorado(root)
+    if BOOTSTRAP_AVAILABLE:
+        root = ttkb.Window(themename="flatly")
+        app = SimuladorVigaMejorado(root, bootstrap=True)
+    else:
+        root = tk.Tk()
+        app = SimuladorVigaMejorado(root)
     app.run()
 
 if __name__ == "__main__":

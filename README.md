@@ -1,7 +1,7 @@
 
 # Cómo está hecho el simulador de viga mecánica
 
-Este repositorio contiene un programa escrito en **Python** para analizar y visualizar el comportamiento de una viga mecánica. Utiliza **Tkinter** para la interfaz gráfica, `matplotlib` para las gráficas, `numpy` para los cálculos y `mpl_toolkits` para la vista en 3D.
+Este repositorio contiene un programa escrito en **Python** para analizar y visualizar el comportamiento de una viga mecánica. Utiliza **Tkinter** para la interfaz gráfica y, si está disponible, el paquete **`ttkbootstrap`** para darle un aspecto mucho más moderno. Las gráficas se generan con `matplotlib`, los cálculos con `numpy` y la vista en 3D con `mpl_toolkits`.
 
 ### 1. Estructura del código
 
@@ -76,21 +76,34 @@ Usa `matplotlib` para todos estos gráficos y los incrusta dentro de la ventana 
 
 ### 7. Estilo visual
 
-Se aplicó un **tema moderno** (`clam`) con colores claros, botones azules, tipografías limpias, y organización visual con pestañas (`Notebook`) para que sea fácil de entender y usar.
-Además se añadió un **modo oscuro** seleccionable desde los controles principales.
+El programa puede aprovechar **`ttkbootstrap`** para mostrar un aspecto totalmente renovado (botones planos, colores actuales y fuentes más limpias). Si no se cuenta con esa biblioteca, se usa el tema `clam` de `tkinter` como alternativa.
+El botón de tema permite alternar entre un estilo claro (*flatly*) y uno oscuro (*darkly*).
 
 ---
 
-### 8. Par torsor en un punto
+### 8. Herramientas de la interfaz
+
+* **🧮 Calcular Reacciones**: resuelve las fuerzas de apoyo de la viga.
+* **📍 Calcular Centro de Masa**: muestra el punto donde actúa la resultante de las cargas.
+* **📊 Mostrar Diagramas**: genera los diagramas de cortante, momento y torsión.
+* **🌀 Par en Punto**: introduce una posición y obtén el torque interno en ese lugar.
+* **🔍 Ampliar Gráfica**: abre las gráficas en una ventana aparte.
+* **🎞️ Animar 3D**: activa una rotación automática de la vista 3D.
+* **❓ Ayuda**: despliega un resumen de uso.
+* **🗑️ Limpiar Todo**: borra todas las cargas y reinicia la configuración.
+* **🌓/🌞 Modo Oscuro/Claro**: alterna el tema visual de la aplicación.
+
+### 9. Par torsor en un punto
 
 Esta función permite obtener el momento torsor (torque interno) en una posición específica de la viga.
 Solo escribe la coordenada en metros en el cuadro **Par en Punto** y presiona el botón del mismo nombre.
 El valor se mostrará en el registro y en los diagramas.
 
-### 9. Uso
+### 10. Uso
 
 1. Clona este repositorio o descarga el código.
 2. Asegúrate de tener **Python 3**, `tkinter`, `matplotlib` y `numpy` instalados.
+   Para un aspecto moderno instala opcionalmente `ttkbootstrap` con `pip install ttkbootstrap`.
 3. Ejecuta `python3 simulador_viga_mejorado.py`.
 4. Configura la viga y agrega las cargas necesarias.
 5. Usa **Par en Punto** para consultar el momento torsor si lo necesitas.
