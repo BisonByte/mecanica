@@ -123,10 +123,13 @@ class SimuladorVigaMejorado:
 
     def add_hover_effect(self, widget):
         """Apply a simple hover style to a button."""
-        default = widget.cget("style") or "TButton"
-        widget.default_style = default
+        default_style = widget.cget("style") or "TButton"
+        widget.default_style = default_style
         widget.bind("<Enter>", lambda e: widget.configure(style="Hover.TButton"))
-        widget.bind("<Leave>", lambda e: widget.configure(style=widget.default_style))
+        widget.bind(
+            "<Leave>",
+            lambda e: widget.configure(style=widget.default_style),
+        )
 
     def apply_theme(self):
         """Aplicar paleta de colores según el modo actual."""
