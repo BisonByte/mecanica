@@ -702,23 +702,25 @@ class SimuladorVigaMejorado:
         # Dibujar cargas distribuidas como fuerza equivalente
         for inicio, fin, mag in self.cargas_distribuidas:
             h_mid = h_inicial + (h_final - h_inicial) * ((inicio + fin) / 2) / L
+            F_eq = mag * (fin - inicio)
+            signo = 1 if F_eq >= 0 else -1
+
             ax.text(
                 (inicio + fin) / 2,
-                h_mid + 0.45,
+                h_mid + 0.45 * signo,
                 f"{mag}N/m",
                 ha="center",
-                va="bottom",
+                va="bottom" if signo > 0 else "top",
                 fontsize=10,
                 color="#ff7f0e",
                 fontweight="bold",
             )
 
-            F_eq = mag * (fin - inicio)
             ax.arrow(
                 (inicio + fin) / 2,
-                h_mid + 0.8,
+                h_mid + 0.8 * signo,
                 0,
-                -0.6,
+                -0.6 * signo,
                 head_width=L * 0.015,
                 head_length=0.05,
                 fc="#ff7f0e",
@@ -728,10 +730,10 @@ class SimuladorVigaMejorado:
             )
             ax.text(
                 (inicio + fin) / 2,
-                h_mid + 0.85,
+                h_mid + 0.85 * signo,
                 f"{F_eq:.1f}N",
                 ha="center",
-                va="bottom",
+                va="bottom" if signo > 0 else "top",
                 fontsize=10,
                 color="#ff7f0e",
                 fontweight="bold",
@@ -788,23 +790,34 @@ class SimuladorVigaMejorado:
 
         for inicio, fin, mag in self.cargas_distribuidas:
             F_eq = mag * (fin - inicio)
+            signo = 1 if F_eq >= 0 else -1
+            ax.text(
+                (inicio + fin) / 2,
+                0,
+                0.45 * signo,
+                f"{mag}N/m",
+                ha="center",
+                va="bottom" if signo > 0 else "top",
+                fontsize=8,
+                color="orange",
+            )
             ax.quiver(
                 (inicio + fin) / 2,
                 0,
-                0.8,
+                0.8 * signo,
                 0,
                 0,
-                -0.6,
+                -0.6 * signo,
                 color="orange",
                 arrow_length_ratio=0.3,
             )
             ax.text(
                 (inicio + fin) / 2,
                 0,
-                0.85,
+                0.85 * signo,
                 f"{F_eq:.1f}N",
                 ha="center",
-                va="bottom",
+                va="bottom" if signo > 0 else "top",
                 fontsize=8,
                 color="orange",
             )
@@ -856,35 +869,36 @@ class SimuladorVigaMejorado:
 
         # Dibujar cargas distribuidas como fuerza equivalente
         for inicio, fin, mag in self.cargas_distribuidas:
+            F_eq = mag * (fin - inicio)
+            signo = 1 if F_eq >= 0 else -1
             ax.text(
                 (inicio + fin) / 2,
                 0,
-                0.45,
+                0.45 * signo,
                 f"{mag}N/m",
                 ha="center",
-                va="bottom",
+                va="bottom" if signo > 0 else "top",
                 fontsize=8,
                 color="orange",
             )
 
-            F_eq = mag * (fin - inicio)
             ax.quiver(
                 (inicio + fin) / 2,
                 0,
-                0.8,
+                0.8 * signo,
                 0,
                 0,
-                -0.6,
+                -0.6 * signo,
                 color="orange",
                 arrow_length_ratio=0.3,
             )
             ax.text(
                 (inicio + fin) / 2,
                 0,
-                0.85,
+                0.85 * signo,
                 f"{F_eq:.1f}N",
                 ha="center",
-                va="bottom",
+                va="bottom" if signo > 0 else "top",
                 fontsize=8,
                 color="orange",
             )
@@ -944,22 +958,23 @@ class SimuladorVigaMejorado:
             ax.text(pos, 0.6, f'{mag}N', ha='center', va='bottom', fontsize=8, color='red')
             
         for inicio, fin, mag in self.cargas_distribuidas:
+            F_eq = mag * (fin - inicio)
+            signo = 1 if F_eq >= 0 else -1
             ax.text(
                 (inicio + fin) / 2,
-                0.45,
+                0.45 * signo,
                 f"{mag}N/m",
                 ha="center",
-                va="bottom",
+                va="bottom" if signo > 0 else "top",
                 fontsize=8,
                 color="red",
             )
 
-            F_eq = mag * (fin - inicio)
             ax.arrow(
                 (inicio + fin) / 2,
-                0.75,
+                0.75 * signo,
                 0,
-                -0.5,
+                -0.5 * signo,
                 head_width=L * 0.015,
                 head_length=0.03,
                 fc="red",
@@ -968,10 +983,10 @@ class SimuladorVigaMejorado:
             )
             ax.text(
                 (inicio + fin) / 2,
-                0.8,
+                0.8 * signo,
                 f"{F_eq:.1f}N",
                 ha="center",
-                va="bottom",
+                va="bottom" if signo > 0 else "top",
                 fontsize=8,
                 color="red",
             )
@@ -1035,22 +1050,23 @@ class SimuladorVigaMejorado:
             ax1.text(pos, 0.35, f'{mag}N', ha='center', va='bottom', fontsize=7, color='red')
         
         for inicio, fin, mag in self.cargas_distribuidas:
+            F_eq = mag * (fin - inicio)
+            signo = 1 if F_eq >= 0 else -1
             ax1.text(
                 (inicio + fin) / 2,
-                0.25,
+                0.25 * signo,
                 f"{mag}N/m",
                 ha="center",
-                va="bottom",
+                va="bottom" if signo > 0 else "top",
                 fontsize=7,
                 color="red",
             )
 
-            F_eq = mag * (fin - inicio)
             ax1.arrow(
                 (inicio + fin) / 2,
-                0.55,
+                0.55 * signo,
                 0,
-                -0.35,
+                -0.35 * signo,
                 head_width=L * 0.015,
                 head_length=0.03,
                 fc="red",
@@ -1059,10 +1075,10 @@ class SimuladorVigaMejorado:
             )
             ax1.text(
                 (inicio + fin) / 2,
-                0.6,
+                0.6 * signo,
                 f"{F_eq:.1f}N",
                 ha="center",
-                va="bottom",
+                va="bottom" if signo > 0 else "top",
                 fontsize=7,
                 color="red",
             )
