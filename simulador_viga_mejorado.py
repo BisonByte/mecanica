@@ -699,15 +699,43 @@ class SimuladorVigaMejorado:
             ax.arrow(pos, h+0.5, 0, -0.4, head_width=L*0.015, head_length=0.05, fc='#d62728', ec='#d62728', width=0.002, zorder=15)
             ax.text(pos, h+0.6, f'{mag}N', ha='center', va='bottom', fontsize=10, color='#d62728', fontweight='bold')
 
-        # Dibujar cargas distribuidas
+        # Dibujar cargas distribuidas como fuerza equivalente
         for inicio, fin, mag in self.cargas_distribuidas:
-            x_dist = np.linspace(inicio, fin, 50)
-            y_dist = h_inicial + (h_final - h_inicial) * x_dist / L + 0.4
-            ax.plot(x_dist, y_dist, '#ff7f0e', linewidth=2, zorder=15)
-            for x_pos in x_dist[::5]:
-                h = h_inicial + (h_final - h_inicial) * x_pos / L
-                ax.arrow(x_pos, h+0.4, 0, -0.3, head_width=L*0.008, head_length=0.02, fc='#ff7f0e', ec='#ff7f0e', width=0.001, zorder=15)
-            ax.text((inicio+fin)/2, h+0.5, f'{mag}N/m', ha='center', va='bottom', fontsize=10, color='#ff7f0e', fontweight='bold')
+            h_mid = h_inicial + (h_final - h_inicial) * ((inicio + fin) / 2) / L
+            ax.text(
+                (inicio + fin) / 2,
+                h_mid + 0.45,
+                f"{mag}N/m",
+                ha="center",
+                va="bottom",
+                fontsize=10,
+                color="#ff7f0e",
+                fontweight="bold",
+            )
+
+            F_eq = mag * (fin - inicio)
+            ax.arrow(
+                (inicio + fin) / 2,
+                h_mid + 0.8,
+                0,
+                -0.6,
+                head_width=L * 0.015,
+                head_length=0.05,
+                fc="#ff7f0e",
+                ec="#ff7f0e",
+                width=0.002,
+                zorder=15,
+            )
+            ax.text(
+                (inicio + fin) / 2,
+                h_mid + 0.85,
+                f"{F_eq:.1f}N",
+                ha="center",
+                va="bottom",
+                fontsize=10,
+                color="#ff7f0e",
+                fontweight="bold",
+            )
 
         # Dibujar centro de masa si está disponible
         if x_cm is not None:
@@ -759,19 +787,27 @@ class SimuladorVigaMejorado:
             ax.quiver(pos, 0, 0.5, 0, 0, -0.4, color="red", arrow_length_ratio=0.3)
 
         for inicio, fin, mag in self.cargas_distribuidas:
-            x_dist = np.linspace(inicio, fin, 10)
-            for x_pos in x_dist:
-                ax.quiver(
-                    x_pos,
-                    0,
-                    0.4,
-                    0,
-                    0,
-                    -0.3,
-                    color="orange",
-                    arrow_length_ratio=0.3,
-                    alpha=0.7,
-                )
+            F_eq = mag * (fin - inicio)
+            ax.quiver(
+                (inicio + fin) / 2,
+                0,
+                0.8,
+                0,
+                0,
+                -0.6,
+                color="orange",
+                arrow_length_ratio=0.3,
+            )
+            ax.text(
+                (inicio + fin) / 2,
+                0,
+                0.85,
+                f"{F_eq:.1f}N",
+                ha="center",
+                va="bottom",
+                fontsize=8,
+                color="orange",
+            )
 
         ax.set_xlim(-L * 0.15, L * 1.15)
         ax.set_ylim(-0.8, 0.8)
@@ -818,12 +854,40 @@ class SimuladorVigaMejorado:
             ax.quiver(pos, 0, 0.5, 0, 0, -0.4, color='red', arrow_length_ratio=0.3)
             ax.text(pos, 0, 0.6, f'{mag}N', ha='center', va='bottom', fontsize=8, color='red')
 
-        # Dibujar cargas distribuidas
+        # Dibujar cargas distribuidas como fuerza equivalente
         for inicio, fin, mag in self.cargas_distribuidas:
-            x_dist = np.linspace(inicio, fin, 10)
-            for x_pos in x_dist:
-                ax.quiver(x_pos, 0, 0.4, 0, 0, -0.3, color='orange', arrow_length_ratio=0.3, alpha=0.7)
-            ax.text((inicio+fin)/2, 0, 0.5, f'{mag}N/m', ha='center', va='bottom', fontsize=8, color='orange')
+            ax.text(
+                (inicio + fin) / 2,
+                0,
+                0.45,
+                f"{mag}N/m",
+                ha="center",
+                va="bottom",
+                fontsize=8,
+                color="orange",
+            )
+
+            F_eq = mag * (fin - inicio)
+            ax.quiver(
+                (inicio + fin) / 2,
+                0,
+                0.8,
+                0,
+                0,
+                -0.6,
+                color="orange",
+                arrow_length_ratio=0.3,
+            )
+            ax.text(
+                (inicio + fin) / 2,
+                0,
+                0.85,
+                f"{F_eq:.1f}N",
+                ha="center",
+                va="bottom",
+                fontsize=8,
+                color="orange",
+            )
 
         # Dibujar centro de masa si está disponible
         if x_cm is not None:
@@ -880,12 +944,37 @@ class SimuladorVigaMejorado:
             ax.text(pos, 0.6, f'{mag}N', ha='center', va='bottom', fontsize=8, color='red')
             
         for inicio, fin, mag in self.cargas_distribuidas:
-            x_dist = np.linspace(inicio, fin, 50)
-            y_dist = np.full_like(x_dist, 0.4)
-            ax.plot(x_dist, y_dist, 'r-', linewidth=2)
-            for x_pos in x_dist[::5]:
-                ax.arrow(x_pos, 0.4, 0, -0.3, head_width=L*0.008, head_length=0.02, fc='red', ec='red', width=0.001)
-            ax.text((inicio+fin)/2, 0.5, f'{mag}N/m', ha='center', va='bottom', fontsize=8, color='red')
+            ax.text(
+                (inicio + fin) / 2,
+                0.45,
+                f"{mag}N/m",
+                ha="center",
+                va="bottom",
+                fontsize=8,
+                color="red",
+            )
+
+            F_eq = mag * (fin - inicio)
+            ax.arrow(
+                (inicio + fin) / 2,
+                0.75,
+                0,
+                -0.5,
+                head_width=L * 0.015,
+                head_length=0.03,
+                fc="red",
+                ec="red",
+                width=0.002,
+            )
+            ax.text(
+                (inicio + fin) / 2,
+                0.8,
+                f"{F_eq:.1f}N",
+                ha="center",
+                va="bottom",
+                fontsize=8,
+                color="red",
+            )
             
         # Dibujar el par torsor
         par_torsor = self.par_torsor.get()
@@ -946,12 +1035,37 @@ class SimuladorVigaMejorado:
             ax1.text(pos, 0.35, f'{mag}N', ha='center', va='bottom', fontsize=7, color='red')
         
         for inicio, fin, mag in self.cargas_distribuidas:
-            x_dist = np.linspace(inicio, fin, 50)
-            y_dist = np.full_like(x_dist, 0.2)
-            ax1.plot(x_dist, y_dist, 'r-', linewidth=2)
-            for x_pos in x_dist[::5]:
-                ax1.arrow(x_pos, 0.2, 0, -0.15, head_width=L*0.008, head_length=0.02, fc='red', ec='red', width=0.001)
-            ax1.text((inicio+fin)/2, 0.25, f'{mag}N/m', ha='center', va='bottom', fontsize=7, color='red')
+            ax1.text(
+                (inicio + fin) / 2,
+                0.25,
+                f"{mag}N/m",
+                ha="center",
+                va="bottom",
+                fontsize=7,
+                color="red",
+            )
+
+            F_eq = mag * (fin - inicio)
+            ax1.arrow(
+                (inicio + fin) / 2,
+                0.55,
+                0,
+                -0.35,
+                head_width=L * 0.015,
+                head_length=0.03,
+                fc="red",
+                ec="red",
+                width=0.002,
+            )
+            ax1.text(
+                (inicio + fin) / 2,
+                0.6,
+                f"{F_eq:.1f}N",
+                ha="center",
+                va="bottom",
+                fontsize=7,
+                color="red",
+            )
         
         ax1.set_xlim(-L*0.1, L*1.1)
         ax1.set_ylim(-0.6, 0.7)
