@@ -107,9 +107,12 @@ class SimuladorVigaMejorado:
         
         # Mostrar mensaje inicial
         self.mostrar_mensaje_inicial()
-        
+
         # Dibujar la viga inicial
         self.dibujar_viga_actual()
+
+        # Precargar algunos datos de ejemplo para facilitar las pruebas
+        self.cargar_datos_ejemplo()
 
     def on_button_click(self, button, action):
         """Flash the button and execute its action."""
@@ -356,7 +359,10 @@ class SimuladorVigaMejorado:
         return frame_botones
     
     def mostrar_mensaje_inicial(self):
-        mensaje = "Bienvenido al Simulador de Viga Mecánica. Use los controles para configurar la viga y las cargas."
+        mensaje = (
+            "Bienvenido al Simulador de Viga Mecánica. "
+            "Se han precargado algunos datos de ejemplo para que puedas probar las funciones de inmediato."
+        )
         self.log(mensaje, "info")
         
     def agregar_carga_puntual(self):
@@ -1097,6 +1103,22 @@ class SimuladorVigaMejorado:
         self.mostrar_mensaje_inicial()
 
         # Redibujar la viga en su estado inicial
+        self.dibujar_viga_actual()
+
+    def cargar_datos_ejemplo(self):
+        """Cargar algunas cargas de ejemplo para probar el sistema."""
+        # Reiniciar listas por si se llamó varias veces
+        self.cargas_puntuales = [(2.0, 20.0), (8.0, 15.0)]
+        self.cargas_distribuidas = [(3.0, 7.0, 5.0)]
+
+        # Mostrar los valores en los campos para que el usuario los vea
+        self.posicion_carga.set(2.0)
+        self.magnitud_carga.set(20.0)
+        self.inicio_dist.set(3.0)
+        self.fin_dist.set(7.0)
+        self.magnitud_dist.set(5.0)
+
+        self.log("Cargas de ejemplo precargadas\n", "info")
         self.dibujar_viga_actual()
         
     def mostrar_ayuda(self):
