@@ -80,8 +80,8 @@ def generar_diagramas(
     posicion_apoyo_c: float = 0.0,
     par_torsor: float = 0.0,
     num_puntos: int = 500,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Return x positions, shear force and bending moment diagrams."""
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Return x positions, shear force, bending moment and torsion diagrams."""
     RA, RB, RC = calcular_reacciones(
         longitud,
         cargas_puntuales,
@@ -94,6 +94,7 @@ def generar_diagramas(
     x = np.linspace(0, longitud, num_puntos)
     cortante = np.zeros_like(x)
     momento = np.zeros_like(x)
+    torsion = np.full_like(x, par_torsor)
 
     for i, xi in enumerate(x):
         V = RA
@@ -125,8 +126,7 @@ def generar_diagramas(
 
         cortante[i] = V
         momento[i] = M
-
-    return x, cortante, momento
+    return x, cortante, momento, torsion
 
 
 def par_en_punto(

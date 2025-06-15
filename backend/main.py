@@ -54,7 +54,7 @@ def api_centro_masa(data: BeamRequest):
 
 @app.post("/generar_diagramas")
 def api_generar_diagramas(data: BeamRequest):
-    x, cortante, momento = beam.generar_diagramas(
+    x, cortante, momento, torsion = beam.generar_diagramas(
         data.longitud,
         [(c.pos, c.mag) for c in data.cargas_puntuales],
         [(d.inicio, d.fin, d.mag) for d in data.cargas_distribuidas],
@@ -66,6 +66,7 @@ def api_generar_diagramas(data: BeamRequest):
         "x": x.tolist(),
         "cortante": cortante.tolist(),
         "momento": momento.tolist(),
+        "torsion": torsion.tolist(),
     }
 
 

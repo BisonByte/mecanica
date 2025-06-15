@@ -133,3 +133,5 @@ También se incluye un `Dockerfile` para levantar la aplicación de manera senci
 docker build -t simulador-viga .
 docker run -p 8000:8000 simulador-viga
 ```
+
+La página web ahora incluye gráficas interactivas con **Plotly.js** para los diagramas de cortante, momento y torsión, así como una vista básica en 3D de la viga implementada con **Three.js**.

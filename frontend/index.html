@@ -7,17 +7,21 @@
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.153/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.153/examples/js/controls/OrbitControls.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3/dist/tailwind.min.css" rel="stylesheet" />
 </head>
 <body class="bg-gray-100 text-gray-900">
   <div id="root" class="p-4"></div>
 
   <script type="text/babel">
-    const { useState } = React;
+    const { useState, useEffect } = React;
 
     function App() {
       const [longitud, setLongitud] = useState(10);
       const [resultado, setResultado] = useState(null);
+      const [diagramas, setDiagramas] = useState(null);
 
       async function calcular() {
         const data = { longitud, cargas_puntuales: [], cargas_distribuidas: [] };
@@ -25,17 +29,58 @@
         setResultado(res.data);
       }
 
+      async function mostrarDiagramas() {
+        const data = { longitud, cargas_puntuales: [], cargas_distribuidas: [] };
+        const res = await axios.post('/generar_diagramas', data);
+        setDiagramas(res.data);
+      }
+
+      useEffect(() => {
+        if (!diagramas) return;
+        const { x, cortante, momento, torsion } = diagramas;
+        Plotly.newPlot('cortante', [{ x, y: cortante }], { title: 'Diagrama de Cortante' });
+        Plotly.newPlot('momento', [{ x, y: momento }], { title: 'Diagrama de Momento' });
+        Plotly.newPlot('torsion', [{ x, y: torsion }], { title: 'Diagrama de Torsión' });
+      }, [diagramas]);
+
+      useEffect(() => {
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const container = document.getElementById('view3d');
+        renderer.setSize(300, 300);
+        container.appendChild(renderer.domElement);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        const geometry = new THREE.BoxGeometry(longitud, 0.2, 0.2);
+        const material = new THREE.MeshNormalMaterial();
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+        camera.position.z = 5;
+        function animate() {
+          requestAnimationFrame(animate);
+          renderer.render(scene, camera);
+        }
+        animate();
+      }, []);
+
       return (
-        <div className="max-w-xl mx-auto">
-          <h1 className="text-2xl font-bold mb-4">Simulador de Viga</h1>
-          <label className="block mb-2">
+        <div className="max-w-xl mx-auto space-y-4">
+          <h1 className="text-2xl font-bold">Simulador de Viga</h1>
+          <label className="block">
             Longitud (m)
             <input type="number" value={longitud} onChange={e => setLongitud(+e.target.value)} className="border p-1 ml-2" />
           </label>
-          <button onClick={calcular} className="bg-blue-500 text-white px-4 py-2 rounded">Calcular Reacciones</button>
+          <div className="space-x-2">
+            <button onClick={calcular} className="bg-blue-500 text-white px-4 py-2 rounded">Calcular Reacciones</button>
+            <button onClick={mostrarDiagramas} className="bg-green-500 text-white px-4 py-2 rounded">Mostrar Diagramas</button>
+          </div>
           {resultado && (
-            <pre className="mt-4 bg-white p-2 border rounded">{JSON.stringify(resultado, null, 2)}</pre>
+            <pre className="bg-white p-2 border rounded">{JSON.stringify(resultado, null, 2)}</pre>
           )}
+          <div id="cortante" className="bg-white p-2 border rounded"></div>
+          <div id="momento" className="bg-white p-2 border rounded mt-4"></div>
+          <div id="torsion" className="bg-white p-2 border rounded mt-4"></div>
+          <div id="view3d" className="mt-4"></div>
         </div>
       );
     }
