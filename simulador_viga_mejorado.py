@@ -1,5 +1,12 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+
+try:
+    import ttkbootstrap as ttkb
+    BOOTSTRAP_AVAILABLE = True
+except ImportError:
+    ttkb = None
+    BOOTSTRAP_AVAILABLE = False
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.animation import FuncAnimation
@@ -7,15 +14,20 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 
 class SimuladorVigaMejorado:
-    def __init__(self, root):
+    def __init__(self, root, bootstrap=False):
         self.root = root
+        self.bootstrap = bootstrap
         self.root.title("Simulador de Viga Mecánica - Versión Completa")
         self.root.geometry("1200x900")  # Aumentado el tamaño de la ventana
-        
+
         # Configurar tema y estilo moderno
-        self.style = ttk.Style()
-        if 'clam' in self.style.theme_names():
-            self.style.theme_use('clam')
+        if self.bootstrap:
+            # En ttkbootstrap la instancia de estilo ya existe
+            self.style = self.root.style
+        else:
+            self.style = ttk.Style()
+            if 'clam' in self.style.theme_names():
+                self.style.theme_use('clam')
 
         # Paletas de colores para modo claro y oscuro
         self.bg_light = "#f7f7f7"
@@ -111,6 +123,12 @@ class SimuladorVigaMejorado:
 
     def apply_theme(self):
         """Aplicar paleta de colores según el modo actual."""
+        if self.bootstrap:
+            theme = "darkly" if self.dark_mode.get() else "flatly"
+            # ttkbootstrap usa el estilo del root
+            self.root.style.theme_use(theme)
+            return
+
         if self.dark_mode.get():
             bg_color = self.bg_dark
             fg_color = self.fg_dark
@@ -172,10 +190,18 @@ class SimuladorVigaMejorado:
         notebook.add(tab_result, text="Resultados")
 
         # Sección configuración y cargas
-        self.crear_seccion_configuracion_viga(tab_config)
-        self.crear_seccion_cargas_puntuales(tab_config)
-        self.crear_seccion_cargas_distribuidas(tab_config)
-        self.crear_seccion_botones_calculo(tab_config)
+        tab_config.columnconfigure(0, weight=1)
+        tab_config.columnconfigure(1, weight=1)
+
+        frame_config = self.crear_seccion_configuracion_viga(tab_config)
+        frame_puntual = self.crear_seccion_cargas_puntuales(tab_config)
+        frame_dist = self.crear_seccion_cargas_distribuidas(tab_config)
+        frame_botones = self.crear_seccion_botones_calculo(tab_config)
+
+        frame_config.grid(row=0, column=0, columnspan=2, sticky="ew", padx=10, pady=10)
+        frame_puntual.grid(row=1, column=0, sticky="nsew", padx=10, pady=5)
+        frame_dist.grid(row=1, column=1, sticky="nsew", padx=10, pady=5)
+        frame_botones.grid(row=2, column=0, columnspan=2, sticky="ew", padx=10, pady=10)
 
         # Sección propiedades de la sección y formas irregulares
         self.crear_seccion_propiedades_seccion(tab_seccion)
@@ -187,7 +213,6 @@ class SimuladorVigaMejorado:
     
     def crear_seccion_configuracion_viga(self, parent):
         frame_config = ttk.LabelFrame(parent, text="⚙ Configuración de la Viga")
-        frame_config.pack(fill="x", pady=10, padx=10)
     
         # Longitud de la viga
         ttk.Label(frame_config, text="Longitud (m):").grid(row=0, column=0, padx=5, pady=5)
@@ -218,6 +243,8 @@ class SimuladorVigaMejorado:
         ttk.Entry(frame_config, textvariable=self.altura_inicial, width=10).grid(row=4, column=1, padx=5, pady=5)
         ttk.Label(frame_config, text="Altura final (m):").grid(row=4, column=2, padx=5, pady=5)
         ttk.Entry(frame_config, textvariable=self.altura_final, width=10).grid(row=4, column=3, padx=5, pady=5)
+
+        return frame_config
     
     def crear_seccion_propiedades_seccion(self, parent):
         frame_seccion = ttk.LabelFrame(parent, text="Propiedades de la Sección Transversal")
@@ -245,7 +272,6 @@ class SimuladorVigaMejorado:
     
     def crear_seccion_cargas_puntuales(self, parent):
         frame_puntuales = ttk.LabelFrame(parent, text="⬇️ Cargas Puntuales")
-        frame_puntuales.pack(fill="x", pady=10, padx=10)
     
         ttk.Label(frame_puntuales, text="Posición (m):").grid(row=0, column=0, padx=5, pady=5)
         ttk.Entry(frame_puntuales, textvariable=self.posicion_carga, width=10).grid(row=0, column=1, padx=5, pady=5)
@@ -255,10 +281,11 @@ class SimuladorVigaMejorado:
     
         ttk.Button(frame_puntuales, text="➕ Agregar", command=self.agregar_carga_puntual).grid(row=1, column=0, columnspan=2, padx=5, pady=5)
         ttk.Button(frame_puntuales, text="🗑️ Limpiar", command=self.limpiar_cargas_puntuales).grid(row=1, column=2, columnspan=2, padx=5, pady=5)
+
+        return frame_puntuales
     
     def crear_seccion_cargas_distribuidas(self, parent):
         frame_distribuidas = ttk.LabelFrame(parent, text="📅 Cargas Distribuidas")
-        frame_distribuidas.pack(fill="x", pady=10, padx=10)
     
         ttk.Label(frame_distribuidas, text="Inicio (m):").grid(row=0, column=0, padx=5, pady=5)
         ttk.Entry(frame_distribuidas, textvariable=self.inicio_dist, width=10).grid(row=0, column=1, padx=5, pady=5)
@@ -271,10 +298,11 @@ class SimuladorVigaMejorado:
     
         ttk.Button(frame_distribuidas, text="➕ Agregar", command=self.agregar_carga_distribuida).grid(row=2, column=0, columnspan=2, padx=5, pady=5)
         ttk.Button(frame_distribuidas, text="🗑️ Limpiar", command=self.limpiar_cargas_distribuidas).grid(row=2, column=2, columnspan=2, padx=5, pady=5)
+
+        return frame_distribuidas
     
     def crear_seccion_botones_calculo(self, parent):
         frame_botones = ttk.Frame(parent)
-        frame_botones.pack(fill="x", pady=10, padx=10)
         
         # Los estilos de botones se configuran en apply_theme
         
@@ -291,10 +319,13 @@ class SimuladorVigaMejorado:
         btn_diagramas.config(command=lambda b=btn_diagramas: self.on_button_click(b, self.mostrar_diagramas))
         btn_diagramas.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
 
-        ttk.Entry(frame_botones, textvariable=self.posicion_torsor, width=8).grid(row=0, column=3, padx=5, pady=5)
-        btn_par_punto = ttk.Button(frame_botones, text="🌀 Par en Punto", style="Action.TButton")
+        par_frame = ttk.Frame(frame_botones)
+        ttk.Label(par_frame, text="x (m):").pack(side="left", padx=(0, 2))
+        ttk.Entry(par_frame, textvariable=self.posicion_torsor, width=6).pack(side="left")
+        btn_par_punto = ttk.Button(par_frame, text="🌀 Par en Punto", style="Action.TButton")
+        btn_par_punto.pack(side="left", padx=2)
         btn_par_punto.config(command=lambda b=btn_par_punto: self.on_button_click(b, lambda: self.calcular_par_torsor_en_punto(self.posicion_torsor.get())))
-        btn_par_punto.grid(row=0, column=4, padx=5, pady=5, sticky="ew")
+        par_frame.grid(row=0, column=3, columnspan=2, padx=5, pady=5, sticky="ew")
         
         # Segunda fila de botones
         btn_limpiar = ttk.Button(frame_botones, text="🗑️ Limpiar Todo", style="Warning.TButton")
@@ -321,6 +352,8 @@ class SimuladorVigaMejorado:
         # Configurar el grid para que se expanda correctamente
         for i in range(5):
             frame_botones.columnconfigure(i, weight=1)
+
+        return frame_botones
     
     def mostrar_mensaje_inicial(self):
         mensaje = "Bienvenido al Simulador de Viga Mecánica. Use los controles para configurar la viga y las cargas."
@@ -673,7 +706,7 @@ class SimuladorVigaMejorado:
         h_final = self.altura_final.get()
 
         # Configuración del estilo
-        plt.style.use('default')  # Cambiado de 'seaborn-whitegrid' a 'default'
+        plt.style.use('ggplot')  # Estilo más atractivo para las gráficas
         ax.set_facecolor('#f0f0f0')
         fig.patch.set_facecolor('#ffffff')
 
@@ -699,15 +732,14 @@ class SimuladorVigaMejorado:
             ax.arrow(pos, h+0.5, 0, -0.4, head_width=L*0.015, head_length=0.05, fc='#d62728', ec='#d62728', width=0.002, zorder=15)
             ax.text(pos, h+0.6, f'{mag}N', ha='center', va='bottom', fontsize=10, color='#d62728', fontweight='bold')
 
-        # Dibujar cargas distribuidas
+        # Dibujar cargas distribuidas como carga puntual equivalente
         for inicio, fin, mag in self.cargas_distribuidas:
-            x_dist = np.linspace(inicio, fin, 50)
-            y_dist = h_inicial + (h_final - h_inicial) * x_dist / L + 0.4
-            ax.plot(x_dist, y_dist, '#ff7f0e', linewidth=2, zorder=15)
-            for x_pos in x_dist[::5]:
-                h = h_inicial + (h_final - h_inicial) * x_pos / L
-                ax.arrow(x_pos, h+0.4, 0, -0.3, head_width=L*0.008, head_length=0.02, fc='#ff7f0e', ec='#ff7f0e', width=0.001, zorder=15)
-            ax.text((inicio+fin)/2, h+0.5, f'{mag}N/m', ha='center', va='bottom', fontsize=10, color='#ff7f0e', fontweight='bold')
+            h_mid = h_inicial + (h_final - h_inicial) * ((inicio+fin)/2) / L
+            F_eq = mag * (fin - inicio)
+            ax.arrow((inicio+fin)/2, h_mid+0.8, 0, -0.6, head_width=L*0.015, head_length=0.05,
+                     fc='#ff7f0e', ec='#ff7f0e', width=0.002, zorder=15)
+            ax.text((inicio+fin)/2, h_mid+0.85, f'{F_eq:.1f}N', ha='center', va='bottom',
+                    fontsize=10, color='#ff7f0e', fontweight='bold')
 
         # Dibujar centro de masa si está disponible
         if x_cm is not None:
@@ -724,6 +756,7 @@ class SimuladorVigaMejorado:
         ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=3, fontsize=10, frameon=True, facecolor='white', edgecolor='gray')
 
 
+        plt.tight_layout()
         canvas = FigureCanvasTkAgg(fig, master=self.frame_grafico)
         canvas.draw()
         canvas.get_tk_widget().pack(fill="both", expand=True)
@@ -759,19 +792,9 @@ class SimuladorVigaMejorado:
             ax.quiver(pos, 0, 0.5, 0, 0, -0.4, color="red", arrow_length_ratio=0.3)
 
         for inicio, fin, mag in self.cargas_distribuidas:
-            x_dist = np.linspace(inicio, fin, 10)
-            for x_pos in x_dist:
-                ax.quiver(
-                    x_pos,
-                    0,
-                    0.4,
-                    0,
-                    0,
-                    -0.3,
-                    color="orange",
-                    arrow_length_ratio=0.3,
-                    alpha=0.7,
-                )
+            F_eq = mag * (fin - inicio)
+            ax.quiver((inicio+fin)/2, 0, 0.8, 0, 0, -0.6, color="orange", arrow_length_ratio=0.3)
+            ax.text((inicio+fin)/2, 0, 0.85, f"{F_eq:.1f}N", ha="center", va="bottom", fontsize=8, color="orange")
 
         ax.set_xlim(-L * 0.15, L * 1.15)
         ax.set_ylim(-0.8, 0.8)
@@ -818,12 +841,11 @@ class SimuladorVigaMejorado:
             ax.quiver(pos, 0, 0.5, 0, 0, -0.4, color='red', arrow_length_ratio=0.3)
             ax.text(pos, 0, 0.6, f'{mag}N', ha='center', va='bottom', fontsize=8, color='red')
 
-        # Dibujar cargas distribuidas
+        # Dibujar cargas distribuidas como carga puntual equivalente
         for inicio, fin, mag in self.cargas_distribuidas:
-            x_dist = np.linspace(inicio, fin, 10)
-            for x_pos in x_dist:
-                ax.quiver(x_pos, 0, 0.4, 0, 0, -0.3, color='orange', arrow_length_ratio=0.3, alpha=0.7)
-            ax.text((inicio+fin)/2, 0, 0.5, f'{mag}N/m', ha='center', va='bottom', fontsize=8, color='orange')
+            F_eq = mag * (fin - inicio)
+            ax.quiver((inicio+fin)/2, 0, 0.8, 0, 0, -0.6, color='orange', arrow_length_ratio=0.3)
+            ax.text((inicio+fin)/2, 0, 0.85, f'{F_eq:.1f}N', ha='center', va='bottom', fontsize=8, color='orange')
 
         # Dibujar centro de masa si está disponible
         if x_cm is not None:
@@ -880,12 +902,10 @@ class SimuladorVigaMejorado:
             ax.text(pos, 0.6, f'{mag}N', ha='center', va='bottom', fontsize=8, color='red')
             
         for inicio, fin, mag in self.cargas_distribuidas:
-            x_dist = np.linspace(inicio, fin, 50)
-            y_dist = np.full_like(x_dist, 0.4)
-            ax.plot(x_dist, y_dist, 'r-', linewidth=2)
-            for x_pos in x_dist[::5]:
-                ax.arrow(x_pos, 0.4, 0, -0.3, head_width=L*0.008, head_length=0.02, fc='red', ec='red', width=0.001)
-            ax.text((inicio+fin)/2, 0.5, f'{mag}N/m', ha='center', va='bottom', fontsize=8, color='red')
+            F_eq = mag * (fin - inicio)
+            ax.arrow((inicio+fin)/2, 0.75, 0, -0.5, head_width=L*0.015, head_length=0.03,
+                     fc='red', ec='red', width=0.002)
+            ax.text((inicio+fin)/2, 0.8, f'{F_eq:.1f}N', ha='center', va='bottom', fontsize=8, color='red')
             
         # Dibujar el par torsor
         par_torsor = self.par_torsor.get()
@@ -946,12 +966,9 @@ class SimuladorVigaMejorado:
             ax1.text(pos, 0.35, f'{mag}N', ha='center', va='bottom', fontsize=7, color='red')
         
         for inicio, fin, mag in self.cargas_distribuidas:
-            x_dist = np.linspace(inicio, fin, 50)
-            y_dist = np.full_like(x_dist, 0.2)
-            ax1.plot(x_dist, y_dist, 'r-', linewidth=2)
-            for x_pos in x_dist[::5]:
-                ax1.arrow(x_pos, 0.2, 0, -0.15, head_width=L*0.008, head_length=0.02, fc='red', ec='red', width=0.001)
-            ax1.text((inicio+fin)/2, 0.25, f'{mag}N/m', ha='center', va='bottom', fontsize=7, color='red')
+            F_eq = mag * (fin - inicio)
+            ax1.arrow((inicio+fin)/2, 0.55, 0, -0.35, head_width=L*0.015, head_length=0.03, fc='red', ec='red', width=0.002)
+            ax1.text((inicio+fin)/2, 0.6, f'{F_eq:.1f}N', ha='center', va='bottom', fontsize=7, color='red')
         
         ax1.set_xlim(-L*0.1, L*1.1)
         ax1.set_ylim(-0.6, 0.7)
@@ -1090,11 +1107,14 @@ class SimuladorVigaMejorado:
 • Longitud entre 5 y 50 m
 • Apoyos A y B (Fijo/Móvil) y apoyo C opcional con posición
 • Altura inicial y final para vigas inclinadas
-• Par torsor y modo 3D opcionales
+• Par torsor opcional y modo 3D
 
 🔹 CARGAS
 • Puntuales: posición y magnitud
-• Distribuidas: inicio, fin y magnitud (N/m)
+• Distribuidas: inicio y fin (dos puntos) y magnitud (N/m)
+
+🔹 PAR EN PUNTO
+• Escribe la posición x y presiona "Par en Punto" para conocer el momento torsor interno
 
 🔹 QUÉ PUEDE HACER
 • 🧮 Calcular Reacciones
@@ -1109,7 +1129,8 @@ class SimuladorVigaMejorado:
 1. Configure la viga y apoyos
 2. Agregue las cargas necesarias
 3. Presione "Calcular Reacciones"
-4. Revise resultados y diagramas en la pestaña de Resultados
+4. (Opcional) use "Par en Punto" para consultar el momento torsor
+5. Revise resultados y diagramas en la pestaña de Resultados
         """
         
         ventana_ayuda = tk.Toplevel(self.root)
@@ -1327,8 +1348,8 @@ class SimuladorVigaMejorado:
                 cy = y + alto/3
             elif tipo == "Círculo":
                 area = np.pi * (ancho/2)**2
-                cx = x + ancho/2
-                cy = y + ancho/2
+                cx = x
+                cy = y
             else:
                 continue  # Saltar formas no reconocidas
             
@@ -1356,7 +1377,7 @@ class SimuladorVigaMejorado:
             elif tipo == "Triángulo":
                 ax.add_patch(plt.Polygon([(x, y), (x+ancho, y), (x, y+alto)], fill=False))
             elif tipo == "Círculo":
-                ax.add_patch(plt.Circle((x+ancho/2, y+ancho/2), ancho/2, fill=False))
+                ax.add_patch(plt.Circle((x, y), ancho/2, fill=False))
         
         ax.plot(cg_x, cg_y, 'ro', markersize=10)
         ax.text(cg_x, cg_y, f'CG ({cg_x:.2f}, {cg_y:.2f})', ha='right', va='bottom')
@@ -1615,8 +1636,12 @@ class SimuladorVigaMejorado:
         self.root.mainloop()
 
 def main():
-    root = tk.Tk()
-    app = SimuladorVigaMejorado(root)
+    if BOOTSTRAP_AVAILABLE:
+        root = ttkb.Window(themename="flatly")
+        app = SimuladorVigaMejorado(root, bootstrap=True)
+    else:
+        root = tk.Tk()
+        app = SimuladorVigaMejorado(root)
     app.run()
 
 if __name__ == "__main__":
