@@ -6,6 +6,7 @@
   <title>Simulador de Viga</title>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3/dist/tailwind.min.css" rel="stylesheet" />
 </head>
@@ -13,28 +14,217 @@
   <div id="root" class="p-4"></div>
 
   <script type="text/babel">
-    const { useState } = React;
+    const { useState, useEffect } = React;
+
+    function PointLoadInput({ load, index, onChange, onRemove }) {
+      return (
+        <div className="flex items-center space-x-2 mb-2">
+          <input
+            type="number"
+            value={load.pos}
+            onChange={e => onChange(index, 'pos', +e.target.value)}
+            placeholder="Posición"
+            className="border p-1 w-24"
+          />
+          <input
+            type="number"
+            value={load.mag}
+            onChange={e => onChange(index, 'mag', +e.target.value)}
+            placeholder="Magnitud"
+            className="border p-1 w-24"
+          />
+          <button onClick={() => onRemove(index)} className="text-red-500">✕</button>
+        </div>
+      );
+    }
+
+    function DistLoadInput({ load, index, onChange, onRemove }) {
+      return (
+        <div className="flex items-center space-x-2 mb-2">
+          <input
+            type="number"
+            value={load.inicio}
+            onChange={e => onChange(index, 'inicio', +e.target.value)}
+            placeholder="Inicio"
+            className="border p-1 w-20"
+          />
+          <input
+            type="number"
+            value={load.fin}
+            onChange={e => onChange(index, 'fin', +e.target.value)}
+            placeholder="Fin"
+            className="border p-1 w-20"
+          />
+          <input
+            type="number"
+            value={load.mag}
+            onChange={e => onChange(index, 'mag', +e.target.value)}
+            placeholder="Magnitud"
+            className="border p-1 w-20"
+          />
+          <button onClick={() => onRemove(index)} className="text-red-500">✕</button>
+        </div>
+      );
+    }
 
     function App() {
       const [longitud, setLongitud] = useState(10);
+      const [cargasPuntuales, setCargasPuntuales] = useState([]);
+      const [cargasDistribuidas, setCargasDistribuidas] = useState([]);
+      const [tipoApoyoC, setTipoApoyoC] = useState('Ninguno');
+      const [posicionApoyoC, setPosicionApoyoC] = useState(0);
+      const [parTorsor, setParTorsor] = useState(0);
+      const [dark, setDark] = useState(false);
       const [resultado, setResultado] = useState(null);
 
+      useEffect(() => {
+        document.body.className = dark
+          ? 'bg-gray-800 text-white'
+          : 'bg-gray-100 text-gray-900';
+      }, [dark]);
+
+      const addPointLoad = () =>
+        setCargasPuntuales([...cargasPuntuales, { pos: 0, mag: 0 }]);
+      const updatePointLoad = (i, field, value) => {
+        const copy = [...cargasPuntuales];
+        copy[i][field] = value;
+        setCargasPuntuales(copy);
+      };
+      const removePointLoad = i => {
+        setCargasPuntuales(cargasPuntuales.filter((_, idx) => idx !== i));
+      };
+
+      const addDistLoad = () =>
+        setCargasDistribuidas([...cargasDistribuidas, { inicio: 0, fin: 0, mag: 0 }]);
+      const updateDistLoad = (i, field, value) => {
+        const copy = [...cargasDistribuidas];
+        copy[i][field] = value;
+        setCargasDistribuidas(copy);
+      };
+      const removeDistLoad = i => {
+        setCargasDistribuidas(cargasDistribuidas.filter((_, idx) => idx !== i));
+      };
+
       async function calcular() {
-        const data = { longitud, cargas_puntuales: [], cargas_distribuidas: [] };
+        const data = {
+          longitud,
+          cargas_puntuales: cargasPuntuales,
+          cargas_distribuidas: cargasDistribuidas,
+          tipo_apoyo_c: tipoApoyoC,
+          posicion_apoyo_c: posicionApoyoC,
+          par_torsor: parTorsor,
+        };
         const res = await axios.post('/calcular_reacciones', data);
         setResultado(res.data);
       }
 
       return (
-        <div className="max-w-xl mx-auto">
-          <h1 className="text-2xl font-bold mb-4">Simulador de Viga</h1>
-          <label className="block mb-2">
-            Longitud (m)
-            <input type="number" value={longitud} onChange={e => setLongitud(+e.target.value)} className="border p-1 ml-2" />
-          </label>
-          <button onClick={calcular} className="bg-blue-500 text-white px-4 py-2 rounded">Calcular Reacciones</button>
+        <div className="max-w-3xl mx-auto space-y-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold">Simulador de Viga</h1>
+            <label className="flex items-center space-x-2">
+              <span>Modo oscuro</span>
+              <input type="checkbox" checked={dark} onChange={() => setDark(!dark)} />
+            </label>
+          </div>
+
+          <div>
+            <label className="font-semibold">Longitud: {longitud} m</label>
+            <input
+              type="range"
+              min="1"
+              max="20"
+              value={longitud}
+              onChange={e => setLongitud(+e.target.value)}
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <h2 className="font-semibold mb-2">Cargas Puntuales</h2>
+            {cargasPuntuales.map((load, i) => (
+              <PointLoadInput
+                key={i}
+                load={load}
+                index={i}
+                onChange={updatePointLoad}
+                onRemove={removePointLoad}
+              />
+            ))}
+            <button
+              onClick={addPointLoad}
+              className="mt-2 bg-blue-500 text-white px-2 py-1 rounded"
+            >
+              Añadir carga puntual
+            </button>
+          </div>
+
+          <div>
+            <h2 className="font-semibold mb-2">Cargas Distribuidas</h2>
+            {cargasDistribuidas.map((load, i) => (
+              <DistLoadInput
+                key={i}
+                load={load}
+                index={i}
+                onChange={updateDistLoad}
+                onRemove={removeDistLoad}
+              />
+            ))}
+            <button
+              onClick={addDistLoad}
+              className="mt-2 bg-blue-500 text-white px-2 py-1 rounded"
+            >
+              Añadir carga distribuida
+            </button>
+          </div>
+
+          <div>
+            <label className="mr-2">Apoyo C</label>
+            <select
+              value={tipoApoyoC}
+              onChange={e => setTipoApoyoC(e.target.value)}
+              className="border p-1"
+            >
+              <option value="Ninguno">Ninguno</option>
+              <option value="Fijo">Fijo</option>
+              <option value="Movil">Móvil</option>
+            </select>
+            {tipoApoyoC !== 'Ninguno' && (
+              <div className="mt-2">
+                <label>Posición: {posicionApoyoC} m</label>
+                <input
+                  type="range"
+                  min="0"
+                  max={longitud}
+                  value={posicionApoyoC}
+                  onChange={e => setPosicionApoyoC(+e.target.value)}
+                  className="w-full"
+                />
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block">Par torsor (N·m)</label>
+            <input
+              type="number"
+              value={parTorsor}
+              onChange={e => setParTorsor(+e.target.value)}
+              className="border p-1 mt-1"
+            />
+          </div>
+
+          <button
+            onClick={calcular}
+            className="bg-green-600 text-white px-4 py-2 rounded"
+          >
+            Calcular Reacciones
+          </button>
+
           {resultado && (
-            <pre className="mt-4 bg-white p-2 border rounded">{JSON.stringify(resultado, null, 2)}</pre>
+            <pre className="mt-4 bg-white p-2 border rounded text-sm overflow-auto">
+              {JSON.stringify(resultado, null, 2)}
+            </pre>
           )}
         </div>
       );
