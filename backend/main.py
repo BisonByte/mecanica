@@ -3,6 +3,8 @@
 from typing import List
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from pydantic import BaseModel
 
 from . import beam
@@ -85,3 +87,8 @@ def api_par_en_punto(data: ParRequest):
         data.par_torsor,
     )
     return {"torsor": M}
+
+
+# Serve the static frontend directly with FastAPI
+frontend_dir = Path(__file__).resolve().parents[1] / "frontend"
+app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")

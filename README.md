@@ -99,15 +99,15 @@ Esta función permite obtener el momento torsor (torque interno) en una posició
 Solo escribe la coordenada en metros en el cuadro **Par en Punto** y presiona el botón del mismo nombre.
 El valor se mostrará en el registro y en los diagramas.
 
-### 10. Uso
+### 10. Instalación rápida
 
 1. Clona este repositorio o descarga el código.
-2. Asegúrate de tener **Python 3**, `tkinter`, `matplotlib` y `numpy` instalados.
-   Para un aspecto moderno instala opcionalmente `ttkbootstrap` con `pip install ttkbootstrap`.
-3. Ejecuta `python3 simulador_viga_mejorado.py`.
-4. Configura la viga y agrega las cargas necesarias.
-5. Usa **Par en Punto** para consultar el momento torsor si lo necesitas.
-6. Revisa los resultados en la pestaña de **Resultados**.
+2. Instala las dependencias con `pip install -r requirements.txt`.
+   (para la versión de escritorio se requiere tener `tkinter` disponible).
+3. Ejecuta `python3 simulador_viga_mejorado.py` si deseas usar la aplicación de escritorio.
+4. Para la versión web, ejecuta `uvicorn backend.main:app --reload` y abre `http://localhost:8000`.
+5. Configura la viga y agrega las cargas necesarias desde la interfaz que prefieras.
+6. Usa **Par en Punto** para consultar el momento torsor si lo necesitas y revisa los resultados.
 
 ## Nueva versión web
 
@@ -121,13 +121,13 @@ Se añadió una estructura básica para migrar el simulador a una aplicación we
 Para ejecutar el backend de pruebas:
 
 ```bash
-pip install fastapi uvicorn numpy
+pip install -r requirements.txt
 uvicorn backend.main:app --reload
 ```
 
-Luego abre `frontend/index.html` en tu navegador y realiza peticiones al backend.
+Abre `http://localhost:8000` en tu navegador para cargar la interfaz web.
 
-También se incluye un `Dockerfile` para levantar la aplicación de manera sencilla:
+También se incluye un `Dockerfile` para levantar toda la aplicación de manera sencilla:
 
 ```bash
 docker build -t simulador-viga .
