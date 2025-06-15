@@ -1,135 +1,112 @@
+# Simulador de Viga Mecánica
 
-# Cómo está hecho el simulador de viga mecánica
+Este repositorio contiene todas las piezas necesarias para analizar de manera interactiva el comportamiento de una viga simplemente apoyada. Incluye una **aplicación de escritorio** escrita en Python con Tkinter y una versión **web experimental** basada en FastAPI y React.
 
-Este repositorio contiene un programa escrito en **Python** para analizar y visualizar el comportamiento de una viga mecánica. Utiliza **Tkinter** para la interfaz gráfica y, si está disponible, el paquete **`ttkbootstrap`** para darle un aspecto mucho más moderno. Las gráficas se generan con `matplotlib`, los cálculos con `numpy` y la vista en 3D con `mpl_toolkits`.
-
-### 1. Estructura del código
-
-El programa está estructurado en una **clase principal llamada `SimuladorVigaMejorado`**, donde se encuentra todo lo relacionado con el simulador. Dentro de esta clase se inicializa la ventana y se organizan todas las pestañas y botones.
+La idea principal es que puedas definir apoyos, aplicar cargas, obtener las reacciones y generar los diagramas de cortante y momento sin tener que realizar los cálculos manualmente. Además, cuenta con herramientas para visualizar la viga en 3D y para estudiar la sección transversal.
 
 ---
 
-### 2. Interfaz gráfica (ventana del simulador)
+## Tecnologías utilizadas
 
-La ventana está dividida en **tres pestañas principales**:
-
-* **Configuración y cargas**: aquí se puede cambiar la longitud de la viga, los tipos de apoyos (fijo, móvil o ninguno), y agregar cargas (puntuales o distribuidas).
-* **Sección y formas**: permite calcular propiedades geométricas como el centro de gravedad y momento de inercia. También se pueden dibujar formas irregulares (triángulos, círculos y rectángulos) para analizar cómo afectan.
-* **Resultados**: en esta pestaña se muestran los gráficos, los resultados de las reacciones, los diagramas de momento y cortante, y también la animación 3D si se activa.
-
----
-
-### 3. Variables y entradas del usuario
-
-El programa usa **variables `tk.DoubleVar` y `tk.StringVar`** para guardar valores como la longitud de la viga, magnitud de las cargas, tipo de apoyo, altura inicial/final, etc. Estas variables están conectadas directamente a las entradas del usuario (los campos de texto o sliders que se ven en pantalla).
+- **Python 3** como lenguaje principal.
+- **Tkinter** para la interfaz de la versión de escritorio. De forma opcional se usa `ttkbootstrap` para darle un estilo moderno.
+- **NumPy** para los cálculos numéricos.
+- **Matplotlib** para las gráficas 2D y la visualización 3D.
+- **FastAPI** como backend para la versión web.
+- **React** + **Tailwind** para la interfaz web (archivo `frontend/index.html`).
 
 ---
 
-### 4. Funcionalidades principales
-
-#### ✅ Cargas
-
-* Se pueden agregar **cargas puntuales** (con posición y magnitud).
-* También se pueden agregar **cargas distribuidas** (entre dos puntos, con una intensidad constante).
-* Soporta múltiples cargas a la vez.
-
-#### ✅ Apoyos
-
-* Tiene **dos apoyos principales (A y B)** y un apoyo opcional (C), que puede colocarse en cualquier parte.
-* Cada apoyo puede ser **fijo, móvil o ninguno**, y esto afecta los cálculos de equilibrio.
-
-#### ✅ Cálculos que realiza
-
-* **Reacciones en los apoyos**, considerando todas las cargas y el par torsor.
-* **Centro de masa** de todas las cargas.
-* **Diagramas de cortante, momento flector y torsión**.
-* **Par torsor (torque) en cualquier punto** y fuerza equivalente de cargas distribuidas.
-* **Centro de masa en 3D** y cálculo de fuerza a partir de un par torsor.
-* También calcula propiedades como el **área total**, **centro de gravedad de la sección transversal**, y **momento de inercia**.
-
----
-
-### 5. Representaciones gráficas
-
-El simulador puede dibujar:
-
-* La **viga con sus cargas** y sus **reacciones**.
-* Las **cargas distribuidas** también se muestran con su **vector equivalente** y magnitud en el diagrama de cuerpo libre.
-* **Diagramas de fuerza cortante y momento flector**.
-* **Vista 3D rotativa** de la viga con cargas y apoyos.
-* **Vista de la sección transversal** y el centro de gravedad de figuras combinadas.
-
-Usa `matplotlib` para todos estos gráficos y los incrusta dentro de la ventana con `FigureCanvasTkAgg`.
-
----
-
-### 6. Extras interesantes
-
-* Tiene un **modo 3D** que rota la viga automáticamente.
-* Cuenta con un **modo oscuro** opcional para la interfaz.
-* Tiene una **opción de ayuda** con una guía escrita dentro del programa.
-* También incluye **mensajes de error y advertencias** si el usuario pone mal los datos.
-* Se pueden **ampliar las gráficas** y ver todo más grande en otra ventana.
-* Incluye funciones para el **centro de masa en 3D**.
-
----
-
-### 7. Estilo visual
-
-El programa puede aprovechar **`ttkbootstrap`** para mostrar un aspecto totalmente renovado (botones planos, colores actuales y fuentes más limpias). Si no se cuenta con esa biblioteca, se usa el tema `clam` de `tkinter` como alternativa.
-El botón de tema permite alternar entre un estilo claro (*flatly*) y uno oscuro (*darkly*).
-
----
-
-### 8. Herramientas de la interfaz
-
-* **🧮 Calcular Reacciones**: resuelve las fuerzas de apoyo de la viga.
-* **📍 Calcular Centro de Masa**: muestra el punto donde actúa la resultante de las cargas.
-* **📊 Mostrar Diagramas**: genera los diagramas de cortante, momento y torsión.
-* **🌀 Par en Punto**: introduce una posición y obtén el torque interno en ese lugar.
-* **🔍 Ampliar Gráfica**: abre las gráficas en una ventana aparte.
-* **🎞️ Animar 3D**: activa una rotación automática de la vista 3D.
-* **❓ Ayuda**: despliega un resumen de uso.
-* **🗑️ Limpiar Todo**: borra todas las cargas y reinicia la configuración.
-* **🌓/🌞 Modo Oscuro/Claro**: alterna el tema visual de la aplicación.
-
-### 9. Par torsor en un punto
-
-Esta función permite obtener el momento torsor (torque interno) en una posición específica de la viga.
-Solo escribe la coordenada en metros en el cuadro **Par en Punto** y presiona el botón del mismo nombre.
-El valor se mostrará en el registro y en los diagramas.
-
-### 10. Uso
-
-1. Clona este repositorio o descarga el código.
-2. Asegúrate de tener **Python 3**, `tkinter`, `matplotlib` y `numpy` instalados.
-   Para un aspecto moderno instala opcionalmente `ttkbootstrap` con `pip install ttkbootstrap`.
-3. Ejecuta `python3 simulador_viga_mejorado.py`.
-4. Configura la viga y agrega las cargas necesarias.
-5. Usa **Par en Punto** para consultar el momento torsor si lo necesitas.
-6. Revisa los resultados en la pestaña de **Resultados**.
-
-## Nueva versión web
-
-Se añadió una estructura básica para migrar el simulador a una aplicación web basada en **FastAPI** y **React**.
+## Estructura del proyecto
 
 ```
-/backend  -> API en Python (FastAPI)
-/frontend -> Interfaz React + Tailwind
+/                       Código de la aplicación de escritorio
+/backend                API REST con FastAPI (cálculos de viga)
+/frontend               Pequeña interfaz React de prueba
+/Dockerfile             Imagen para ejecutar el backend
+simulador_viga_mejorado.py   Script principal del simulador GUI
 ```
 
-Para ejecutar el backend de pruebas:
+### Aplicación de escritorio
 
-```bash
-pip install fastapi uvicorn numpy
-uvicorn backend.main:app --reload
-```
+El archivo `simulador_viga_mejorado.py` define la clase `SimuladorVigaMejorado`. Esta clase crea la ventana principal, gestiona las pestañas y conecta todos los botones con las funciones de cálculo. Algunas características importantes son:
 
-Luego abre `frontend/index.html` en tu navegador y realiza peticiones al backend.
+- Definición de apoyos fijos, móviles u opcionales.
+- Cargas puntuales y distribuidas (varias simultáneamente).
+- Cálculo automático de reacciones y centro de masa.
+- Generación de diagramas de cortante, momento flector y torsión.
+- Vista 3D animada de la viga y representación de la sección transversal.
+- Modo claro y oscuro a través de `ttkbootstrap`.
 
-También se incluye un `Dockerfile` para levantar la aplicación de manera sencilla:
+### Backend y frontend web
+
+El directorio `backend` expone las funciones de cálculo mediante FastAPI. Los puntos principales son:
+
+- `/calcular_reacciones` – calcula las reacciones en los apoyos.
+- `/calcular_centro_masa` – devuelve la posición de la resultante de las cargas.
+- `/generar_diagramas` – genera los datos de cortante y momento.
+- `/par_en_punto` – obtiene el par torsor en un punto específico.
+
+En `frontend/index.html` se encuentra una interfaz React muy sencilla que hace peticiones al backend usando Axios.
+
+### Docker
+
+El `Dockerfile` permite ejecutar el backend de manera aislada. Copia los archivos necesarios, instala las dependencias mínimas y lanza FastAPI con Uvicorn.
+
+---
+
+## Cómo utilizar el simulador
+
+### Ejecutar la versión de escritorio
+
+1. Clona este repositorio o descarga los archivos.
+2. Instala las dependencias principales:
+   ```bash
+   pip install numpy matplotlib
+   # opcional para aspecto moderno
+   pip install ttkbootstrap
+   ```
+3. Ejecuta el script principal:
+   ```bash
+   python3 simulador_viga_mejorado.py
+   ```
+4. Configura la viga, añade las cargas deseadas y pulsa **Calcular Reacciones**.
+5. Revisa los diagramas en la pestaña **Resultados** y utiliza **Par en Punto** si necesitas el torque interno en una posición.
+
+### Ejecutar la versión web
+
+1. Instala `fastapi` y `uvicorn`.
+   ```bash
+   pip install fastapi uvicorn numpy
+   uvicorn backend.main:app --reload
+   ```
+2. Abre `frontend/index.html` en tu navegador y utiliza la interfaz para enviar datos al backend.
+
+### Usar la imagen Docker
 
 ```bash
 docker build -t simulador-viga .
 docker run -p 8000:8000 simulador-viga
 ```
+
+Con esto tendrás el backend corriendo en `http://localhost:8000` y podrás utilizar la interfaz React o cualquier cliente que realice peticiones HTTP.
+
+---
+
+## Funcionamiento interno
+
+Los cálculos principales se encuentran en `backend/beam.py`. Este módulo implementa funciones para:
+
+- Obtener las reacciones (RA, RB y opcional RC) de la viga.
+- Calcular el centro de masa resultante.
+- Generar los arreglos de cortante y momento a lo largo de la viga.
+- Evaluar el par torsor en un punto dado.
+
+La interfaz gráfica usa estas funciones y presenta los resultados de manera interactiva. Las entradas del usuario se almacenan en variables `tk.DoubleVar` y `tk.StringVar`, lo que permite actualizar las gráficas en tiempo real.
+
+---
+
+## Contribuciones
+
+Este proyecto es una base educativa y puede ampliarse con nuevas características o mejoras en la interfaz. ¡Se agradecen los _pull requests_ y las sugerencias!
+
