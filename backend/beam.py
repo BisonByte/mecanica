@@ -171,3 +171,29 @@ def par_en_punto(
                 momento -= mag * long_total * (x - (inicio + long_total / 2))
 
     return momento
+
+
+def calcular_centro_masa_3d(
+    puntos: List[Tuple[float, float, float, float]]
+) -> Tuple[float, float, float]:
+    """Return center of mass (x, y, z) for a set of 3D points with mass."""
+    if not puntos:
+        raise ValueError("No hay puntos 3D definidos")
+
+    masa_total = sum(m for _, _, _, m in puntos)
+    if masa_total == 0:
+        raise ValueError("La masa total no puede ser cero")
+
+    x_cm = sum(x * m for x, _, _, m in puntos) / masa_total
+    y_cm = sum(y * m for _, y, _, m in puntos) / masa_total
+    z_cm = sum(z * m for _, _, z, m in puntos) / masa_total
+
+    return x_cm, y_cm, z_cm
+
+
+def fuerza_desde_torsor(torsor: float, distancia: float) -> float:
+    """Return the force equivalent to a torsor at a given distance."""
+    if distancia == 0:
+        raise ValueError("La distancia no puede ser cero")
+
+    return torsor / distancia

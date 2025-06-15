@@ -21,6 +21,14 @@ class DistLoad(BaseModel):
     mag: float
 
 
+class Punto3D(BaseModel):
+    x: float
+    y: float
+    z: float
+    m: float
+
+
+
 class BeamRequest(BaseModel):
     longitud: float
     cargas_puntuales: List[PointLoad] = []
@@ -28,6 +36,15 @@ class BeamRequest(BaseModel):
     tipo_apoyo_c: str = "Ninguno"
     posicion_apoyo_c: float = 0.0
     par_torsor: float = 0.0
+
+
+class CentroMasa3DRequest(BaseModel):
+    puntos: List[Punto3D]
+
+
+class FuerzaDesdeTorsorRequest(BaseModel):
+    torsor: float
+    distancia: float
 
 
 @app.post("/calcular_reacciones")
@@ -85,3 +102,17 @@ def api_par_en_punto(data: ParRequest):
         data.par_torsor,
     )
     return {"torsor": M}
+
+
+@app.post("/centro_masa_3d")
+def api_centro_masa_3d(data: CentroMasa3DRequest):
+    x, y, z = beam.calcular_centro_masa_3d(
+        [(p.x, p.y, p.z, p.m) for p in data.puntos]
+    )
+    return {"x_cm": x, "y_cm": y, "z_cm": z}
+
+
+@app.post("/fuerza_desde_torsor")
+def api_fuerza_desde_torsor(data: FuerzaDesdeTorsorRequest):
+    F = beam.fuerza_desde_torsor(data.torsor, data.distancia)
+    return {"fuerza": F}

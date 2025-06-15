@@ -127,6 +127,15 @@ uvicorn backend.main:app --reload
 
 Luego abre `frontend/index.html` en tu navegador y realiza peticiones al backend.
 
+### Endpoints disponibles
+
+- `/calcular_reacciones` – devuelve las reacciones en los apoyos.
+- `/calcular_centro_masa` – posición del centro de masa en 2D.
+- `/generar_diagramas` – cortante y momento a lo largo de la viga.
+- `/par_en_punto` – par torsor interno en una posición.
+- `/centro_masa_3d` – centro de masa para puntos en 3D.
+- `/fuerza_desde_torsor` – calcula la fuerza equivalente a un torsor.
+
 También se incluye un `Dockerfile` para levantar la aplicación de manera sencilla:
 
 ```bash
