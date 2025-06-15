@@ -118,14 +118,15 @@ Se añadió una estructura básica para migrar el simulador a una aplicación we
 /frontend -> Interfaz React + Tailwind
 ```
 
-Para ejecutar el backend de pruebas:
+Para ejecutar el backend de pruebas (que ya sirve la interfaz desde `/`):
 
 ```bash
 pip install fastapi uvicorn numpy
 uvicorn backend.main:app --reload
 ```
 
-Luego abre `frontend/index.html` en tu navegador y realiza peticiones al backend.
+Luego abre `http://localhost:8000` en tu navegador y realiza peticiones al backend mediante JSON.
+El backend expone rutas como `/calcular_reacciones` y `/propiedades_seccion` para los cálculos.
 
 También se incluye un `Dockerfile` para levantar la aplicación de manera sencilla:
 

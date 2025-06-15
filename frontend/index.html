@@ -18,6 +18,8 @@
     function App() {
       const [longitud, setLongitud] = useState(10);
       const [resultado, setResultado] = useState(null);
+      const [seccion, setSeccion] = useState({ b1: 20, h1: 5, b2: 5, h2: 30, b3: 15, h3: 5 });
+      const [propSeccion, setPropSeccion] = useState(null);
 
       async function calcular() {
         const data = { longitud, cargas_puntuales: [], cargas_distribuidas: [] };
@@ -25,18 +27,37 @@
         setResultado(res.data);
       }
 
+      async function calcularSeccion() {
+        const res = await axios.post('/propiedades_seccion', seccion);
+        setPropSeccion(res.data);
+      }
+
       return (
-        <div className="max-w-xl mx-auto">
-          <h1 className="text-2xl font-bold mb-4">Simulador de Viga</h1>
-          <label className="block mb-2">
-            Longitud (m)
-            <input type="number" value={longitud} onChange={e => setLongitud(+e.target.value)} className="border p-1 ml-2" />
-          </label>
-          <button onClick={calcular} className="bg-blue-500 text-white px-4 py-2 rounded">Calcular Reacciones</button>
-          {resultado && (
-            <pre className="mt-4 bg-white p-2 border rounded">{JSON.stringify(resultado, null, 2)}</pre>
-          )}
-        </div>
+          <div className="max-w-xl mx-auto">
+            <h1 className="text-2xl font-bold mb-4">Simulador de Viga</h1>
+            <label className="block mb-2">
+              Longitud (m)
+              <input type="number" value={longitud} onChange={e => setLongitud(+e.target.value)} className="border p-1 ml-2" />
+            </label>
+            <button onClick={calcular} className="bg-blue-500 text-white px-4 py-2 rounded mr-2">Calcular Reacciones</button>
+            {resultado && (
+              <pre className="mt-4 bg-white p-2 border rounded">{JSON.stringify(resultado, null, 2)}</pre>
+            )}
+
+            <h2 className="text-xl font-bold mt-6">Propiedades de Sección</h2>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {Object.keys(seccion).map(key => (
+                <label key={key} className="block">
+                  {key.toUpperCase()}
+                  <input type="number" value={seccion[key]} onChange={e => setSeccion({ ...seccion, [key]: +e.target.value })} className="border p-1 ml-2" />
+                </label>
+              ))}
+            </div>
+            <button onClick={calcularSeccion} className="bg-green-600 text-white px-4 py-2 rounded mt-2">Calcular Sección</button>
+            {propSeccion && (
+              <pre className="mt-4 bg-white p-2 border rounded">{JSON.stringify(propSeccion, null, 2)}</pre>
+            )}
+          </div>
       );
     }
 
