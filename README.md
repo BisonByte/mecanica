@@ -108,3 +108,28 @@ El valor se mostrará en el registro y en los diagramas.
 4. Configura la viga y agrega las cargas necesarias.
 5. Usa **Par en Punto** para consultar el momento torsor si lo necesitas.
 6. Revisa los resultados en la pestaña de **Resultados**.
+
+## Nueva versión web
+
+Se añadió una estructura básica para migrar el simulador a una aplicación web basada en **FastAPI** y **React**.
+
+```
+/backend  -> API en Python (FastAPI)
+/frontend -> Interfaz React + Tailwind
+```
+
+Para ejecutar el backend de pruebas:
+
+```bash
+pip install fastapi uvicorn numpy
+uvicorn backend.main:app --reload
+```
+
+Luego abre `frontend/index.html` en tu navegador y realiza peticiones al backend.
+
+También se incluye un `Dockerfile` para levantar la aplicación de manera sencilla:
+
+```bash
+docker build -t simulador-viga .
+docker run -p 8000:8000 simulador-viga
+```
