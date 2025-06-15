@@ -17,24 +17,83 @@
 
     function App() {
       const [longitud, setLongitud] = useState(10);
-      const [resultado, setResultado] = useState(null);
+      const [xPar, setXPar] = useState(0);
+      const [reacciones, setReacciones] = useState(null);
+      const [centro, setCentro] = useState(null);
+      const [diagramas, setDiagramas] = useState(null);
+      const [torsor, setTorsor] = useState(null);
 
-      async function calcular() {
-        const data = { longitud, cargas_puntuales: [], cargas_distribuidas: [] };
-        const res = await axios.post('/calcular_reacciones', data);
-        setResultado(res.data);
+      const baseData = { longitud, cargas_puntuales: [], cargas_distribuidas: [] };
+
+      async function calcularReacciones() {
+        const res = await axios.post('/calcular_reacciones', baseData);
+        setReacciones(res.data);
+      }
+
+      async function calcularCentro() {
+        const res = await axios.post('/calcular_centro_masa', baseData);
+        setCentro(res.data);
+      }
+
+      async function generarDiagramas() {
+        const res = await axios.post('/generar_diagramas', baseData);
+        setDiagramas(res.data);
+      }
+
+      async function calcularPar() {
+        const res = await axios.post('/par_en_punto', { ...baseData, x: xPar });
+        setTorsor(res.data);
       }
 
       return (
-        <div className="max-w-xl mx-auto">
-          <h1 className="text-2xl font-bold mb-4">Simulador de Viga</h1>
-          <label className="block mb-2">
+        <div className="max-w-xl mx-auto space-y-4">
+          <h1 className="text-2xl font-bold">Simulador de Viga</h1>
+          <label className="block">
             Longitud (m)
-            <input type="number" value={longitud} onChange={e => setLongitud(+e.target.value)} className="border p-1 ml-2" />
+            <input
+              type="number"
+              value={longitud}
+              onChange={e => setLongitud(+e.target.value)}
+              className="border p-1 ml-2"
+            />
           </label>
-          <button onClick={calcular} className="bg-blue-500 text-white px-4 py-2 rounded">Calcular Reacciones</button>
-          {resultado && (
-            <pre className="mt-4 bg-white p-2 border rounded">{JSON.stringify(resultado, null, 2)}</pre>
+          <div className="space-x-2">
+            <button onClick={calcularReacciones} className="bg-blue-500 text-white px-2 py-1 rounded">
+              Calcular Reacciones
+            </button>
+            <button onClick={calcularCentro} className="bg-green-500 text-white px-2 py-1 rounded">
+              Centro de Masa
+            </button>
+            <button onClick={generarDiagramas} className="bg-purple-500 text-white px-2 py-1 rounded">
+              Diagramas
+            </button>
+          </div>
+          <div>
+            <label>
+              x para Par en Punto (m)
+              <input
+                type="number"
+                value={xPar}
+                onChange={e => setXPar(+e.target.value)}
+                className="border p-1 ml-2"
+              />
+            </label>
+            <button onClick={calcularPar} className="bg-red-500 text-white px-2 py-1 rounded ml-2">
+              Par en Punto
+            </button>
+          </div>
+
+          {reacciones && (
+            <pre className="bg-white p-2 border rounded">Reacciones:\n{JSON.stringify(reacciones, null, 2)}</pre>
+          )}
+          {centro && (
+            <pre className="bg-white p-2 border rounded">Centro de Masa:\n{JSON.stringify(centro, null, 2)}</pre>
+          )}
+          {diagramas && (
+            <pre className="bg-white p-2 border rounded overflow-x-auto">Diagramas:\n{JSON.stringify(diagramas, null, 2)}</pre>
+          )}
+          {torsor && (
+            <pre className="bg-white p-2 border rounded">Par en Punto:\n{JSON.stringify(torsor, null, 2)}</pre>
           )}
         </div>
       );
