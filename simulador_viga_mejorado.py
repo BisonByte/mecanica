@@ -12,6 +12,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from matplotlib.animation import FuncAnimation
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
+import webbrowser
+import os
 
 class SimuladorVigaMejorado:
     def __init__(self, root, bootstrap=False):
@@ -1270,10 +1272,10 @@ class SimuladorVigaMejorado:
         ttk.Button(frame_formas, text="Calcular CG", command=self.calcular_cg_formas).grid(row=3, column=2, columnspan=2, pady=5)
         ttk.Button(frame_formas, text="Limpiar Lienzo", command=self.limpiar_lienzo_formas).grid(row=4, column=0, columnspan=2, pady=5)
         ttk.Button(frame_formas, text="Ampliar Lienzo", command=self.ampliar_lienzo_formas).grid(row=4, column=2, columnspan=2, pady=5)
-
-        ttk.Label(frame_formas, text="⚡ También puede hacer clic en el lienzo para agregar").grid(row=5, column=0, columnspan=4, pady=2)
+        ttk.Button(frame_formas, text="Abrir Opciones Web", command=self.abrir_opciones_figuras_html).grid(row=4, column=4, pady=5)
+        ttk.Label(frame_formas, text="⚡ También puede hacer clic en el lienzo para agregar").grid(row=5, column=0, columnspan=5, pady=2)
         self.canvas_formas = tk.Canvas(frame_formas, width=400, height=300, bg="white")
-        self.canvas_formas.grid(row=6, column=0, columnspan=4, pady=5)
+        self.canvas_formas.grid(row=6, column=0, columnspan=5, pady=5)
         self.canvas_formas.bind("<Button-1>", self.iniciar_accion_formas)
         self.canvas_formas.bind("<B1-Motion>", self.arrastrar_forma)
         self.canvas_formas.bind("<ButtonRelease-1>", self.soltar_forma)
@@ -1287,10 +1289,10 @@ class SimuladorVigaMejorado:
         self.dibujar_cuadricula(self.canvas_formas)
 
         self.coord_label = ttk.Label(frame_formas, text="x=0, y=0")
-        self.coord_label.grid(row=7, column=0, columnspan=4, pady=2)
+        self.coord_label.grid(row=7, column=0, columnspan=5, pady=2)
 
         self.cg_label = ttk.Label(frame_formas, text="CG: -")
-        self.cg_label.grid(row=8, column=0, columnspan=4, pady=2)
+        self.cg_label.grid(row=8, column=0, columnspan=5, pady=2)
 
     def agregar_forma(self):
         try:
@@ -1593,6 +1595,11 @@ class SimuladorVigaMejorado:
 
         self.coord_label_ampliado = ttk.Label(self.ventana_lienzo, text="x=0, y=0")
         self.coord_label_ampliado.pack()
+
+    def abrir_opciones_figuras_html(self):
+        """Abre la interfaz HTML para editar figuras irregulares en el navegador."""
+        ruta = os.path.join(os.path.dirname(__file__), "figuras_irregulares.html")
+        webbrowser.open(f"file://{os.path.abspath(ruta)}")
 
     def crear_seccion_resultados(self, parent):
         frame_resultados = ttk.LabelFrame(parent, text="Resultados")

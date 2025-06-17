@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Editor de Figuras Irregulares</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  canvas { border: 1px solid #ccc; cursor: crosshair; }
+  #controls { margin-bottom: 10px; }
+  label { margin-right: 5px; }
+</style>
+</head>
+<body>
+<h2>Editor de Figuras Irregulares</h2>
+<div id="controls">
+  <label>Tipo:</label>
+  <select id="shape">
+    <option value="rect">Rectángulo</option>
+    <option value="tri">Triángulo</option>
+    <option value="circ">Círculo</option>
+  </select>
+  <label>Ancho:</label>
+  <input type="number" id="width" value="50" style="width:60px">
+  <label>Alto/Radio:</label>
+  <input type="number" id="height" value="50" style="width:60px">
+  <button id="add">Agregar</button>
+</div>
+<canvas id="canvas" width="600" height="400"></canvas>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let shapes = [];
+let dragging = null;
+let offsetX = 0;
+let offsetY = 0;
+function drawShapes(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  shapes.forEach(s => {
+    ctx.beginPath();
+    if(s.type==='rect') ctx.rect(s.x, s.y, s.w, s.h);
+    if(s.type==='tri') {
+      ctx.moveTo(s.x, s.y+s.h); ctx.lineTo(s.x+s.w, s.y+s.h); ctx.lineTo(s.x, s.y); ctx.closePath();
+    }
+    if(s.type==='circ') ctx.arc(s.x, s.y, s.w/2, 0, Math.PI*2);
+    ctx.stroke();
+  });
+}
+canvas.addEventListener('mousedown', e => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  for(let i=shapes.length-1;i>=0;i--){
+    const s=shapes[i];
+    if(s.type==='rect' && x>=s.x && x<=s.x+s.w && y>=s.y && y<=s.y+s.h){
+      dragging=i; offsetX=x-s.x; offsetY=y-s.y; return; }
+    if(s.type==='tri'){
+      const b = s.y+s.h; const area = Math.abs((s.x*(b-y)+(s.x+s.w)* (y-s.y)+x*(s.y-b))/2);
+      if(area<=s.w*s.h/2){ dragging=i; offsetX=x-s.x; offsetY=y-s.y; return; }
+    }
+    if(s.type==='circ' && Math.hypot(x-s.x,y-s.y)<=s.w/2){ dragging=i; offsetX=x-s.x; offsetY=y-s.y; return; }
+  }
+});
+canvas.addEventListener('mousemove', e => {
+  if(dragging===null) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const s = shapes[dragging];
+  s.x = x - offsetX;
+  s.y = y - offsetY;
+  drawShapes();
+});
+canvas.addEventListener('mouseup', ()=>{ dragging=null; });
+document.getElementById('add').addEventListener('click', ()=>{
+  const type=document.getElementById('shape').value;
+  const w=parseFloat(document.getElementById('width').value);
+  const h=parseFloat(document.getElementById('height').value);
+  shapes.push({type,x:50,y:50,w,w,h});
+  drawShapes();
+});
+</script>
+</body>
+</html>
