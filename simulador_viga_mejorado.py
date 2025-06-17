@@ -1598,7 +1598,7 @@ class SimuladorVigaMejorado:
 
     def abrir_opciones_figuras_html(self):
         """Abre la interfaz HTML para editar figuras irregulares en el navegador."""
-        ruta = os.path.join(os.path.dirname(__file__), "figuras_irregulares.html")
+        ruta = os.path.join(os.path.dirname(__file__), "web_editor", "figuras_irregulares.html")
         webbrowser.open(f"file://{os.path.abspath(ruta)}")
 
     def crear_seccion_resultados(self, parent):
