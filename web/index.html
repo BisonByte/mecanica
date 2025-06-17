@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simulador de Viga Web</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="p-3">
+  <h1 class="text-center mb-4">Simulador de Viga Web</h1>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-4">
+        <h5>Configuración de la Viga</h5>
+      <div class="mb-2">
+        <label class="form-label">Longitud (m)</label>
+        <input type="number" id="longitud" class="form-control" value="10">
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Apoyo A</label>
+        <select id="apoyoA" class="form-select">
+          <option value="Fijo">Fijo</option>
+          <option value="Móvil">Móvil</option>
+        </select>
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Apoyo B</label>
+        <select id="apoyoB" class="form-select">
+          <option value="Móvil">Móvil</option>
+          <option value="Fijo">Fijo</option>
+        </select>
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Apoyo C</label>
+        <select id="apoyoC" class="form-select">
+          <option value="Ninguno" selected>Ninguno</option>
+          <option value="Fijo">Fijo</option>
+          <option value="Móvil">Móvil</option>
+        </select>
+        <input type="number" id="posC" class="form-control mt-1" placeholder="Posición C (m)" value="5">
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Par Torsor (N·m)</label>
+        <input type="number" id="torsor" class="form-control" value="0">
+      </div>
+      <div class="mb-2">
+        <button id="calcReacciones" class="btn btn-primary w-100">Calcular Reacciones</button>
+        <button id="calcDiagramas" class="btn btn-info w-100 mt-2">Calcular Diagramas</button>
+        <button id="limpiar" class="btn btn-secondary w-100 mt-2">Limpiar</button>
+      </div>
+      <hr>
+      <h5>Añadir Carga Puntual</h5>
+      <div class="input-group mb-2">
+        <input type="number" id="posCarga" class="form-control" placeholder="Posición (m)">
+        <input type="number" id="magCarga" class="form-control" placeholder="Magnitud (N)">
+        <button id="addCarga" class="btn btn-success">Agregar</button>
+      </div>
+      <h5>Añadir Carga Distribuida</h5>
+      <div class="input-group mb-2">
+        <input type="number" id="inicioDist" class="form-control" placeholder="Inicio (m)">
+        <input type="number" id="finDist" class="form-control" placeholder="Fin (m)">
+        <input type="number" id="magDist" class="form-control" placeholder="N/m">
+        <button id="addDist" class="btn btn-success">Agregar</button>
+      </div>
+    </div>
+    <div class="col-md-8">
+      <ul class="nav nav-tabs mb-3" id="chartTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="beam-tab" data-bs-toggle="tab" data-bs-target="#beam" type="button" role="tab">Viga</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="shear-tab" data-bs-toggle="tab" data-bs-target="#shear" type="button" role="tab">Cortante</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="moment-tab" data-bs-toggle="tab" data-bs-target="#moment" type="button" role="tab">Momento</button>
+        </li>
+      </ul>
+      <div class="tab-content">
+        <div class="tab-pane fade show active" id="beam" role="tabpanel" aria-labelledby="beam-tab">
+          <canvas id="beamChart" height="200"></canvas>
+        </div>
+        <div class="tab-pane fade" id="shear" role="tabpanel" aria-labelledby="shear-tab">
+          <canvas id="shearChart" height="200"></canvas>
+        </div>
+        <div class="tab-pane fade" id="moment" role="tabpanel" aria-labelledby="moment-tab">
+          <canvas id="momentChart" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row mt-3">
+    <div class="col">
+      <pre id="resultado" class="border p-2"></pre>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
