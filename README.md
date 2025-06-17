@@ -104,8 +104,13 @@ El valor se mostrará en el registro y en los diagramas.
 ### 10. Uso
 
 1. Clona este repositorio o descarga el código.
-2. Asegúrate de tener **Python 3**, `tkinter`, `matplotlib` y `numpy` instalados.
-   Para un aspecto moderno instala opcionalmente `ttkbootstrap` con `pip install ttkbootstrap`.
+2. Asegúrate de tener **Python 3** y las dependencias necesarias. Ejecuta:
+   ```bash
+   pip install -r requirements.txt
+   ```
+   Esto instalará `matplotlib`, `numpy` y opcionalmente `ttkbootstrap`.
+   Si alguna dependencia falta al ejecutar el programa, verás un mensaje con
+   instrucciones para instalarla.
 3. Ejecuta `python3 simulador_viga_mejorado.py`.
 4. Configura la viga y agrega las cargas necesarias.
 5. Usa **Par en Punto** para consultar el momento torsor si lo necesitas.
