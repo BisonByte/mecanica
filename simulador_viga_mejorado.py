@@ -1,4 +1,3 @@
-import sys
 import tkinter as tk
 from tkinter import ttk, messagebox
 
@@ -8,35 +7,11 @@ try:
 except ImportError:
     ttkb = None
     BOOTSTRAP_AVAILABLE = False
-def missing_dependency(dep: str):
-    """Display an error message and exit when a dependency is missing."""
-    try:
-        root = tk.Tk()
-        root.withdraw()
-        messagebox.showerror(
-            "Dependencia faltante",
-            f"No se encontró la biblioteca '{dep}'.\nInstálala ejecutando 'pip install {dep}'.",
-        )
-        root.destroy()
-    except tk.TclError:
-        # Entornos sin interfaz gráfica
-        print(
-            f"Error: No se encontró la biblioteca '{dep}'. Instálala ejecutando 'pip install {dep}'."
-        )
-    sys.exit(1)
-
-try:
-    import matplotlib.pyplot as plt
-    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-    from matplotlib.animation import FuncAnimation
-    from mpl_toolkits.mplot3d import Axes3D
-except ImportError:
-    missing_dependency("matplotlib")
-
-try:
-    import numpy as np
-except ImportError:
-    missing_dependency("numpy")
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.animation import FuncAnimation
+import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
 
 class SimuladorVigaMejorado:
     def __init__(self, root, bootstrap=False):
