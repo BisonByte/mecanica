@@ -3,7 +3,7 @@
 
 Este repositorio contiene un programa escrito en **Python** para analizar y visualizar el comportamiento de una viga mecánica. Utiliza **Tkinter** para la interfaz gráfica y, si está disponible, el paquete **`ttkbootstrap`** para darle un aspecto mucho más moderno. Las gráficas se generan con `matplotlib`, los cálculos con `numpy` y la vista en 3D con `mpl_toolkits`.
 
-También se incluye una versión web sencilla en la carpeta **web/**. Está implementada con HTML, JavaScript y Chart.js para mostrar los diagramas básicos y ahora permite calcular el par torsor en un punto.
+La versión anterior incluía una carpeta con archivos HTML y JavaScript. Se eliminó por completo para mantener solo la aplicación de escritorio basada en Python.
 
 ### 1. Estructura del código
 
@@ -110,3 +110,13 @@ El valor se mostrará en el registro y en los diagramas.
 4. Configura la viga y agrega las cargas necesarias.
 5. Usa **Par en Punto** para consultar el momento torsor si lo necesitas.
 6. Revisa los resultados en la pestaña de **Resultados**.
+
+### 11. Compilar la aplicación a `.exe`
+
+Para generar un archivo ejecutable en Windows puedes usar **PyInstaller**:
+
+1. Instala PyInstaller con `pip install pyinstaller`.
+2. Ejecuta `pyinstaller --onefile simulador_viga_mejorado.py`.
+3. El ejecutable aparecerá en la carpeta `dist/` con el nombre `simulador_viga_mejorado.exe`.
+
+En este repositorio se incluye un directorio `dist/` como lugar sugerido para colocar dicho archivo.
