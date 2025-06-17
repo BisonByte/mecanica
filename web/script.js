@@ -2,6 +2,10 @@ let cargasPuntuales = [];
 let cargasDistribuidas = [];
 let beamChart, shearChart, momentChart;
 
+// Variables para almacenar las reacciones y configuración actual
+let RA = 0, RB = 0, RC = 0;
+let L = 0, torsor = 0, tipoC = 'Ninguno', c = 0;
+
 function agregarCarga() {
   const pos = parseFloat(document.getElementById('posCarga').value);
   const mag = parseFloat(document.getElementById('magCarga').value);
@@ -19,20 +23,26 @@ function agregarDist() {
 
 document.getElementById('addCarga').onclick = () => { agregarCarga(); };
 document.getElementById('addDist').onclick = () => { agregarDist(); };
-document.getElementById('limpiar').onclick = () => { cargasPuntuales = []; cargasDistribuidas = []; actualizarGraficos([], [], []); document.getElementById('resultado').textContent=''; };
+document.getElementById('limpiar').onclick = () => {
+  cargasPuntuales = [];
+  cargasDistribuidas = [];
+  RA = RB = RC = 0;
+  actualizarGraficos([], [], []);
+  document.getElementById('resultado').textContent='';
+};
 
 document.getElementById('calcular').onclick = () => {
-  const L = parseFloat(document.getElementById('longitud').value);
-  const torsor = parseFloat(document.getElementById('torsor').value);
-  const tipoC = document.getElementById('apoyoC').value;
-  const c = parseFloat(document.getElementById('posC').value);
+  L = parseFloat(document.getElementById('longitud').value);
+  torsor = parseFloat(document.getElementById('torsor').value);
+  tipoC = document.getElementById('apoyoC').value;
+  c = parseFloat(document.getElementById('posC').value);
 
   let sumaF = 0;
   let sumaM = 0;
   cargasPuntuales.forEach(cg => { sumaF += cg.mag; sumaM += cg.mag * cg.pos; });
   cargasDistribuidas.forEach(cd => { let F = cd.mag * (cd.fin-cd.inicio); let cent = cd.inicio + (cd.fin-cd.inicio)/2; sumaF += F; sumaM += F * cent; });
 
-  let RA, RB, RC=0;
+  RA = RB = RC = 0;
   if (tipoC === 'Ninguno') {
     RB = (sumaM + torsor) / L;
     RA = sumaF - RB;
@@ -92,3 +102,29 @@ function actualizarGraficos(x, V, M){
     options:{plugins:{legend:{display:false}}, scales:{y:{beginAtZero:false}}}
   });
 }
+
+// Calcular el par torsor interno en una posición dada
+function calcularParEnPunto(){
+  const x = parseFloat(document.getElementById('puntoPar').value);
+  if(isNaN(x)) return;
+  let momento = torsor;
+  if(x >= 0) momento += RA * x;
+  if(tipoC !== 'Ninguno' && x >= c) momento += RC * (x - c);
+  if(x >= L) momento += RB * (x - L);
+  cargasPuntuales.forEach(cp => { if(x > cp.pos){ momento -= cp.mag * (x - cp.pos); } });
+  cargasDistribuidas.forEach(cd => {
+    if(x > cd.inicio){
+      if(x <= cd.fin){
+        let l = x - cd.inicio;
+        momento -= cd.mag * l * l / 2;
+      } else {
+        let lt = cd.fin - cd.inicio;
+        momento -= cd.mag * lt * (x - (cd.inicio + lt/2));
+      }
+    }
+  });
+  const texto = document.getElementById('resultado').textContent + `\nPar en x=${x.toFixed(2)} m: ${momento.toFixed(2)} N·m`;
+  document.getElementById('resultado').textContent = texto;
+}
+
+document.getElementById('calcPar').onclick = calcularParEnPunto;
