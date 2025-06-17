@@ -130,5 +130,10 @@ document.getElementById('year').textContent = new Date().getFullYear();
 window.addEventListener('load',()=>{
   const overlay=document.getElementById('welcomeOverlay');
   const startBtn=document.getElementById('startBtn');
-  if(overlay&&startBtn){ startBtn.addEventListener('click',()=>{overlay.style.display='none';}); }
+  if(overlay&&startBtn){
+    startBtn.addEventListener('click',()=>{
+      overlay.classList.add('hide');
+      setTimeout(()=>overlay.remove(),600);
+    });
+  }
 });
