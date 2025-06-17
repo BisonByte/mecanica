@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulador de Viga Mecánica</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1, h2, h3 { color: #333; }
+    pre { background: #f0f0f0; padding: 10px; overflow-x: auto; }
+    code { background: #f5f5f5; padding: 2px 4px; }
+    nav ul { list-style: none; padding: 0; }
+    nav li { display: inline-block; margin-right: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Simulador de Viga Mecánica</h1>
+  <nav>
+    <ul>
+      <li><a href="#estructura">Estructura del Código</a></li>
+      <li><a href="#interfaz">Interfaz Gráfica</a></li>
+      <li><a href="#variables">Variables y Entradas</a></li>
+      <li><a href="#funciones">Funcionalidades</a></li>
+      <li><a href="#graficos">Representaciones Gráficas</a></li>
+      <li><a href="#extras">Extras</a></li>
+      <li><a href="#estilo">Estilo Visual</a></li>
+      <li><a href="#herramientas">Herramientas</a></li>
+      <li><a href="#par">Par torsor en un punto</a></li>
+      <li><a href="#uso">Uso</a></li>
+      <li><a href="web_editor/figuras_irregulares.html">Editor Web</a></li>
+    </ul>
+  </nav>
+
+  <h2 id="estructura">1. Estructura del código</h2>
+  <p>El programa está estructurado en una <strong>clase principal llamada <code>SimuladorVigaMejorado</code></strong>, donde se inicializa la ventana y se organizan las pestañas y botones.</p>
+
+  <h2 id="interfaz">2. Interfaz gráfica (ventana del simulador)</h2>
+  <p>La ventana se divide en <strong>tres pestañas</strong>:</p>
+  <ul>
+    <li><strong>Configuración y cargas</strong>: longitud de la viga, apoyos y cargas.</li>
+    <li><strong>Sección y formas</strong>: propiedades geométricas y dibujo de figuras irregulares. Incluye un botón para abrir el <em>editor web</em> ubicado en <code>web_editor/</code>.</li>
+    <li><strong>Resultados</strong>: gráficos, reacciones y animación 3D.</li>
+  </ul>
+
+  <h2 id="variables">3. Variables y entradas del usuario</h2>
+  <p>Se emplean variables <code>tk.DoubleVar</code> y <code>tk.StringVar</code> para capturar la longitud, cargas, tipo de apoyo, etc. Están ligadas directamente a las entradas visibles en pantalla.</p>
+
+  <h2 id="funciones">4. Funcionalidades principales</h2>
+  <h3>Cargas</h3>
+  <ul>
+    <li>Cargas puntuales con posición y magnitud.</li>
+    <li>Cargas distribuidas con intensidad constante.</li>
+    <li>Soporta múltiples cargas.</li>
+  </ul>
+  <h3>Apoyos</h3>
+  <ul>
+    <li>Dos apoyos principales (A y B) y uno opcional (C).</li>
+    <li>Pueden ser fijos, móviles o ninguno.</li>
+  </ul>
+  <h3>Cálculos</h3>
+  <ul>
+    <li>Reacciones en los apoyos.</li>
+    <li>Centro de masa de todas las cargas.</li>
+    <li>Diagramas de cortante, momento flector y torsión.</li>
+    <li>Par torsor en cualquier punto.</li>
+    <li>Cálculo de centro de masa en 3D y momento de inercia.</li>
+  </ul>
+
+  <h2 id="graficos">5. Representaciones gráficas</h2>
+  <ul>
+    <li>La viga con cargas y reacciones.</li>
+    <li>Cargas distribuidas con su vector equivalente.</li>
+    <li>Diagramas de fuerza cortante y momento flector.</li>
+    <li>Vista 3D rotativa de la viga.</li>
+    <li>Vista de la sección transversal con su centro de gravedad.</li>
+  </ul>
+  <p>Se utiliza <code>matplotlib</code> para las gráficas incrustadas con <code>FigureCanvasTkAgg</code>.</p>
+
+  <h2 id="extras">6. Extras interesantes</h2>
+  <ul>
+    <li>Modo 3D con rotación automática.</li>
+    <li>Modo oscuro opcional.</li>
+    <li>Guía de ayuda integrada.</li>
+    <li>Mensajes de error y advertencias.</li>
+    <li>Posibilidad de ampliar las gráficas en otra ventana.</li>
+    <li>Funciones para calcular el centro de masa en 3D.</li>
+  </ul>
+
+  <h2 id="estilo">7. Estilo visual</h2>
+  <p>Con <code>ttkbootstrap</code> se puede lograr un aspecto moderno. Si no está disponible, se usa el tema <em>clam</em> de Tkinter. El botón de tema permite alternar entre modo claro y oscuro.</p>
+
+  <h2 id="herramientas">8. Herramientas de la interfaz</h2>
+  <ul>
+    <li>🧮 Calcular Reacciones</li>
+    <li>📍 Calcular Centro de Masa</li>
+    <li>📊 Mostrar Diagramas</li>
+    <li>🌀 Par en Punto</li>
+    <li>🔍 Ampliar Gráfica</li>
+    <li>🎞️ Animar 3D</li>
+    <li>❓ Ayuda</li>
+    <li>🗑️ Limpiar Todo</li>
+    <li>🌓/🌞 Modo Oscuro/Claro</li>
+  </ul>
+
+  <h2 id="par">9. Par torsor en un punto</h2>
+  <p>Permite obtener el momento torsor interno en una posición específica de la viga. Escribe la coordenada y presiona el botón correspondiente para ver el valor en los diagramas.</p>
+
+  <h2 id="uso">10. Uso</h2>
+  <ol>
+    <li>Clona este repositorio o descarga el código.</li>
+    <li>Asegúrate de tener <strong>Python 3</strong>, <code>tkinter</code>, <code>matplotlib</code> y <code>numpy</code> instalados. Opcionalmente instala <code>ttkbootstrap</code> con <code>pip install ttkbootstrap</code>.</li>
+    <li>Ejecuta <code>python3 simulador_viga_mejorado.py</code>.</li>
+    <li>Configura la viga y agrega las cargas necesarias.</li>
+    <li>Utiliza <em>Par en Punto</em> para consultar el momento torsor.</li>
+    <li>Revisa los resultados en la pestaña <strong>Resultados</strong>.</li>
+  </ol>
+
+  <p>Para probar el editor de figuras irregulares ejecuta <code>python3 web_editor/server.py</code> y abre <a href="web_editor/figuras_irregulares.html">figuras_irregulares.html</a> en tu navegador.</p>
+
+</body>
+</html>
