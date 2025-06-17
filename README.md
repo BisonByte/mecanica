@@ -14,7 +14,7 @@ El programa está estructurado en una **clase principal llamada `SimuladorVigaMe
 La ventana está dividida en **tres pestañas principales**:
 
 * **Configuración y cargas**: aquí se puede cambiar la longitud de la viga, los tipos de apoyos (fijo, móvil o ninguno), y agregar cargas (puntuales o distribuidas).
-* **Sección y formas**: permite calcular propiedades geométricas como el centro de gravedad y momento de inercia. También se pueden dibujar formas irregulares (triángulos, círculos y rectángulos) para analizar cómo afectan. Ahora incluye un botón **Abrir Opciones Web** que lanza un editor HTML para manipular las figuras con mayor precisión. Este editor se encuentra dentro de la carpeta `web_editor`.
+* **Sección y formas**: permite calcular propiedades geométricas como el centro de gravedad y momento de inercia. También se pueden dibujar formas irregulares (triángulos, círculos y rectángulos) para analizarlas.
 * **Resultados**: en esta pestaña se muestran los gráficos, los resultados de las reacciones, los diagramas de momento y cortante, y también la animación 3D si se activa.
 
 ---
