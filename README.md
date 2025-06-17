@@ -3,8 +3,6 @@
 
 Este repositorio contiene un programa escrito en **Python** para analizar y visualizar el comportamiento de una viga mecánica. Utiliza **Tkinter** para la interfaz gráfica y, si está disponible, el paquete **`ttkbootstrap`** para darle un aspecto mucho más moderno. Las gráficas se generan con `matplotlib`, los cálculos con `numpy` y la vista en 3D con `mpl_toolkits`.
 
-La versión anterior incluía una carpeta con archivos HTML y JavaScript. Se eliminó por completo para mantener solo la aplicación de escritorio basada en Python.
-
 ### 1. Estructura del código
 
 El programa está estructurado en una **clase principal llamada `SimuladorVigaMejorado`**, donde se encuentra todo lo relacionado con el simulador. Dentro de esta clase se inicializa la ventana y se organizan todas las pestañas y botones.
@@ -104,24 +102,9 @@ El valor se mostrará en el registro y en los diagramas.
 ### 10. Uso
 
 1. Clona este repositorio o descarga el código.
-2. Asegúrate de tener **Python 3** y las dependencias necesarias. Ejecuta:
-   ```bash
-   pip install -r requirements.txt
-   ```
-   Esto instalará `matplotlib`, `numpy` y opcionalmente `ttkbootstrap`.
-   Si alguna dependencia falta al ejecutar el programa, verás un mensaje con
-   instrucciones para instalarla.
+2. Asegúrate de tener **Python 3**, `tkinter`, `matplotlib` y `numpy` instalados.
+   Para un aspecto moderno instala opcionalmente `ttkbootstrap` con `pip install ttkbootstrap`.
 3. Ejecuta `python3 simulador_viga_mejorado.py`.
 4. Configura la viga y agrega las cargas necesarias.
 5. Usa **Par en Punto** para consultar el momento torsor si lo necesitas.
 6. Revisa los resultados en la pestaña de **Resultados**.
-
-### 11. Compilar la aplicación a `.exe`
-
-Para generar un archivo ejecutable en Windows puedes usar **PyInstaller**:
-
-1. Instala PyInstaller con `pip install pyinstaller`.
-2. Ejecuta `pyinstaller --onefile simulador_viga_mejorado.py`.
-3. El ejecutable aparecerá en la carpeta `dist/` con el nombre `simulador_viga_mejorado.exe`.
-
-En este repositorio se incluye un directorio `dist/` como lugar sugerido para colocar dicho archivo.
