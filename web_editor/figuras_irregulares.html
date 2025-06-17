@@ -33,6 +33,11 @@
   <button id="smaller">Reducir</button>
   <button id="cgLocal">CG Local</button>
   <button id="cgBack">CG Backend</button>
+  <button id="clear">Limpiar Todo</button>
+  <button id="export">Guardar JSON</button>
+  <label for="import" style="margin-left:5px">Cargar JSON:</label>
+  <input type="file" id="import" accept="application/json">
+  <button id="saveImg">Descargar Imagen</button>
 </div>
 <canvas id="canvas" width="600" height="400"></canvas>
 <div id="result"></div>
@@ -209,6 +214,48 @@ function calcBackCG(){
 }
 document.getElementById('cgLocal').addEventListener('click', calcLocalCG);
 document.getElementById('cgBack').addEventListener('click', calcBackCG);
+function clearShapes(){
+  shapes = [];
+  selected = null;
+  drawShapes();
+  document.getElementById('result').textContent='';
+}
+function exportJSON(){
+  const data = JSON.stringify(shapes, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'figuras.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function importJSON(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      shapes = JSON.parse(e.target.result);
+      selected = null;
+      drawShapes();
+    } catch(err){
+      alert('Error al cargar JSON');
+    }
+  };
+  reader.readAsText(file);
+  evt.target.value='';
+}
+function saveImage(){
+  const link = document.createElement('a');
+  link.href = canvas.toDataURL('image/png');
+  link.download = 'figuras.png';
+  link.click();
+}
+document.getElementById('clear').addEventListener('click', clearShapes);
+document.getElementById('export').addEventListener('click', exportJSON);
+document.getElementById('import').addEventListener('change', importJSON);
+document.getElementById('saveImg').addEventListener('click', saveImage);
 </script>
 </body>
 </html>
