@@ -30,6 +30,50 @@ Esta versión es una adaptación básica y no incluye todas las funciones avanza
 - **En iOS** existen apps como `Pythonista` o `Pyto` que también permiten correr el script anterior.
 - Si prefieres arrancar el servidor en tu PC, solo asegúrate de que el móvil esté en la misma red y abre `http://<IP_DEL_PC>:8000` en el navegador del teléfono.
 
+## Guía paso a paso para Android e iOS
+
+A continuación se describe un procedimiento detallado para poner en marcha la
+versión móvil en cada plataforma.
+
+### Android
+
+1. Instala **Pydroid 3** o **Termux** desde la tienda de aplicaciones.
+2. Copia la carpeta `mobile_version` a tu dispositivo o clona el repositorio en
+   la terminal:
+   ```bash
+   git clone <URL_DEL_REPOSITORIO>
+   ```
+3. Abre la terminal de Pydroid 3 o Termux y entra en la carpeta copiada:
+   ```bash
+   cd ruta/a/mobile_version
+   ```
+4. Instala las dependencias (solo la primera vez):
+   ```bash
+   pip install matplotlib numpy
+   ```
+5. Ejecuta el servidor:
+   ```bash
+   python3 mobile_server.py
+   ```
+6. En la misma terminal aparecerá la dirección `http://localhost:8000`.
+7. Abre el navegador del teléfono y escribe esa dirección para acceder al
+   formulario del simulador.
+
+### iOS
+
+1. Instala **Pythonista** o **Pyto** desde la App Store.
+2. Copia la carpeta `mobile_version` a tu dispositivo (por ejemplo mediante
+   iCloud Drive).
+3. Abre la aplicación elegida y navega hasta `mobile_server.py`.
+4. Si es necesario, instala las bibliotecas con:
+   ```bash
+   pip install matplotlib numpy
+   ```
+5. Ejecuta el archivo `mobile_server.py`.
+6. Cuando veas la dirección `http://localhost:8000`, abre Safari (u otro
+   navegador) e ingresa esa URL.
+7. Rellena el formulario y pulsa **Calcular** para obtener los resultados.
+
 ## Ejemplo rápido
 
 Al acceder a la página aparecerá un formulario donde puedes indicar:
