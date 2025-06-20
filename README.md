@@ -143,3 +143,22 @@ A continuación se listan las fórmulas utilizadas en cada apartado del programa
 
 Con estas expresiones es posible verificar manualmente cada resultado que
 entrega el simulador.
+
+### 13. Uso programático
+
+Ahora puedes realizar los cálculos sin abrir la interfaz gráfica. El archivo
+`calculos_utiles.py` provee funciones y dataclasses que facilitan la
+creación de vigas, armaduras o bastidores desde cualquier script.
+
+```python
+from calculos_utiles import Viga, calcular_reacciones_viga
+
+viga = Viga(longitud=10.0)
+viga.agregar_carga_puntual(pos=4.0, magnitud=5.0)
+ra, rb, rc = calcular_reacciones_viga(viga)
+print(ra, rb, rc)
+```
+
+También incluye `resolver_armadura` y `resolver_bastidor` para utilizar las
+clases de análisis estructural de forma directa.
+
