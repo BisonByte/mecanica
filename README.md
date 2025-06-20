@@ -111,13 +111,7 @@ El valor se mostrará en el registro y en los diagramas.
 
 ### 11. Análisis de Armaduras y Bastidores
 
-Se añadió el módulo `estructuras_equilibrio.py` para resolver **armaduras planas**
-por el método de nodos utilizando únicamente las ecuaciones de equilibrio
-(`ΣFx = 0` y `ΣFy = 0`).
-Cada `Nodo` almacena sus coordenadas, las cargas externas y las restricciones en
-`x` y `y`. Las barras se definen indicando los nodos que conectan y el método
-`Armadura2D.resolver()` devuelve las fuerzas internas de cada barra junto con
-las reacciones en los apoyos.
+El análisis de armaduras planas está integrado directamente en `simulador_viga_mejorado.py`. Las clases `Nodo`, `Barra` y `Armadura2D` usan solo las ecuaciones de equilibrio (`ΣFx = 0` y `ΣFy = 0`) para calcular las fuerzas internas de las barras y las reacciones.
 
 ### 12. Formulario de Cálculos
 
