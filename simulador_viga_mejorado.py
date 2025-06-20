@@ -14,7 +14,6 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
-from bastidor2d import Bastidor2D
 
 @dataclass
 class Nodo:
@@ -114,7 +113,136 @@ class Armadura2D:
         return fuerzas_barras, reacciones
 
 
-__all__ = ["Nodo", "Barra", "Armadura2D", "Bastidor2D"]
+@dataclass
+class NodoBastidor:
+    """Nodo con tres grados de libertad para análisis de bastidores."""
+    x: float
+    y: float
+    carga_x: float = 0.0
+    carga_y: float = 0.0
+    momento: float = 0.0
+    restringido_x: bool = False
+    restringido_y: bool = False
+    restringido_rot: bool = False
+
+
+@dataclass
+class BarraBastidor:
+    """Elemento de bastidor con propiedades mecánicas."""
+    n_i: int
+    n_j: int
+    E: float
+    A: float
+    I: float
+
+
+class Bastidor2D:
+    """Analiza un bastidor plano mediante el método de rigidez."""
+
+    def __init__(self, nodos: Dict[int, NodoBastidor], barras: List[BarraBastidor]):
+        self.nodos = nodos
+        self.barras = barras
+
+    def resolver(self) -> Tuple[np.ndarray, Dict[int, Tuple[float, float, float]]]:
+        """Devuelve desplazamientos nodales y reacciones."""
+        nodos = sorted(self.nodos.keys())
+        dof_map = {n: i * 3 for i, n in enumerate(nodos)}
+        n_dof = 3 * len(nodos)
+
+        K = np.zeros((n_dof, n_dof))
+        f_ext = np.zeros(n_dof)
+
+        for idx in nodos:
+            n = self.nodos[idx]
+            base = dof_map[idx]
+            f_ext[base] = n.carga_x
+            f_ext[base + 1] = n.carga_y
+            f_ext[base + 2] = n.momento
+
+        for barra in self.barras:
+            ni = self.nodos[barra.n_i]
+            nj = self.nodos[barra.n_j]
+            dx = nj.x - ni.x
+            dy = nj.y - ni.y
+            L = np.hypot(dx, dy)
+            c = dx / L
+            s = dy / L
+
+            EA_L = barra.E * barra.A / L
+            EI = barra.E * barra.I
+            k_local = np.array(
+                [
+                    [EA_L, 0, 0, -EA_L, 0, 0],
+                    [0, 12 * EI / L**3, 6 * EI / L**2, 0, -12 * EI / L**3, 6 * EI / L**2],
+                    [0, 6 * EI / L**2, 4 * EI / L, 0, -6 * EI / L**2, 2 * EI / L],
+                    [-EA_L, 0, 0, EA_L, 0, 0],
+                    [0, -12 * EI / L**3, -6 * EI / L**2, 0, 12 * EI / L**3, -6 * EI / L**2],
+                    [0, 6 * EI / L**2, 2 * EI / L, 0, -6 * EI / L**2, 4 * EI / L],
+                ]
+            )
+
+            T = np.array(
+                [
+                    [c, s, 0, 0, 0, 0],
+                    [-s, c, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0, 0],
+                    [0, 0, 0, c, s, 0],
+                    [0, 0, 0, -s, c, 0],
+                    [0, 0, 0, 0, 0, 1],
+                ]
+            )
+
+            k_global = T.T @ k_local @ T
+            idx_i = dof_map[barra.n_i]
+            idx_j = dof_map[barra.n_j]
+            for r in range(3):
+                for c in range(3):
+                    K[idx_i + r, idx_i + c] += k_global[r, c]
+                    K[idx_i + r, idx_j + c] += k_global[r, c + 3]
+                    K[idx_j + r, idx_i + c] += k_global[r + 3, c]
+                    K[idx_j + r, idx_j + c] += k_global[r + 3, c + 3]
+
+        free = []
+        for idx in nodos:
+            n = self.nodos[idx]
+            base = dof_map[idx]
+            if not n.restringido_x:
+                free.append(base)
+            if not n.restringido_y:
+                free.append(base + 1)
+            if not n.restringido_rot:
+                free.append(base + 2)
+
+        free = np.array(free, dtype=int)
+        K_ff = K[np.ix_(free, free)]
+        f_f = f_ext[free]
+
+        disp = np.zeros(n_dof)
+        if K_ff.size > 0:
+            disp_free = np.linalg.solve(K_ff, f_f)
+            disp[free] = disp_free
+
+        reactions = K @ disp - f_ext
+
+        reacc_nodales = {}
+        for idx in nodos:
+            base = dof_map[idx]
+            rx = reactions[base]
+            ry = reactions[base + 1]
+            rm = reactions[base + 2]
+            reacc_nodales[idx] = (rx, ry, rm)
+
+        return disp, reacc_nodales
+
+
+__all__ = [
+    "Nodo",
+    "Barra",
+    "Armadura2D",
+    "NodoBastidor",
+    "BarraBastidor",
+    "Bastidor2D",
+]
 class SimuladorVigaMejorado:
     def __init__(self, root, bootstrap=False):
         self.root = root
@@ -205,6 +333,10 @@ class SimuladorVigaMejorado:
         self.alto_inicial = 0
         # Espaciado de la cuadrícula para el lienzo de formas
         self.grid_spacing = 20
+        self.texto_bastidor = None
+        self.fig_bastidor = None
+        self.ax_bastidor = None
+        self.canvas_bastidor = None
         self.crear_widgets()
         
         # Mostrar mensaje inicial
@@ -286,10 +418,12 @@ class SimuladorVigaMejorado:
         tab_config = ttk.Frame(notebook)
         tab_seccion = ttk.Frame(notebook)
         tab_result = ttk.Frame(notebook)
+        tab_bastidor = ttk.Frame(notebook)
 
         notebook.add(tab_config, text="Configuración y Cargas")
         notebook.add(tab_seccion, text="Sección y Formas")
         notebook.add(tab_result, text="Resultados")
+        notebook.add(tab_bastidor, text="Bastidor 2D")
 
         # Sección configuración y cargas
         tab_config.columnconfigure(0, weight=1)
@@ -312,6 +446,7 @@ class SimuladorVigaMejorado:
         # Resultados y gráficos
         self.crear_seccion_resultados(tab_result)
         self.crear_seccion_graficos(tab_result)
+        self.crear_seccion_bastidor(tab_bastidor)
     
     def crear_seccion_configuracion_viga(self, parent):
         frame_config = ttk.LabelFrame(parent, text="⚙ Configuración de la Viga")
@@ -1226,6 +1361,16 @@ class SimuladorVigaMejorado:
 • Figuras Irregulares: añada rectángulos, triángulos o círculos y obtenga su centro de gravedad
 • 🔍 Ampliar la gráfica en otra ventana
 • 🗑️ Limpiar Todo para reiniciar
+• Nuevo apartado **Bastidor 2D** para marcos planos
+
+🔹 FORMULARIO DE CÁLCULOS
+• Reacciones: ΣFy=0 y ΣM=0
+• Carga distribuida: F=w·(xf−xi)
+• Centro de masa: x_cm=Σ(x·F)/ΣF
+• Par en punto: M(x)=T+ΣR_i(x−x_i)−ΣP_j(x−x_j)
+• Momento de inercia: I=b h³/12
+• Armaduras: ΣFx=0 y ΣFy=0
+• Bastidores: se resuelve K·d=F
 
 🔹 PASOS BÁSICOS
 1. Configure la viga y apoyos
@@ -1733,6 +1878,102 @@ class SimuladorVigaMejorado:
     def crear_seccion_graficos(self, parent):
         self.frame_grafico = ttk.Frame(parent)
         self.frame_grafico.pack(fill="both", expand=True, pady=10, padx=10)
+
+    def crear_seccion_bastidor(self, parent):
+        frame = ttk.Frame(parent)
+        frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        instrucciones = (
+            "NODOS: id x y cx cy m rx ry rz\n"
+            "BARRAS: ni nj E A I\n"
+            "Escriba los datos debajo y presione Calcular."
+        )
+        ttk.Label(frame, text=instrucciones, justify="left").pack(anchor="w")
+
+        self.texto_bastidor = tk.Text(frame, height=8)
+        self.texto_bastidor.pack(fill="x", pady=5)
+        ejemplo = (
+            "NODOS\n"
+            "1 0 0 0 0 0 1 1 1\n"
+            "2 4 0 0 -1000 0 0 1 1\n"
+            "3 4 3 0 0 0 0 0 0\n\n"
+            "BARRAS\n"
+            "1 2 2e11 0.02 8e-5\n"
+            "2 3 2e11 0.02 8e-5"
+        )
+        self.texto_bastidor.insert("1.0", ejemplo)
+
+        btn = ttk.Button(frame, text="Calcular Bastidor", command=self.calcular_bastidor)
+        btn.pack(pady=5)
+
+        self.fig_bastidor, self.ax_bastidor = plt.subplots()
+        self.canvas_bastidor = FigureCanvasTkAgg(self.fig_bastidor, frame)
+        self.canvas_bastidor.get_tk_widget().pack(fill="both", expand=True)
+
+    def calcular_bastidor(self):
+        try:
+            text = self.texto_bastidor.get("1.0", "end").strip().splitlines()
+            mode = None
+            nodos = {}
+            barras = []
+            for line in text:
+                l = line.strip()
+                if not l:
+                    continue
+                if l.lower().startswith("nodos"):
+                    mode = "n"
+                    continue
+                if l.lower().startswith("barras"):
+                    mode = "b"
+                    continue
+                parts = l.split()
+                if mode == "n" and len(parts) >= 9:
+                    idx = int(parts[0])
+                    nodos[idx] = NodoBastidor(
+                        x=float(parts[1]),
+                        y=float(parts[2]),
+                        carga_x=float(parts[3]),
+                        carga_y=float(parts[4]),
+                        momento=float(parts[5]),
+                        restringido_x=bool(int(parts[6])),
+                        restringido_y=bool(int(parts[7])),
+                        restringido_rot=bool(int(parts[8])),
+                    )
+                elif mode == "b" and len(parts) >= 5:
+                    barras.append(
+                        BarraBastidor(
+                            n_i=int(parts[0]),
+                            n_j=int(parts[1]),
+                            E=float(parts[2]),
+                            A=float(parts[3]),
+                            I=float(parts[4]),
+                        )
+                    )
+
+            bast = Bastidor2D(nodos, barras)
+            disp, reacc = bast.resolver()
+
+            self.ax_bastidor.clear()
+            for bar in barras:
+                n1 = nodos[bar.n_i]
+                n2 = nodos[bar.n_j]
+                self.ax_bastidor.plot([n1.x, n2.x], [n1.y, n2.y], "b-o")
+
+            scale = 100
+            for i, idx in enumerate(sorted(nodos.keys())):
+                d = disp[i*3:i*3+2]
+                n = nodos[idx]
+                self.ax_bastidor.plot(n.x + scale*d[0], n.y + scale*d[1], "ro")
+
+            self.ax_bastidor.set_title("Deformada (escala x{} )".format(scale))
+            self.ax_bastidor.axis("equal")
+            self.canvas_bastidor.draw()
+            self.log("\n=== RESULTADOS BASTIDOR ===\n", "title")
+            for idx in sorted(nodos.keys()):
+                rx, ry, rm = reacc[idx]
+                self.log(f"Nodo {idx}: Rx={rx:.2f} Ry={ry:.2f} M={rm:.2f}\n", "data")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error en bastidor: {e}")
 
     def run(self):
         self.root.mainloop()
