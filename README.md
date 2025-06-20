@@ -11,11 +11,12 @@ El programa está estructurado en una **clase principal llamada `SimuladorVigaMe
 
 ### 2. Interfaz gráfica (ventana del simulador)
 
-La ventana está dividida en **tres pestañas principales**:
+La ventana está dividida en **cuatro pestañas principales**:
 
 * **Configuración y cargas**: aquí se puede cambiar la longitud de la viga, los tipos de apoyos (fijo, móvil o ninguno), y agregar cargas (puntuales o distribuidas).
 * **Sección y formas**: permite calcular propiedades geométricas como el centro de gravedad y momento de inercia. También se pueden dibujar formas irregulares (triángulos, círculos y rectángulos) para analizarlas.
 * **Resultados**: en esta pestaña se muestran los gráficos, los resultados de las reacciones, los diagramas de momento y cortante, y también la animación 3D si se activa.
+* **Armadura**: módulo adicional para definir nodos y barras de una armadura plana y calcular las fuerzas internas usando las ecuaciones de equilibrio.
 
 ---
 
@@ -108,3 +109,15 @@ El valor se mostrará en el registro y en los diagramas.
 4. Configura la viga y agrega las cargas necesarias.
 5. Usa **Par en Punto** para consultar el momento torsor si lo necesitas.
 6. Revisa los resultados en la pestaña de **Resultados**.
+
+### 11. Armaduras
+
+En la pestaña **Armadura** puedes crear nodos, barras, apoyos y cargas para una armadura plana.
+Cada nodo se define con sus coordenadas en metros. Las barras se especifican indicando los
+nodos inicial y final. Los apoyos pueden ser **Fijo** (reacciones en x e y) o **Móvil** (solo reacción vertical).
+Al pulsar **Calcular Armadura** el programa forma el sistema de ecuaciones de equilibrio
+para cada nodo:
+
+\[\sum F_x = 0 \qquad \sum F_y = 0\]
+
+De esta manera se obtienen las fuerzas internas de las barras y las reacciones en los apoyos.

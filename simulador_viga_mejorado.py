@@ -103,6 +103,23 @@ class SimuladorVigaMejorado:
         self.alto_inicial = 0
         # Espaciado de la cuadrícula para el lienzo de formas
         self.grid_spacing = 20
+
+        # Datos para análisis de armaduras
+        self.nodos_arm = []
+        self.barras_arm = []
+        self.cargas_arm = []
+        self.apoyos_arm = []
+
+        # Variables de entrada para armaduras
+        self.x_nodo = tk.DoubleVar(value=0.0)
+        self.y_nodo = tk.DoubleVar(value=0.0)
+        self.nodo_i = tk.IntVar(value=0)
+        self.nodo_j = tk.IntVar(value=0)
+        self.nodo_carga = tk.IntVar(value=0)
+        self.fx_carga = tk.DoubleVar(value=0.0)
+        self.fy_carga = tk.DoubleVar(value=0.0)
+        self.nodo_apoyo = tk.IntVar(value=0)
+        self.tipo_apoyo_armadura = tk.StringVar(value="Fijo")
         self.crear_widgets()
         
         # Mostrar mensaje inicial
@@ -184,10 +201,12 @@ class SimuladorVigaMejorado:
         tab_config = ttk.Frame(notebook)
         tab_seccion = ttk.Frame(notebook)
         tab_result = ttk.Frame(notebook)
+        tab_armadura = ttk.Frame(notebook)
 
         notebook.add(tab_config, text="Configuración y Cargas")
         notebook.add(tab_seccion, text="Sección y Formas")
         notebook.add(tab_result, text="Resultados")
+        notebook.add(tab_armadura, text="Armadura")
 
         # Sección configuración y cargas
         tab_config.columnconfigure(0, weight=1)
@@ -210,6 +229,9 @@ class SimuladorVigaMejorado:
         # Resultados y gráficos
         self.crear_seccion_resultados(tab_result)
         self.crear_seccion_graficos(tab_result)
+
+        # Sección de armaduras
+        self.crear_tab_armadura(tab_armadura)
     
     def crear_seccion_configuracion_viga(self, parent):
         frame_config = ttk.LabelFrame(parent, text="⚙ Configuración de la Viga")
@@ -1631,6 +1653,194 @@ class SimuladorVigaMejorado:
     def crear_seccion_graficos(self, parent):
         self.frame_grafico = ttk.Frame(parent)
         self.frame_grafico.pack(fill="both", expand=True, pady=10, padx=10)
+
+    # ----- Armaduras -----
+    def crear_tab_armadura(self, parent):
+        frame_nodos = ttk.LabelFrame(parent, text="Nodos")
+        frame_nodos.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
+        ttk.Label(frame_nodos, text="x (m):").grid(row=0, column=0, padx=2, pady=2)
+        ttk.Entry(frame_nodos, textvariable=self.x_nodo, width=8).grid(row=0, column=1, padx=2, pady=2)
+        ttk.Label(frame_nodos, text="y (m):").grid(row=1, column=0, padx=2, pady=2)
+        ttk.Entry(frame_nodos, textvariable=self.y_nodo, width=8).grid(row=1, column=1, padx=2, pady=2)
+        ttk.Button(frame_nodos, text="Agregar Nodo", command=self.agregar_nodo_armadura).grid(row=2, column=0, columnspan=2, pady=5)
+
+        frame_barras = ttk.LabelFrame(parent, text="Barras")
+        frame_barras.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
+        ttk.Label(frame_barras, text="Nodo i:").grid(row=0, column=0, padx=2, pady=2)
+        ttk.Entry(frame_barras, textvariable=self.nodo_i, width=5).grid(row=0, column=1, padx=2, pady=2)
+        ttk.Label(frame_barras, text="Nodo j:").grid(row=1, column=0, padx=2, pady=2)
+        ttk.Entry(frame_barras, textvariable=self.nodo_j, width=5).grid(row=1, column=1, padx=2, pady=2)
+        ttk.Button(frame_barras, text="Agregar Barra", command=self.agregar_barra_armadura).grid(row=2, column=0, columnspan=2, pady=5)
+
+        frame_cargas = ttk.LabelFrame(parent, text="Cargas en Nodos")
+        frame_cargas.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
+        ttk.Label(frame_cargas, text="Nodo:").grid(row=0, column=0, padx=2, pady=2)
+        ttk.Entry(frame_cargas, textvariable=self.nodo_carga, width=5).grid(row=0, column=1, padx=2, pady=2)
+        ttk.Label(frame_cargas, text="Fx (N):").grid(row=1, column=0, padx=2, pady=2)
+        ttk.Entry(frame_cargas, textvariable=self.fx_carga, width=8).grid(row=1, column=1, padx=2, pady=2)
+        ttk.Label(frame_cargas, text="Fy (N):").grid(row=2, column=0, padx=2, pady=2)
+        ttk.Entry(frame_cargas, textvariable=self.fy_carga, width=8).grid(row=2, column=1, padx=2, pady=2)
+        ttk.Button(frame_cargas, text="Agregar Carga", command=self.agregar_carga_armadura).grid(row=3, column=0, columnspan=2, pady=5)
+
+        frame_apoyos = ttk.LabelFrame(parent, text="Apoyos")
+        frame_apoyos.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
+        ttk.Label(frame_apoyos, text="Nodo:").grid(row=0, column=0, padx=2, pady=2)
+        ttk.Entry(frame_apoyos, textvariable=self.nodo_apoyo, width=5).grid(row=0, column=1, padx=2, pady=2)
+        ttk.Label(frame_apoyos, text="Tipo:").grid(row=1, column=0, padx=2, pady=2)
+        ttk.Combobox(frame_apoyos, textvariable=self.tipo_apoyo_armadura, values=["Fijo", "Móvil"], width=7).grid(row=1, column=1, padx=2, pady=2)
+        ttk.Button(frame_apoyos, text="Agregar Apoyo", command=self.agregar_apoyo_armadura).grid(row=2, column=0, columnspan=2, pady=5)
+
+        frame_btn = ttk.Frame(parent)
+        frame_btn.grid(row=2, column=0, columnspan=2, pady=10)
+        ttk.Button(frame_btn, text="Calcular Armadura", command=self.calcular_armadura).pack()
+
+        parent.columnconfigure(0, weight=1)
+        parent.columnconfigure(1, weight=1)
+
+    def agregar_nodo_armadura(self):
+        x = self.x_nodo.get()
+        y = self.y_nodo.get()
+        self.nodos_arm.append((x, y))
+        self.log(f"Nodo {len(self.nodos_arm)-1}: ({x}, {y})\n", "data")
+
+    def agregar_barra_armadura(self):
+        i = self.nodo_i.get()
+        j = self.nodo_j.get()
+        if i == j or i < 0 or j < 0 or i >= len(self.nodos_arm) or j >= len(self.nodos_arm):
+            messagebox.showerror("Error", "Nodos inválidos")
+            return
+        self.barras_arm.append((i, j))
+        self.log(f"Barra {len(self.barras_arm)-1}: {i}-{j}\n", "data")
+
+    def agregar_carga_armadura(self):
+        n = self.nodo_carga.get()
+        if n < 0 or n >= len(self.nodos_arm):
+            messagebox.showerror("Error", "Nodo inválido")
+            return
+        fx = self.fx_carga.get()
+        fy = self.fy_carga.get()
+        self.cargas_arm.append((n, fx, fy))
+        self.log(f"Carga en nodo {n}: Fx={fx} N, Fy={fy} N\n", "data")
+
+    def agregar_apoyo_armadura(self):
+        n = self.nodo_apoyo.get()
+        if n < 0 or n >= len(self.nodos_arm):
+            messagebox.showerror("Error", "Nodo inválido")
+            return
+        tipo = self.tipo_apoyo_armadura.get()
+        self.apoyos_arm.append((n, tipo))
+        self.log(f"Apoyo {tipo} en nodo {n}\n", "data")
+
+    def calcular_armadura(self):
+        nodos = self.nodos_arm
+        barras = self.barras_arm
+        if not nodos or not barras:
+            messagebox.showwarning("Advertencia", "Defina nodos y barras")
+            return
+        n = len(nodos)
+        m = len(barras)
+
+        # Cargar reacciones
+        reaction_info = []
+        for n_idx, tipo in self.apoyos_arm:
+            if tipo == "Fijo":
+                reaction_info.append((n_idx, "x"))
+                reaction_info.append((n_idx, "y"))
+            else:
+                reaction_info.append((n_idx, "y"))
+        num_reac = len(reaction_info)
+
+        if m + num_reac != 2 * n:
+            messagebox.showerror("Error", "Sistema indeterminado o incompatibile")
+            return
+
+        A = np.zeros((2 * n, m + num_reac))
+        b = np.zeros(2 * n)
+
+        # Cargas por nodo
+        cargas_nodo = [[0.0, 0.0] for _ in range(n)]
+        for nodo, fx, fy in self.cargas_arm:
+            cargas_nodo[nodo][0] += fx
+            cargas_nodo[nodo][1] += fy
+
+        for node_idx in range(n):
+            row_x = 2 * node_idx
+            row_y = row_x + 1
+            # Barras
+            for bar_idx, (i, j) in enumerate(barras):
+                xi, yi = nodos[i]
+                xj, yj = nodos[j]
+                L = np.hypot(xj - xi, yj - yi)
+                cx = (xj - xi) / L
+                cy = (yj - yi) / L
+                if node_idx == i:
+                    A[row_x, bar_idx] += cx
+                    A[row_y, bar_idx] += cy
+                elif node_idx == j:
+                    A[row_x, bar_idx] -= cx
+                    A[row_y, bar_idx] -= cy
+
+            # Reacciones
+            for r_idx, (n_r, dir_r) in enumerate(reaction_info):
+                col = m + r_idx
+                if node_idx == n_r:
+                    if dir_r == "x":
+                        A[row_x, col] = 1
+                    else:
+                        A[row_y, col] = 1
+
+            b[row_x] = -cargas_nodo[node_idx][0]
+            b[row_y] = -cargas_nodo[node_idx][1]
+
+        try:
+            x = np.linalg.solve(A, b)
+        except np.linalg.LinAlgError:
+            messagebox.showerror("Error", "No se pudo resolver el sistema")
+            return
+
+        fuerzas = x[:m]
+        reacciones = x[m:]
+
+        self.log("\n=== ARMADURA ===\n", "title")
+        self.log("Ecuaciones: ΣFx = 0 y ΣFy = 0 en cada nodo\n", "data")
+        for idx, F in enumerate(fuerzas):
+            self.log(f"Barra {idx}: F = {F:.2f} N\n", "data")
+        for idx, (n_r, dir_r) in enumerate(reaction_info):
+            comp = "R" + ("x" if dir_r == "x" else "y")
+            self.log(f"Reacción nodo {n_r} {comp}: {reacciones[idx]:.2f} N\n", "data")
+
+        self.dibujar_armadura(fuerzas)
+
+    def dibujar_armadura(self, fuerzas):
+        for widget in self.frame_grafico.winfo_children():
+            widget.destroy()
+
+        fig, ax = plt.subplots(figsize=(8, 6))
+        nodos = self.nodos_arm
+        for (i, j), F in zip(self.barras_arm, fuerzas):
+            xi, yi = nodos[i]
+            xj, yj = nodos[j]
+            ax.plot([xi, xj], [yi, yj], "bo-", linewidth=2)
+            xm = (xi + xj) / 2
+            ym = (yi + yj) / 2
+            ax.text(xm, ym, f"{F:.1f}N", color="purple")
+
+        for idx, (x, y) in enumerate(nodos):
+            ax.text(x, y + 0.1, str(idx), color="blue")
+
+        for nodo, fx, fy in self.cargas_arm:
+            x, y = nodos[nodo]
+            ax.arrow(x, y, fx / 50, fy / 50, head_width=0.1, color="red")
+
+        ax.set_aspect('equal', 'box')
+        ax.set_xlabel('x (m)')
+        ax.set_ylabel('y (m)')
+        ax.set_title('Armadura')
+        plt.tight_layout()
+        canvas = FigureCanvasTkAgg(fig, master=self.frame_grafico)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill="both", expand=True)
+        self.ultima_figura = fig
 
     def run(self):
         self.root.mainloop()
