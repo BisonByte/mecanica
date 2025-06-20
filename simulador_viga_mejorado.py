@@ -14,6 +14,7 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
+from bastidor2d import Bastidor2D
 
 @dataclass
 class Nodo:
@@ -113,7 +114,7 @@ class Armadura2D:
         return fuerzas_barras, reacciones
 
 
-__all__ = ["Nodo", "Barra", "Armadura2D"]
+__all__ = ["Nodo", "Barra", "Armadura2D", "Bastidor2D"]
 class SimuladorVigaMejorado:
     def __init__(self, root, bootstrap=False):
         self.root = root
