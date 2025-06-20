@@ -418,11 +418,13 @@ class SimuladorVigaMejorado:
         tab_config = ttk.Frame(notebook)
         tab_seccion = ttk.Frame(notebook)
         tab_result = ttk.Frame(notebook)
+        tab_armadura = ttk.Frame(notebook)
         tab_bastidor = ttk.Frame(notebook)
 
         notebook.add(tab_config, text="Configuración y Cargas")
         notebook.add(tab_seccion, text="Sección y Formas")
         notebook.add(tab_result, text="Resultados")
+        notebook.add(tab_armadura, text="Armadura 2D")
         notebook.add(tab_bastidor, text="Bastidor 2D")
 
         # Sección configuración y cargas
@@ -446,6 +448,7 @@ class SimuladorVigaMejorado:
         # Resultados y gráficos
         self.crear_seccion_resultados(tab_result)
         self.crear_seccion_graficos(tab_result)
+        self.crear_seccion_armadura(tab_armadura)
         self.crear_seccion_bastidor(tab_bastidor)
     
     def crear_seccion_configuracion_viga(self, parent):
@@ -1878,6 +1881,90 @@ class SimuladorVigaMejorado:
     def crear_seccion_graficos(self, parent):
         self.frame_grafico = ttk.Frame(parent)
         self.frame_grafico.pack(fill="both", expand=True, pady=10, padx=10)
+
+    def crear_seccion_armadura(self, parent):
+        frame = ttk.Frame(parent)
+        frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        instrucciones = (
+            "NODOS: id x y Fx Fy rx ry\n"
+            "BARRAS: ni nj\n"
+            "Escriba los datos debajo y presione Calcular."
+        )
+        ttk.Label(frame, text=instrucciones, justify="left").pack(anchor="w")
+
+        self.texto_armadura = tk.Text(frame, height=8)
+        self.texto_armadura.pack(fill="x", pady=5)
+        ejemplo = (
+            "NODOS\n"
+            "1 0 0 0 0 1 1\n"
+            "2 4 0 0 -1000 0 1\n"
+            "3 4 3 0 0 0 0\n\n"
+            "BARRAS\n"
+            "1 2\n"
+            "2 3"
+        )
+        self.texto_armadura.insert("1.0", ejemplo)
+
+        btn = ttk.Button(frame, text="Calcular Armadura", command=self.calcular_armadura)
+        btn.pack(pady=5)
+
+        self.fig_armadura, self.ax_armadura = plt.subplots()
+        self.canvas_armadura = FigureCanvasTkAgg(self.fig_armadura, frame)
+        self.canvas_armadura.get_tk_widget().pack(fill="both", expand=True)
+
+    def calcular_armadura(self):
+        try:
+            text = self.texto_armadura.get("1.0", "end").strip().splitlines()
+            mode = None
+            nodos = {}
+            barras = []
+            for line in text:
+                l = line.strip()
+                if not l:
+                    continue
+                if l.lower().startswith("nodos"):
+                    mode = "n"
+                    continue
+                if l.lower().startswith("barras"):
+                    mode = "b"
+                    continue
+                parts = l.split()
+                if mode == "n" and len(parts) >= 7:
+                    idx = int(parts[0])
+                    nodos[idx] = Nodo(
+                        x=float(parts[1]),
+                        y=float(parts[2]),
+                        carga_x=float(parts[3]),
+                        carga_y=float(parts[4]),
+                        restringido_x=bool(int(parts[5])),
+                        restringido_y=bool(int(parts[6])),
+                    )
+                elif mode == "b" and len(parts) >= 2:
+                    barras.append(Barra(n_i=int(parts[0]), n_j=int(parts[1])))
+
+            arm = Armadura2D(nodos, barras)
+            fuerzas, reacc = arm.resolver()
+
+            self.ax_armadura.clear()
+            for bar, F in zip(barras, fuerzas):
+                n1 = nodos[bar.n_i]
+                n2 = nodos[bar.n_j]
+                color = "red" if F >= 0 else "blue"
+                self.ax_armadura.plot([n1.x, n2.x], [n1.y, n2.y], color=color, marker="o")
+                self.ax_armadura.text((n1.x + n2.x) / 2, (n1.y + n2.y) / 2, f"{F:.1f}", color=color)
+            self.ax_armadura.axis("equal")
+            self.ax_armadura.set_title("Fuerzas en barras (+Tensión / -Compresión)")
+            self.canvas_armadura.draw()
+
+            self.log("\n=== RESULTADOS ARMADURA ===\n", "title")
+            for i, bar in enumerate(barras):
+                self.log(f"Barra {bar.n_i}-{bar.n_j}: {fuerzas[i]:.2f} N\n", "data")
+            for idx in sorted(nodos.keys()):
+                rx, ry = reacc.get(idx, (0.0, 0.0))
+                self.log(f"Nodo {idx}: Rx={rx:.2f} Ry={ry:.2f}\n", "data")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error en armadura: {e}")
 
     def crear_seccion_bastidor(self, parent):
         frame = ttk.Frame(parent)
