@@ -102,12 +102,14 @@ El valor se mostrará en el registro y en los diagramas.
 ### 10. Uso
 
 1. Clona este repositorio o descarga el código.
-2. Asegúrate de tener **Python 3**, `tkinter`, `matplotlib` y `numpy` instalados.
+2. Instala las dependencias con `pip install -r requirements.txt`.
+
+3. Asegúrate de tener **Python 3**, `tkinter`, `matplotlib` y `numpy` instalados.
    Para un aspecto moderno instala opcionalmente `ttkbootstrap` con `pip install ttkbootstrap`.
-3. Ejecuta `python3 simulador_viga_mejorado.py`.
-4. Configura la viga y agrega las cargas necesarias.
-5. Usa **Par en Punto** para consultar el momento torsor si lo necesitas.
-6. Revisa los resultados en la pestaña de **Resultados**.
+4. Ejecuta `python3 simulador_viga_mejorado.py`.
+5. Configura la viga y agrega las cargas necesarias.
+6. Usa **Par en Punto** para consultar el momento torsor si lo necesitas.
+7. Revisa los resultados en la pestaña de **Resultados**.
 
 ### 11. Análisis de Armaduras y Bastidores
 
@@ -147,7 +149,8 @@ entrega el simulador.
 ### 13. Uso programático
 
 Ahora puedes realizar los cálculos sin abrir la interfaz gráfica. El archivo
-`simulador_viga_mejorado.py` incluye funciones y dataclasses que facilitan la
+`simulador_viga_mejorado.py` incluye (y desde la versión actual puedes usar un CLI en `cli.py`) funciones y dataclasses que facilitan la
+Puedes invocar `python cli.py reacciones --longitud 10 --carga 4 5` para un ejemplo rapido.
 creación de vigas, armaduras o bastidores desde cualquier script.
 
 ```python

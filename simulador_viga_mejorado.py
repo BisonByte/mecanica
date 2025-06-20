@@ -8,354 +8,33 @@ except ImportError:
     ttkb = None
     BOOTSTRAP_AVAILABLE = False
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.backends.backend_tkagg import (
+    FigureCanvasTkAgg,
+    NavigationToolbar2Tk,
+)
 from matplotlib.animation import FuncAnimation
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
-from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
 
-@dataclass
-class Nodo:
-    """Representa un nodo con coordenadas y cargas externas."""
-    x: float
-    y: float
-    carga_x: float = 0.0
-    carga_y: float = 0.0
-    restringido_x: bool = False
-    restringido_y: bool = False
+from beam import (
+    CargaDistribuida,
+    CargaPuntual,
+    Viga,
+    calcular_reacciones_viga,
+    centro_de_masa_viga,
+)
+from analysis import (
+    Armadura2D,
+    Barra,
+    BarraBastidor,
+    Bastidor2D,
+    Nodo,
+    NodoBastidor,
+    resolver_armadura,
+    resolver_bastidor,
+)
 
-
-@dataclass
-class Barra:
-    """Barra que conecta dos nodos."""
-    n_i: int
-    n_j: int
-
-
-class Armadura2D:
-    """Resuelve armaduras planas por el metodo de nodos (joints)."""
-
-    def __init__(self, nodos: Dict[int, Nodo], barras: List[Barra]):
-        self.nodos = nodos
-        self.barras = barras
-
-    def resolver(self) -> Tuple[np.ndarray, Dict[int, Tuple[float, float]]]:
-        """Devuelve fuerzas en barras y reacciones (Rx, Ry) por nodo."""
-        num_barras = len(self.barras)
-        nodos = list(self.nodos.keys())
-        num_nodos = len(nodos)
-
-        # Mapear reacciones
-        reaccion_vars = []
-        for idx in nodos:
-            n = self.nodos[idx]
-            if n.restringido_x:
-                reaccion_vars.append((idx, 'Rx'))
-            if n.restringido_y:
-                reaccion_vars.append((idx, 'Ry'))
-        num_reacciones = len(reaccion_vars)
-
-        # Variables: fuerzas en barras + reacciones
-        num_vars = num_barras + num_reacciones
-        A = np.zeros((2 * num_nodos, num_vars))
-        b = np.zeros(2 * num_nodos)
-
-        # Fuerzas de barras
-        for k, barra in enumerate(self.barras):
-            i = barra.n_i
-            j = barra.n_j
-            ni = self.nodos[i]
-            nj = self.nodos[j]
-            L = np.hypot(nj.x - ni.x, nj.y - ni.y)
-            c = (nj.x - ni.x) / L
-            s = (nj.y - ni.y) / L
-            # Nodo i
-            row_ix = nodos.index(i) * 2
-            A[row_ix, k] = c
-            A[row_ix + 1, k] = s
-            # Nodo j
-            row_jx = nodos.index(j) * 2
-            A[row_jx, k] = -c
-            A[row_jx + 1, k] = -s
-
-        # Reacciones
-        for r_idx, (n_id, comp) in enumerate(reaccion_vars):
-            col = num_barras + r_idx
-            row = nodos.index(n_id) * 2
-            if comp == 'Rx':
-                A[row, col] = 1
-            else:
-                A[row + 1, col] = 1
-
-        # Vector b con cargas externas
-        for idx in nodos:
-            n = self.nodos[idx]
-            row = nodos.index(idx) * 2
-            b[row] = -n.carga_x
-            b[row + 1] = -n.carga_y
-
-        # Resolver sistema lineal
-        x = np.linalg.solve(A, b)
-
-        # Extraer resultados
-        fuerzas_barras = x[:num_barras]
-        reacciones = {}
-        for r_idx, (n_id, comp) in enumerate(reaccion_vars):
-            fuerza = x[num_barras + r_idx]
-            rx, ry = reacciones.get(n_id, (0.0, 0.0))
-            if comp == 'Rx':
-                rx = fuerza
-            else:
-                ry = fuerza
-            reacciones[n_id] = (rx, ry)
-
-        return fuerzas_barras, reacciones
-
-
-@dataclass
-class NodoBastidor:
-    """Nodo con tres grados de libertad para análisis de bastidores."""
-    x: float
-    y: float
-    carga_x: float = 0.0
-    carga_y: float = 0.0
-    momento: float = 0.0
-    restringido_x: bool = False
-    restringido_y: bool = False
-    restringido_rot: bool = False
-
-
-@dataclass
-class BarraBastidor:
-    """Elemento de bastidor con propiedades mecánicas."""
-    n_i: int
-    n_j: int
-    E: float
-    A: float
-    I: float
-
-
-class Bastidor2D:
-    """Analiza un bastidor plano mediante el método de rigidez."""
-
-    def __init__(self, nodos: Dict[int, NodoBastidor], barras: List[BarraBastidor]):
-        self.nodos = nodos
-        self.barras = barras
-
-    def resolver(self) -> Tuple[np.ndarray, Dict[int, Tuple[float, float, float]]]:
-        """Devuelve desplazamientos nodales y reacciones."""
-        nodos = sorted(self.nodos.keys())
-        dof_map = {n: i * 3 for i, n in enumerate(nodos)}
-        n_dof = 3 * len(nodos)
-
-        K = np.zeros((n_dof, n_dof))
-        f_ext = np.zeros(n_dof)
-
-        for idx in nodos:
-            n = self.nodos[idx]
-            base = dof_map[idx]
-            f_ext[base] = n.carga_x
-            f_ext[base + 1] = n.carga_y
-            f_ext[base + 2] = n.momento
-
-        for barra in self.barras:
-            ni = self.nodos[barra.n_i]
-            nj = self.nodos[barra.n_j]
-            dx = nj.x - ni.x
-            dy = nj.y - ni.y
-            L = np.hypot(dx, dy)
-            c = dx / L
-            s = dy / L
-
-            EA_L = barra.E * barra.A / L
-            EI = barra.E * barra.I
-            k_local = np.array(
-                [
-                    [EA_L, 0, 0, -EA_L, 0, 0],
-                    [0, 12 * EI / L**3, 6 * EI / L**2, 0, -12 * EI / L**3, 6 * EI / L**2],
-                    [0, 6 * EI / L**2, 4 * EI / L, 0, -6 * EI / L**2, 2 * EI / L],
-                    [-EA_L, 0, 0, EA_L, 0, 0],
-                    [0, -12 * EI / L**3, -6 * EI / L**2, 0, 12 * EI / L**3, -6 * EI / L**2],
-                    [0, 6 * EI / L**2, 2 * EI / L, 0, -6 * EI / L**2, 4 * EI / L],
-                ]
-            )
-
-            T = np.array(
-                [
-                    [c, s, 0, 0, 0, 0],
-                    [-s, c, 0, 0, 0, 0],
-                    [0, 0, 1, 0, 0, 0],
-                    [0, 0, 0, c, s, 0],
-                    [0, 0, 0, -s, c, 0],
-                    [0, 0, 0, 0, 0, 1],
-                ]
-            )
-
-            k_global = T.T @ k_local @ T
-            idx_i = dof_map[barra.n_i]
-            idx_j = dof_map[barra.n_j]
-            for r in range(3):
-                for c in range(3):
-                    K[idx_i + r, idx_i + c] += k_global[r, c]
-                    K[idx_i + r, idx_j + c] += k_global[r, c + 3]
-                    K[idx_j + r, idx_i + c] += k_global[r + 3, c]
-                    K[idx_j + r, idx_j + c] += k_global[r + 3, c + 3]
-
-        free = []
-        for idx in nodos:
-            n = self.nodos[idx]
-            base = dof_map[idx]
-            if not n.restringido_x:
-                free.append(base)
-            if not n.restringido_y:
-                free.append(base + 1)
-            if not n.restringido_rot:
-                free.append(base + 2)
-
-        free = np.array(free, dtype=int)
-        K_ff = K[np.ix_(free, free)]
-        f_f = f_ext[free]
-
-        disp = np.zeros(n_dof)
-        if K_ff.size > 0:
-            disp_free = np.linalg.solve(K_ff, f_f)
-            disp[free] = disp_free
-
-        reactions = K @ disp - f_ext
-
-        reacc_nodales = {}
-        for idx in nodos:
-            base = dof_map[idx]
-            rx = reactions[base]
-            ry = reactions[base + 1]
-            rm = reactions[base + 2]
-            reacc_nodales[idx] = (rx, ry, rm)
-
-        return disp, reacc_nodales
-
-
-
-@dataclass
-class CargaPuntual:
-    """Carga puntual aplicada en una posición."""
-    posicion: float
-    magnitud: float
-
-
-@dataclass
-class CargaDistribuida:
-    """Carga distribuida con magnitud constante."""
-    inicio: float
-    fin: float
-    magnitud: float
-
-    @property
-    def fuerza_equivalente(self) -> float:
-        return self.magnitud * (self.fin - self.inicio)
-
-    @property
-    def centroide(self) -> float:
-        return self.inicio + (self.fin - self.inicio) / 2
-
-
-@dataclass
-class Viga:
-    """Representación simplificada de una viga para cálculos directos."""
-    longitud: float
-    tipo_apoyo_a: str = "Fijo"
-    tipo_apoyo_b: str = "Móvil"
-    tipo_apoyo_c: str = "Ninguno"
-    posicion_apoyo_c: float = 0.0
-    par_torsor: float = 0.0
-    cargas_puntuales: List[CargaPuntual] = field(default_factory=list)
-    cargas_distribuidas: List[CargaDistribuida] = field(default_factory=list)
-
-    def agregar_carga_puntual(self, pos: float, magnitud: float) -> None:
-        self.cargas_puntuales.append(CargaPuntual(pos, magnitud))
-
-    def agregar_carga_distribuida(self, inicio: float, fin: float, magnitud: float) -> None:
-        self.cargas_distribuidas.append(CargaDistribuida(inicio, fin, magnitud))
-
-
-def calcular_reacciones_viga(viga: Viga) -> Tuple[float, float, float]:
-    """Calcula las reacciones de una viga simple."""
-    suma_fuerzas_y = 0.0
-    suma_momentos_a = 0.0
-    L = viga.longitud
-
-    for carga in viga.cargas_puntuales:
-        suma_fuerzas_y += carga.magnitud
-        suma_momentos_a += carga.magnitud * carga.posicion
-
-    for dist in viga.cargas_distribuidas:
-        F = dist.fuerza_equivalente
-        x = dist.centroide
-        suma_fuerzas_y += F
-        suma_momentos_a += F * x
-
-    T = viga.par_torsor
-
-    if viga.tipo_apoyo_c == "Ninguno":
-        RB = (suma_momentos_a + T) / L
-        RA = suma_fuerzas_y - RB
-        RC = 0.0
-    else:
-        c = viga.posicion_apoyo_c
-        RB = ((suma_momentos_a + T) - c * suma_fuerzas_y / 2) / (L - c)
-        RA = RC = (suma_fuerzas_y - RB) / 2
-
-    return RA, RB, RC
-
-
-def centro_de_masa_viga(viga: Viga) -> float:
-    """Posición del centro de masa de las cargas."""
-    suma_momentos = 0.0
-    suma_cargas = 0.0
-
-    for carga in viga.cargas_puntuales:
-        suma_momentos += carga.posicion * carga.magnitud
-        suma_cargas += carga.magnitud
-
-    for dist in viga.cargas_distribuidas:
-        F = dist.fuerza_equivalente
-        x = dist.centroide
-        suma_momentos += x * F
-        suma_cargas += F
-
-    if suma_cargas == 0:
-        raise ValueError("No hay cargas definidas")
-
-    return suma_momentos / suma_cargas
-
-
-def resolver_armadura(nodos: Dict[int, Nodo], barras: List[Barra]) -> Tuple[np.ndarray, Dict[int, Tuple[float, float]]]:
-    """Calcula fuerzas y reacciones de una armadura plana."""
-    arm = Armadura2D(nodos, barras)
-    return arm.resolver()
-
-
-def resolver_bastidor(nodos: Dict[int, NodoBastidor], barras: List[BarraBastidor]) -> Tuple[np.ndarray, Dict[int, Tuple[float, float, float]]]:
-    """Obtiene desplazamientos y reacciones de un bastidor plano."""
-    bastidor = Bastidor2D(nodos, barras)
-    return bastidor.resolver()
-
-
-__all__ = [
-    "Nodo",
-    "Barra",
-    "Armadura2D",
-    "NodoBastidor",
-    "BarraBastidor",
-    "Bastidor2D",
-    "CargaPuntual",
-    "CargaDistribuida",
-    "Viga",
-    "calcular_reacciones_viga",
-    "centro_de_masa_viga",
-    "resolver_armadura",
-    "resolver_bastidor",
-]
 class SimuladorVigaMejorado:
     def __init__(self, root, bootstrap=False):
         self.root = root
@@ -735,7 +414,7 @@ class SimuladorVigaMejorado:
             self.log(f"✅ Carga puntual: {mag}N en {pos}m\n", "success")
             self.dibujar_viga_actual()
             
-        except Exception as e:
+        except (tk.TclError, ValueError) as e:
             messagebox.showerror("Error", f"Valores inválidos: {e}")
             
     def agregar_carga_distribuida(self):
@@ -759,7 +438,7 @@ class SimuladorVigaMejorado:
             )
             self.dibujar_viga_actual()
             
-        except Exception as e:
+        except (tk.TclError, ValueError) as e:
             messagebox.showerror("Error", f"Valores inválidos: {e}")
             
     def calcular_reacciones(self):
@@ -860,7 +539,7 @@ class SimuladorVigaMejorado:
 
             self.dibujar_viga_con_reacciones(RA, RB, RC)
             
-        except Exception as e:
+        except (ValueError, ZeroDivisionError, np.linalg.LinAlgError) as e:
             messagebox.showerror("Error", f"Error en cálculos: {e}")
             
     def calcular_centro_masa(self):
@@ -899,7 +578,7 @@ class SimuladorVigaMejorado:
             else:
                 self.dibujar_viga_actual(x_cm)
             
-        except Exception as e:
+        except (ValueError, ZeroDivisionError) as e:
             messagebox.showerror("Error", f"Error en cálculo: {e}")
 
     def calcular_centro_masa_3d(self, puntos):
@@ -1012,7 +691,7 @@ class SimuladorVigaMejorado:
                 
             self.dibujar_diagramas(x, cortante, momento, RA, RB, RC)
 
-        except Exception as e:
+        except (ValueError, ZeroDivisionError, np.linalg.LinAlgError) as e:
             messagebox.showerror("Error", f"Error en diagramas: {e}")
 
     def calcular_par_torsor_en_punto(self, x):
@@ -1586,7 +1265,7 @@ class SimuladorVigaMejorado:
             # Dibujar la sección
             self.dibujar_seccion_transversal(b1, h1, b2, h2, b3, h3, y_cg)
 
-        except Exception as e:
+        except (ValueError, ZeroDivisionError) as e:
             messagebox.showerror("Error", f"Error en cálculos: {e}")
 
     def dibujar_seccion_transversal(self, b1, h1, b2, h2, b3, h3, y_cg):
@@ -2101,7 +1780,7 @@ class SimuladorVigaMejorado:
             for idx in sorted(nodos.keys()):
                 rx, ry = reacc.get(idx, (0.0, 0.0))
                 self.log(f"Nodo {idx}: Rx={rx:.2f} Ry={ry:.2f}\n", "data")
-        except Exception as e:
+        except (ValueError, np.linalg.LinAlgError) as e:
             messagebox.showerror("Error", f"Error en armadura: {e}")
 
     def crear_seccion_bastidor(self, parent):
@@ -2197,7 +1876,7 @@ class SimuladorVigaMejorado:
             for idx in sorted(nodos.keys()):
                 rx, ry, rm = reacc[idx]
                 self.log(f"Nodo {idx}: Rx={rx:.2f} Ry={ry:.2f} M={rm:.2f}\n", "data")
-        except Exception as e:
+        except (ValueError, np.linalg.LinAlgError) as e:
             messagebox.showerror("Error", f"Error en bastidor: {e}")
 
     def run(self):
