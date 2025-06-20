@@ -108,3 +108,34 @@ El valor se mostrará en el registro y en los diagramas.
 4. Configura la viga y agrega las cargas necesarias.
 5. Usa **Par en Punto** para consultar el momento torsor si lo necesitas.
 6. Revisa los resultados en la pestaña de **Resultados**.
+
+### 11. Análisis de Armaduras y Bastidores
+
+Se añadió el módulo `estructuras_equilibrio.py` para resolver **armaduras planas**
+por el método de nodos utilizando únicamente las ecuaciones de equilibrio
+(`ΣFx = 0` y `ΣFy = 0`).
+Cada `Nodo` almacena sus coordenadas, las cargas externas y las restricciones en
+`x` y `y`. Las barras se definen indicando los nodos que conectan y el método
+`Armadura2D.resolver()` devuelve las fuerzas internas de cada barra junto con
+las reacciones en los apoyos.
+
+### 12. Formulario de Cálculos
+
+A continuación se listan las fórmulas utilizadas en cada apartado del programa:
+
+* **Reacciones de la viga**: se aplica el equilibrio estático
+  \(\sum F_y = 0\) y \(\sum M = 0\) para obtener `RA`, `RB` y `RC`.
+* **Cargas distribuidas**: la fuerza equivalente es
+  \(F = w \times (x_f - x_i)\) ubicada en el centroide del tramo.
+* **Centro de masa**: \(x_{cm} = \sum (x_i F_i) / \sum F_i\).
+* **Par torsor en un punto**: \(M(x) = T + \sum R_i (x - x_i) - \sum P_j
+  (x - x_j)\).
+* **Momento de inercia de la sección**: para cada rectángulo se usa
+  \(I = \tfrac{b h^3}{12}\) y el teorema de ejes paralelos para trasladar al
+  eje global.
+* **Armaduras**: en cada nodo se imponen
+  \(\sum F_x = 0\) y \(\sum F_y = 0\) para obtener las fuerzas internas de las
+  barras y las reacciones.
+
+Con estas expresiones es posible verificar manualmente cada resultado que
+entrega el simulador.
