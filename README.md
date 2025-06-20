@@ -115,7 +115,7 @@ El valor se mostrará en el registro y en los diagramas.
 
 El análisis de armaduras planas está integrado directamente en `simulador_viga_mejorado.py`. Las clases `Nodo`, `Barra` y `Armadura2D` usan solo las ecuaciones de equilibrio (`ΣFx = 0` y `ΣFy = 0`) para calcular las fuerzas internas de las barras y las reacciones.
 
-Para marcos o **bastidores** se utiliza la clase `Bastidor2D`, ahora incluida directamente en `simulador_viga_mejorado.py`. Esta clase ensambla la matriz de rigidez de cada elemento (\(K\)) y resuelve el sistema \(K\,d = F\) para obtener los desplazamientos y reacciones del bastidor plano. La interfaz cuenta con una nueva pestaña **Bastidor 2D** para ingresar nodos y barras.
+Para marcos o **bastidores** se utiliza la clase `Bastidor2D`, ahora incluida directamente en `simulador_viga_mejorado.py`. Esta clase ensambla la matriz de rigidez de cada elemento ($K$) y resuelve el sistema $K\,d = F$ para obtener los desplazamientos y reacciones del bastidor plano. La interfaz cuenta con una nueva pestaña **Bastidor 2D** para ingresar nodos y barras.
 
 Asimismo se añadió una pestaña **Armadura 2D**. En esta sección se definen los
 nodos con sus cargas y restricciones y las barras que los conectan. El programa
@@ -128,20 +128,20 @@ compresión.
 A continuación se listan las fórmulas utilizadas en cada apartado del programa:
 
 * **Reacciones de la viga**: se aplica el equilibrio estático
-  \(\sum F_y = 0\) y \(\sum M = 0\) para obtener `RA`, `RB` y `RC`.
+  $\sum F_y = 0$ y $\sum M = 0$ para obtener `RA`, `RB` y `RC`.
 * **Cargas distribuidas**: la fuerza equivalente es
-  \(F = w \times (x_f - x_i)\) ubicada en el centroide del tramo.
-* **Centro de masa**: \(x_{cm} = \sum (x_i F_i) / \sum F_i\).
-* **Par torsor en un punto**: \(M(x) = T + \sum R_i (x - x_i) - \sum P_j
-  (x - x_j)\).
+  $F = w \times (x_f - x_i)$ ubicada en el centroide del tramo.
+* **Centro de masa**: $x_{cm} = \sum (x_i F_i) / \sum F_i$.
+* **Par torsor en un punto**:
+  $M(x) = T + \sum R_i (x - x_i) - \sum P_j (x - x_j)$.
 * **Momento de inercia de la sección**: para cada rectángulo se usa
-  \(I = \tfrac{b h^3}{12}\) y el teorema de ejes paralelos para trasladar al
+  $I = \tfrac{b h^3}{12}$ y el teorema de ejes paralelos para trasladar al
   eje global.
 * **Armaduras**: en cada nodo se imponen
-  \(\sum F_x = 0\) y \(\sum F_y = 0\) para obtener las fuerzas internas de las
+  $\sum F_x = 0$ y $\sum F_y = 0$ para obtener las fuerzas internas de las
   barras y las reacciones.
 * **Bastidores**: se ensambla la matriz global de rigidez y se resuelve
-  \(K\,d = F\) para conocer desplazamientos y reacciones.
+  $K\,d = F$ para conocer desplazamientos y reacciones.
 
 Con estas expresiones es posible verificar manualmente cada resultado que
 entrega el simulador.
