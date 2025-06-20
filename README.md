@@ -113,6 +113,8 @@ El valor se mostrará en el registro y en los diagramas.
 
 El análisis de armaduras planas está integrado directamente en `simulador_viga_mejorado.py`. Las clases `Nodo`, `Barra` y `Armadura2D` usan solo las ecuaciones de equilibrio (`ΣFx = 0` y `ΣFy = 0`) para calcular las fuerzas internas de las barras y las reacciones.
 
+Para marcos o **bastidores** se añadió el módulo `bastidor2d.py`, que define `Bastidor2D`. Esta clase ensambla la matriz de rigidez de cada elemento usando únicamente las ecuaciones de equilibrio y permite obtener los desplazamientos y las reacciones de un bastidor plano.
+
 ### 12. Formulario de Cálculos
 
 A continuación se listan las fórmulas utilizadas en cada apartado del programa:
