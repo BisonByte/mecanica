@@ -147,11 +147,11 @@ entrega el simulador.
 ### 13. Uso programático
 
 Ahora puedes realizar los cálculos sin abrir la interfaz gráfica. El archivo
-`calculos_utiles.py` provee funciones y dataclasses que facilitan la
+`simulador_viga_mejorado.py` incluye funciones y dataclasses que facilitan la
 creación de vigas, armaduras o bastidores desde cualquier script.
 
 ```python
-from calculos_utiles import Viga, calcular_reacciones_viga
+from simulador_viga_mejorado import Viga, calcular_reacciones_viga
 
 viga = Viga(longitud=10.0)
 viga.agregar_carga_puntual(pos=4.0, magnitud=5.0)

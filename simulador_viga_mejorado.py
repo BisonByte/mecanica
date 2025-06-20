@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 
 try:
     import ttkbootstrap as ttkb
@@ -235,6 +235,112 @@ class Bastidor2D:
         return disp, reacc_nodales
 
 
+
+@dataclass
+class CargaPuntual:
+    """Carga puntual aplicada en una posición."""
+    posicion: float
+    magnitud: float
+
+
+@dataclass
+class CargaDistribuida:
+    """Carga distribuida con magnitud constante."""
+    inicio: float
+    fin: float
+    magnitud: float
+
+    @property
+    def fuerza_equivalente(self) -> float:
+        return self.magnitud * (self.fin - self.inicio)
+
+    @property
+    def centroide(self) -> float:
+        return self.inicio + (self.fin - self.inicio) / 2
+
+
+@dataclass
+class Viga:
+    """Representación simplificada de una viga para cálculos directos."""
+    longitud: float
+    tipo_apoyo_a: str = "Fijo"
+    tipo_apoyo_b: str = "Móvil"
+    tipo_apoyo_c: str = "Ninguno"
+    posicion_apoyo_c: float = 0.0
+    par_torsor: float = 0.0
+    cargas_puntuales: List[CargaPuntual] = field(default_factory=list)
+    cargas_distribuidas: List[CargaDistribuida] = field(default_factory=list)
+
+    def agregar_carga_puntual(self, pos: float, magnitud: float) -> None:
+        self.cargas_puntuales.append(CargaPuntual(pos, magnitud))
+
+    def agregar_carga_distribuida(self, inicio: float, fin: float, magnitud: float) -> None:
+        self.cargas_distribuidas.append(CargaDistribuida(inicio, fin, magnitud))
+
+
+def calcular_reacciones_viga(viga: Viga) -> Tuple[float, float, float]:
+    """Calcula las reacciones de una viga simple."""
+    suma_fuerzas_y = 0.0
+    suma_momentos_a = 0.0
+    L = viga.longitud
+
+    for carga in viga.cargas_puntuales:
+        suma_fuerzas_y += carga.magnitud
+        suma_momentos_a += carga.magnitud * carga.posicion
+
+    for dist in viga.cargas_distribuidas:
+        F = dist.fuerza_equivalente
+        x = dist.centroide
+        suma_fuerzas_y += F
+        suma_momentos_a += F * x
+
+    T = viga.par_torsor
+
+    if viga.tipo_apoyo_c == "Ninguno":
+        RB = (suma_momentos_a + T) / L
+        RA = suma_fuerzas_y - RB
+        RC = 0.0
+    else:
+        c = viga.posicion_apoyo_c
+        RB = ((suma_momentos_a + T) - c * suma_fuerzas_y / 2) / (L - c)
+        RA = RC = (suma_fuerzas_y - RB) / 2
+
+    return RA, RB, RC
+
+
+def centro_de_masa_viga(viga: Viga) -> float:
+    """Posición del centro de masa de las cargas."""
+    suma_momentos = 0.0
+    suma_cargas = 0.0
+
+    for carga in viga.cargas_puntuales:
+        suma_momentos += carga.posicion * carga.magnitud
+        suma_cargas += carga.magnitud
+
+    for dist in viga.cargas_distribuidas:
+        F = dist.fuerza_equivalente
+        x = dist.centroide
+        suma_momentos += x * F
+        suma_cargas += F
+
+    if suma_cargas == 0:
+        raise ValueError("No hay cargas definidas")
+
+    return suma_momentos / suma_cargas
+
+
+def resolver_armadura(nodos: Dict[int, Nodo], barras: List[Barra]) -> Tuple[np.ndarray, Dict[int, Tuple[float, float]]]:
+    """Calcula fuerzas y reacciones de una armadura plana."""
+    arm = Armadura2D(nodos, barras)
+    return arm.resolver()
+
+
+def resolver_bastidor(nodos: Dict[int, NodoBastidor], barras: List[BarraBastidor]) -> Tuple[np.ndarray, Dict[int, Tuple[float, float, float]]]:
+    """Obtiene desplazamientos y reacciones de un bastidor plano."""
+    bastidor = Bastidor2D(nodos, barras)
+    return bastidor.resolver()
+
+
 __all__ = [
     "Nodo",
     "Barra",
@@ -242,6 +348,13 @@ __all__ = [
     "NodoBastidor",
     "BarraBastidor",
     "Bastidor2D",
+    "CargaPuntual",
+    "CargaDistribuida",
+    "Viga",
+    "calcular_reacciones_viga",
+    "centro_de_masa_viga",
+    "resolver_armadura",
+    "resolver_bastidor",
 ]
 class SimuladorVigaMejorado:
     def __init__(self, root, bootstrap=False):
@@ -289,6 +402,7 @@ class SimuladorVigaMejorado:
         self.par_torsor = tk.DoubleVar(value=0.0)
         # Posición para evaluar el par torsor
         self.posicion_torsor = tk.DoubleVar(value=0.0)
+        self.resultado_par = tk.StringVar(value="-")
 
         # Guardar reacciones para cálculos posteriores
         self.reaccion_a = 0.0
@@ -564,7 +678,8 @@ class SimuladorVigaMejorado:
         ttk.Entry(par_frame, textvariable=self.posicion_torsor, width=6).pack(side="left")
         btn_par_punto = ttk.Button(par_frame, text="🌀 Par en Punto", style="Action.TButton")
         btn_par_punto.pack(side="left", padx=2)
-        btn_par_punto.config(command=lambda b=btn_par_punto: self.on_button_click(b, lambda: self.calcular_par_torsor_en_punto(self.posicion_torsor.get())))
+        btn_par_punto.config(command=lambda b=btn_par_punto: self.on_button_click(b, self.ejecutar_par_punto))
+        ttk.Label(par_frame, textvariable=self.resultado_par, width=10).pack(side="left", padx=(4, 0))
         par_frame.grid(row=0, column=3, columnspan=2, padx=5, pady=5, sticky="ew")
         
         # Segunda fila de botones
@@ -584,13 +699,17 @@ class SimuladorVigaMejorado:
         btn_animar_3d.config(command=lambda b=btn_animar_3d: self.on_button_click(b, self.animar_viga_3d))
         btn_animar_3d.grid(row=1, column=3, padx=5, pady=5, sticky="ew")
 
+        btn_guardar = ttk.Button(frame_botones, text="💾 Guardar JPG", style="Action.TButton")
+        btn_guardar.config(command=lambda b=btn_guardar: self.on_button_click(b, self.guardar_grafica))
+        btn_guardar.grid(row=1, column=4, padx=5, pady=5, sticky="ew")
+
         btn_tema = ttk.Button(frame_botones, textvariable=self.texto_tema, style="Action.TButton")
         btn_tema.config(command=lambda b=btn_tema: self.on_button_click(b, self.toggle_dark_mode))
-        btn_tema.grid(row=1, column=4, padx=5, pady=5, sticky="ew")
+        btn_tema.grid(row=1, column=5, padx=5, pady=5, sticky="ew")
         self.boton_tema = btn_tema
-        
+
         # Configurar el grid para que se expanda correctamente
-        for i in range(5):
+        for i in range(6):
             frame_botones.columnconfigure(i, weight=1)
 
         return frame_botones
@@ -935,6 +1054,12 @@ class SimuladorVigaMejorado:
 
         self.log(f"🌀 Par torsor en x={x:.2f} m: {momento:.2f} N·m\n", "data")
         return momento
+
+    def ejecutar_par_punto(self):
+        """Obtiene el par torsor en la posición ingresada y actualiza la etiqueta."""
+        valor = self.calcular_par_torsor_en_punto(self.posicion_torsor.get())
+        if valor is not None:
+            self.resultado_par.set(f"{valor:.2f} N·m")
             
     def dibujar_viga_actual(self, x_cm=None):
         for widget in self.frame_grafico.winfo_children():
@@ -1411,6 +1536,19 @@ class SimuladorVigaMejorado:
             canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         else:
             messagebox.showinfo("Información", "No hay gráfica para ampliar.")
+
+    def guardar_grafica(self):
+        """Guarda la última gráfica generada en formato JPG."""
+        if not hasattr(self, 'ultima_figura'):
+            messagebox.showinfo("Información", "No hay gráfica para guardar.")
+            return
+        file_path = filedialog.asksaveasfilename(
+            defaultextension='.jpg',
+            filetypes=[('JPEG', '*.jpg'), ('Todos los archivos', '*.*')]
+        )
+        if file_path:
+            self.ultima_figura.savefig(file_path, format='jpg')
+            self.log(f"💾 Gráfica guardada en {file_path}\n", 'success')
     
     def calcular_propiedades_seccion(self):
         try:
