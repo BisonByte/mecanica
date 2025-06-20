@@ -115,6 +115,12 @@ El análisis de armaduras planas está integrado directamente en `simulador_viga
 
 Para marcos o **bastidores** se utiliza la clase `Bastidor2D`, ahora incluida directamente en `simulador_viga_mejorado.py`. Esta clase ensambla la matriz de rigidez de cada elemento (\(K\)) y resuelve el sistema \(K\,d = F\) para obtener los desplazamientos y reacciones del bastidor plano. La interfaz cuenta con una nueva pestaña **Bastidor 2D** para ingresar nodos y barras.
 
+Asimismo se añadió una pestaña **Armadura 2D**. En esta sección se definen los
+nodos con sus cargas y restricciones y las barras que los conectan. El programa
+resuelve la armadura usando únicamente las ecuaciones de equilibrio y cada
+barra se pinta en rojo cuando se encuentra en tensión y en azul cuando está en
+compresión.
+
 ### 12. Formulario de Cálculos
 
 A continuación se listan las fórmulas utilizadas en cada apartado del programa:
