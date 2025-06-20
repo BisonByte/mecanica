@@ -1,8 +1,9 @@
+# pyright: reportMissingImports=false
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 
 try:
-    import ttkbootstrap as ttkb
+    import ttkbootstrap as ttkb  # type: ignore
     BOOTSTRAP_AVAILABLE = True
 except ImportError:
     ttkb = None
