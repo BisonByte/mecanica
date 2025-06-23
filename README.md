@@ -46,6 +46,7 @@ El programa usa **variables `tk.DoubleVar` y `tk.StringVar`** para guardar valor
 * **Par torsor (torque) en cualquier punto** y fuerza equivalente de cargas distribuidas.
 * **Centro de masa en 3D** y cálculo de fuerza a partir de un par torsor.
 * También calcula propiedades como el **área total**, **centro de gravedad de la sección transversal**, y **momento de inercia**.
+* **Nuevo**: análisis de **armaduras** mediante el método de nodos.
 
 ---
 
@@ -58,6 +59,7 @@ El simulador puede dibujar:
 * **Diagramas de fuerza cortante y momento flector**.
 * **Vista 3D rotativa** de la viga con cargas y apoyos.
 * **Vista de la sección transversal** y el centro de gravedad de figuras combinadas.
+* **Armaduras y bastidores** con fuerzas internas coloreadas.
 
 Usa `matplotlib` para todos estos gráficos y los incrusta dentro de la ventana con `FigureCanvasTkAgg`.
 
@@ -92,6 +94,7 @@ El botón de tema permite alternar entre un estilo claro (*flatly*) y uno oscuro
 * **❓ Ayuda**: despliega un resumen de uso.
 * **🗑️ Limpiar Todo**: borra todas las cargas y reinicia la configuración.
 * **🌓/🌞 Modo Oscuro/Claro**: alterna el tema visual de la aplicación.
+* **🏗️ Calcular Armadura**: resuelve fuerzas internas en nodos y miembros.
 
 ### 9. Par torsor en un punto
 
