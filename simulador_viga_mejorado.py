@@ -1,40 +1,17 @@
-# pyright: reportMissingImports=false
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox
 
 try:
-    import ttkbootstrap as ttkb  # type: ignore
+    import ttkbootstrap as ttkb
     BOOTSTRAP_AVAILABLE = True
 except ImportError:
     ttkb = None
     BOOTSTRAP_AVAILABLE = False
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import (
-    FigureCanvasTkAgg,
-    NavigationToolbar2Tk,
-)
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.animation import FuncAnimation
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
-from typing import Dict, List, Tuple
-
-from beam import (
-    CargaDistribuida,
-    CargaPuntual,
-    Viga,
-    calcular_reacciones_viga,
-    centro_de_masa_viga,
-)
-from analysis import (
-    Armadura2D,
-    Barra,
-    BarraBastidor,
-    Bastidor2D,
-    Nodo,
-    NodoBastidor,
-    resolver_armadura,
-    resolver_bastidor,
-)
 
 class SimuladorVigaMejorado:
     def __init__(self, root, bootstrap=False):
@@ -82,7 +59,6 @@ class SimuladorVigaMejorado:
         self.par_torsor = tk.DoubleVar(value=0.0)
         # Posición para evaluar el par torsor
         self.posicion_torsor = tk.DoubleVar(value=0.0)
-        self.resultado_par = tk.StringVar(value="-")
 
         # Guardar reacciones para cálculos posteriores
         self.reaccion_a = 0.0
@@ -127,10 +103,6 @@ class SimuladorVigaMejorado:
         self.alto_inicial = 0
         # Espaciado de la cuadrícula para el lienzo de formas
         self.grid_spacing = 20
-        self.texto_bastidor = None
-        self.fig_bastidor = None
-        self.ax_bastidor = None
-        self.canvas_bastidor = None
         self.crear_widgets()
         
         # Mostrar mensaje inicial
@@ -212,14 +184,10 @@ class SimuladorVigaMejorado:
         tab_config = ttk.Frame(notebook)
         tab_seccion = ttk.Frame(notebook)
         tab_result = ttk.Frame(notebook)
-        tab_armadura = ttk.Frame(notebook)
-        tab_bastidor = ttk.Frame(notebook)
 
         notebook.add(tab_config, text="Configuración y Cargas")
         notebook.add(tab_seccion, text="Sección y Formas")
         notebook.add(tab_result, text="Resultados")
-        notebook.add(tab_armadura, text="Armadura 2D")
-        notebook.add(tab_bastidor, text="Bastidor 2D")
 
         # Sección configuración y cargas
         tab_config.columnconfigure(0, weight=1)
@@ -242,8 +210,6 @@ class SimuladorVigaMejorado:
         # Resultados y gráficos
         self.crear_seccion_resultados(tab_result)
         self.crear_seccion_graficos(tab_result)
-        self.crear_seccion_armadura(tab_armadura)
-        self.crear_seccion_bastidor(tab_bastidor)
     
     def crear_seccion_configuracion_viga(self, parent):
         frame_config = ttk.LabelFrame(parent, text="⚙ Configuración de la Viga")
@@ -358,8 +324,7 @@ class SimuladorVigaMejorado:
         ttk.Entry(par_frame, textvariable=self.posicion_torsor, width=6).pack(side="left")
         btn_par_punto = ttk.Button(par_frame, text="🌀 Par en Punto", style="Action.TButton")
         btn_par_punto.pack(side="left", padx=2)
-        btn_par_punto.config(command=lambda b=btn_par_punto: self.on_button_click(b, self.ejecutar_par_punto))
-        ttk.Label(par_frame, textvariable=self.resultado_par, width=10).pack(side="left", padx=(4, 0))
+        btn_par_punto.config(command=lambda b=btn_par_punto: self.on_button_click(b, lambda: self.calcular_par_torsor_en_punto(self.posicion_torsor.get())))
         par_frame.grid(row=0, column=3, columnspan=2, padx=5, pady=5, sticky="ew")
         
         # Segunda fila de botones
@@ -379,17 +344,13 @@ class SimuladorVigaMejorado:
         btn_animar_3d.config(command=lambda b=btn_animar_3d: self.on_button_click(b, self.animar_viga_3d))
         btn_animar_3d.grid(row=1, column=3, padx=5, pady=5, sticky="ew")
 
-        btn_guardar = ttk.Button(frame_botones, text="💾 Guardar JPG", style="Action.TButton")
-        btn_guardar.config(command=lambda b=btn_guardar: self.on_button_click(b, self.guardar_grafica))
-        btn_guardar.grid(row=1, column=4, padx=5, pady=5, sticky="ew")
-
         btn_tema = ttk.Button(frame_botones, textvariable=self.texto_tema, style="Action.TButton")
         btn_tema.config(command=lambda b=btn_tema: self.on_button_click(b, self.toggle_dark_mode))
-        btn_tema.grid(row=1, column=5, padx=5, pady=5, sticky="ew")
+        btn_tema.grid(row=1, column=4, padx=5, pady=5, sticky="ew")
         self.boton_tema = btn_tema
-
+        
         # Configurar el grid para que se expanda correctamente
-        for i in range(6):
+        for i in range(5):
             frame_botones.columnconfigure(i, weight=1)
 
         return frame_botones
@@ -415,7 +376,7 @@ class SimuladorVigaMejorado:
             self.log(f"✅ Carga puntual: {mag}N en {pos}m\n", "success")
             self.dibujar_viga_actual()
             
-        except (tk.TclError, ValueError) as e:
+        except Exception as e:
             messagebox.showerror("Error", f"Valores inválidos: {e}")
             
     def agregar_carga_distribuida(self):
@@ -439,7 +400,7 @@ class SimuladorVigaMejorado:
             )
             self.dibujar_viga_actual()
             
-        except (tk.TclError, ValueError) as e:
+        except Exception as e:
             messagebox.showerror("Error", f"Valores inválidos: {e}")
             
     def calcular_reacciones(self):
@@ -540,7 +501,7 @@ class SimuladorVigaMejorado:
 
             self.dibujar_viga_con_reacciones(RA, RB, RC)
             
-        except (ValueError, ZeroDivisionError, np.linalg.LinAlgError) as e:
+        except Exception as e:
             messagebox.showerror("Error", f"Error en cálculos: {e}")
             
     def calcular_centro_masa(self):
@@ -579,7 +540,7 @@ class SimuladorVigaMejorado:
             else:
                 self.dibujar_viga_actual(x_cm)
             
-        except (ValueError, ZeroDivisionError) as e:
+        except Exception as e:
             messagebox.showerror("Error", f"Error en cálculo: {e}")
 
     def calcular_centro_masa_3d(self, puntos):
@@ -692,7 +653,7 @@ class SimuladorVigaMejorado:
                 
             self.dibujar_diagramas(x, cortante, momento, RA, RB, RC)
 
-        except (ValueError, ZeroDivisionError, np.linalg.LinAlgError) as e:
+        except Exception as e:
             messagebox.showerror("Error", f"Error en diagramas: {e}")
 
     def calcular_par_torsor_en_punto(self, x):
@@ -734,12 +695,6 @@ class SimuladorVigaMejorado:
 
         self.log(f"🌀 Par torsor en x={x:.2f} m: {momento:.2f} N·m\n", "data")
         return momento
-
-    def ejecutar_par_punto(self):
-        """Obtiene el par torsor en la posición ingresada y actualiza la etiqueta."""
-        valor = self.calcular_par_torsor_en_punto(self.posicion_torsor.get())
-        if valor is not None:
-            self.resultado_par.set(f"{valor:.2f} N·m")
             
     def dibujar_viga_actual(self, x_cm=None):
         for widget in self.frame_grafico.winfo_children():
@@ -1169,16 +1124,6 @@ class SimuladorVigaMejorado:
 • Figuras Irregulares: añada rectángulos, triángulos o círculos y obtenga su centro de gravedad
 • 🔍 Ampliar la gráfica en otra ventana
 • 🗑️ Limpiar Todo para reiniciar
-• Nuevo apartado **Bastidor 2D** para marcos planos
-
-🔹 FORMULARIO DE CÁLCULOS
-• Reacciones: ΣFy=0 y ΣM=0
-• Carga distribuida: F=w·(xf−xi)
-• Centro de masa: x_cm=Σ(x·F)/ΣF
-• Par en punto: M(x)=T+ΣR_i(x−x_i)−ΣP_j(x−x_j)
-• Momento de inercia: I=b h³/12
-• Armaduras: ΣFx=0 y ΣFy=0
-• Bastidores: se resuelve K·d=F
 
 🔹 PASOS BÁSICOS
 1. Configure la viga y apoyos
@@ -1216,19 +1161,6 @@ class SimuladorVigaMejorado:
             canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         else:
             messagebox.showinfo("Información", "No hay gráfica para ampliar.")
-
-    def guardar_grafica(self):
-        """Guarda la última gráfica generada en formato JPG."""
-        if not hasattr(self, 'ultima_figura'):
-            messagebox.showinfo("Información", "No hay gráfica para guardar.")
-            return
-        file_path = filedialog.asksaveasfilename(
-            defaultextension='.jpg',
-            filetypes=[('JPEG', '*.jpg'), ('Todos los archivos', '*.*')]
-        )
-        if file_path:
-            self.ultima_figura.savefig(file_path, format='jpg')
-            self.log(f"💾 Gráfica guardada en {file_path}\n", 'success')
     
     def calcular_propiedades_seccion(self):
         try:
@@ -1266,7 +1198,7 @@ class SimuladorVigaMejorado:
             # Dibujar la sección
             self.dibujar_seccion_transversal(b1, h1, b2, h2, b3, h3, y_cg)
 
-        except (ValueError, ZeroDivisionError) as e:
+        except Exception as e:
             messagebox.showerror("Error", f"Error en cálculos: {e}")
 
     def dibujar_seccion_transversal(self, b1, h1, b2, h2, b3, h3, y_cg):
@@ -1338,9 +1270,10 @@ class SimuladorVigaMejorado:
         ttk.Button(frame_formas, text="Calcular CG", command=self.calcular_cg_formas).grid(row=3, column=2, columnspan=2, pady=5)
         ttk.Button(frame_formas, text="Limpiar Lienzo", command=self.limpiar_lienzo_formas).grid(row=4, column=0, columnspan=2, pady=5)
         ttk.Button(frame_formas, text="Ampliar Lienzo", command=self.ampliar_lienzo_formas).grid(row=4, column=2, columnspan=2, pady=5)
-        ttk.Label(frame_formas, text="⚡ También puede hacer clic en el lienzo para agregar").grid(row=5, column=0, columnspan=5, pady=2)
+
+        ttk.Label(frame_formas, text="⚡ También puede hacer clic en el lienzo para agregar").grid(row=5, column=0, columnspan=4, pady=2)
         self.canvas_formas = tk.Canvas(frame_formas, width=400, height=300, bg="white")
-        self.canvas_formas.grid(row=6, column=0, columnspan=5, pady=5)
+        self.canvas_formas.grid(row=6, column=0, columnspan=4, pady=5)
         self.canvas_formas.bind("<Button-1>", self.iniciar_accion_formas)
         self.canvas_formas.bind("<B1-Motion>", self.arrastrar_forma)
         self.canvas_formas.bind("<ButtonRelease-1>", self.soltar_forma)
@@ -1354,10 +1287,10 @@ class SimuladorVigaMejorado:
         self.dibujar_cuadricula(self.canvas_formas)
 
         self.coord_label = ttk.Label(frame_formas, text="x=0, y=0")
-        self.coord_label.grid(row=7, column=0, columnspan=5, pady=2)
+        self.coord_label.grid(row=7, column=0, columnspan=4, pady=2)
 
         self.cg_label = ttk.Label(frame_formas, text="CG: -")
-        self.cg_label.grid(row=8, column=0, columnspan=5, pady=2)
+        self.cg_label.grid(row=8, column=0, columnspan=4, pady=2)
 
     def agregar_forma(self):
         try:
@@ -1661,7 +1594,6 @@ class SimuladorVigaMejorado:
         self.coord_label_ampliado = ttk.Label(self.ventana_lienzo, text="x=0, y=0")
         self.coord_label_ampliado.pack()
 
-
     def crear_seccion_resultados(self, parent):
         frame_resultados = ttk.LabelFrame(parent, text="Resultados")
         frame_resultados.pack(fill="both", pady=10, padx=10)
@@ -1699,186 +1631,6 @@ class SimuladorVigaMejorado:
     def crear_seccion_graficos(self, parent):
         self.frame_grafico = ttk.Frame(parent)
         self.frame_grafico.pack(fill="both", expand=True, pady=10, padx=10)
-
-    def crear_seccion_armadura(self, parent):
-        frame = ttk.Frame(parent)
-        frame.pack(fill="both", expand=True, padx=10, pady=10)
-
-        instrucciones = (
-            "NODOS: id x y Fx Fy rx ry\n"
-            "BARRAS: ni nj\n"
-            "Escriba los datos debajo y presione Calcular."
-        )
-        ttk.Label(frame, text=instrucciones, justify="left").pack(anchor="w")
-
-        self.texto_armadura = tk.Text(frame, height=8)
-        self.texto_armadura.pack(fill="x", pady=5)
-        ejemplo = (
-            "NODOS\n"
-            "1 0 0 0 0 1 1\n"
-            "2 4 0 0 -1000 0 1\n"
-            "3 4 3 0 0 0 0\n\n"
-            "BARRAS\n"
-            "1 2\n"
-            "2 3"
-        )
-        self.texto_armadura.insert("1.0", ejemplo)
-
-        btn = ttk.Button(frame, text="Calcular Armadura", command=self.calcular_armadura)
-        btn.pack(pady=5)
-
-        self.fig_armadura, self.ax_armadura = plt.subplots()
-        self.canvas_armadura = FigureCanvasTkAgg(self.fig_armadura, frame)
-        self.canvas_armadura.get_tk_widget().pack(fill="both", expand=True)
-
-    def calcular_armadura(self):
-        try:
-            text = self.texto_armadura.get("1.0", "end").strip().splitlines()
-            mode = None
-            nodos = {}
-            barras = []
-            for line in text:
-                l = line.strip()
-                if not l:
-                    continue
-                if l.lower().startswith("nodos"):
-                    mode = "n"
-                    continue
-                if l.lower().startswith("barras"):
-                    mode = "b"
-                    continue
-                parts = l.split()
-                if mode == "n" and len(parts) >= 7:
-                    idx = int(parts[0])
-                    nodos[idx] = Nodo(
-                        x=float(parts[1]),
-                        y=float(parts[2]),
-                        carga_x=float(parts[3]),
-                        carga_y=float(parts[4]),
-                        restringido_x=bool(int(parts[5])),
-                        restringido_y=bool(int(parts[6])),
-                    )
-                elif mode == "b" and len(parts) >= 2:
-                    barras.append(Barra(n_i=int(parts[0]), n_j=int(parts[1])))
-
-            arm = Armadura2D(nodos, barras)
-            fuerzas, reacc = arm.resolver()
-
-            self.ax_armadura.clear()
-            for bar, F in zip(barras, fuerzas):
-                n1 = nodos[bar.n_i]
-                n2 = nodos[bar.n_j]
-                color = "red" if F >= 0 else "blue"
-                self.ax_armadura.plot([n1.x, n2.x], [n1.y, n2.y], color=color, marker="o")
-                self.ax_armadura.text((n1.x + n2.x) / 2, (n1.y + n2.y) / 2, f"{F:.1f}", color=color)
-            self.ax_armadura.axis("equal")
-            self.ax_armadura.set_title("Fuerzas en barras (+Tensión / -Compresión)")
-            self.canvas_armadura.draw()
-
-            self.log("\n=== RESULTADOS ARMADURA ===\n", "title")
-            for i, bar in enumerate(barras):
-                self.log(f"Barra {bar.n_i}-{bar.n_j}: {fuerzas[i]:.2f} N\n", "data")
-            for idx in sorted(nodos.keys()):
-                rx, ry = reacc.get(idx, (0.0, 0.0))
-                self.log(f"Nodo {idx}: Rx={rx:.2f} Ry={ry:.2f}\n", "data")
-        except (ValueError, np.linalg.LinAlgError) as e:
-            messagebox.showerror("Error", f"Error en armadura: {e}")
-
-    def crear_seccion_bastidor(self, parent):
-        frame = ttk.Frame(parent)
-        frame.pack(fill="both", expand=True, padx=10, pady=10)
-
-        instrucciones = (
-            "NODOS: id x y cx cy m rx ry rz\n"
-            "BARRAS: ni nj E A I\n"
-            "Escriba los datos debajo y presione Calcular."
-        )
-        ttk.Label(frame, text=instrucciones, justify="left").pack(anchor="w")
-
-        self.texto_bastidor = tk.Text(frame, height=8)
-        self.texto_bastidor.pack(fill="x", pady=5)
-        ejemplo = (
-            "NODOS\n"
-            "1 0 0 0 0 0 1 1 1\n"
-            "2 4 0 0 -1000 0 0 1 1\n"
-            "3 4 3 0 0 0 0 0 0\n\n"
-            "BARRAS\n"
-            "1 2 2e11 0.02 8e-5\n"
-            "2 3 2e11 0.02 8e-5"
-        )
-        self.texto_bastidor.insert("1.0", ejemplo)
-
-        btn = ttk.Button(frame, text="Calcular Bastidor", command=self.calcular_bastidor)
-        btn.pack(pady=5)
-
-        self.fig_bastidor, self.ax_bastidor = plt.subplots()
-        self.canvas_bastidor = FigureCanvasTkAgg(self.fig_bastidor, frame)
-        self.canvas_bastidor.get_tk_widget().pack(fill="both", expand=True)
-
-    def calcular_bastidor(self):
-        try:
-            text = self.texto_bastidor.get("1.0", "end").strip().splitlines()
-            mode = None
-            nodos = {}
-            barras = []
-            for line in text:
-                l = line.strip()
-                if not l:
-                    continue
-                if l.lower().startswith("nodos"):
-                    mode = "n"
-                    continue
-                if l.lower().startswith("barras"):
-                    mode = "b"
-                    continue
-                parts = l.split()
-                if mode == "n" and len(parts) >= 9:
-                    idx = int(parts[0])
-                    nodos[idx] = NodoBastidor(
-                        x=float(parts[1]),
-                        y=float(parts[2]),
-                        carga_x=float(parts[3]),
-                        carga_y=float(parts[4]),
-                        momento=float(parts[5]),
-                        restringido_x=bool(int(parts[6])),
-                        restringido_y=bool(int(parts[7])),
-                        restringido_rot=bool(int(parts[8])),
-                    )
-                elif mode == "b" and len(parts) >= 5:
-                    barras.append(
-                        BarraBastidor(
-                            n_i=int(parts[0]),
-                            n_j=int(parts[1]),
-                            E=float(parts[2]),
-                            A=float(parts[3]),
-                            I=float(parts[4]),
-                        )
-                    )
-
-            bast = Bastidor2D(nodos, barras)
-            disp, reacc = bast.resolver()
-
-            self.ax_bastidor.clear()
-            for bar in barras:
-                n1 = nodos[bar.n_i]
-                n2 = nodos[bar.n_j]
-                self.ax_bastidor.plot([n1.x, n2.x], [n1.y, n2.y], "b-o")
-
-            scale = 100
-            for i, idx in enumerate(sorted(nodos.keys())):
-                d = disp[i*3:i*3+2]
-                n = nodos[idx]
-                self.ax_bastidor.plot(n.x + scale*d[0], n.y + scale*d[1], "ro")
-
-            self.ax_bastidor.set_title("Deformada (escala x{} )".format(scale))
-            self.ax_bastidor.axis("equal")
-            self.canvas_bastidor.draw()
-            self.log("\n=== RESULTADOS BASTIDOR ===\n", "title")
-            for idx in sorted(nodos.keys()):
-                rx, ry, rm = reacc[idx]
-                self.log(f"Nodo {idx}: Rx={rx:.2f} Ry={ry:.2f} M={rm:.2f}\n", "data")
-        except (ValueError, np.linalg.LinAlgError) as e:
-            messagebox.showerror("Error", f"Error en bastidor: {e}")
 
     def run(self):
         self.root.mainloop()

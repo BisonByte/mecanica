@@ -14,7 +14,7 @@ El programa está estructurado en una **clase principal llamada `SimuladorVigaMe
 La ventana está dividida en **tres pestañas principales**:
 
 * **Configuración y cargas**: aquí se puede cambiar la longitud de la viga, los tipos de apoyos (fijo, móvil o ninguno), y agregar cargas (puntuales o distribuidas).
-* **Sección y formas**: permite calcular propiedades geométricas como el centro de gravedad y momento de inercia. También se pueden dibujar formas irregulares (triángulos, círculos y rectángulos) para analizarlas.
+* **Sección y formas**: permite calcular propiedades geométricas como el centro de gravedad y momento de inercia. También se pueden dibujar formas irregulares (triángulos, círculos y rectángulos) para analizar cómo afectan.
 * **Resultados**: en esta pestaña se muestran los gráficos, los resultados de las reacciones, los diagramas de momento y cortante, y también la animación 3D si se activa.
 
 ---
@@ -102,66 +102,9 @@ El valor se mostrará en el registro y en los diagramas.
 ### 10. Uso
 
 1. Clona este repositorio o descarga el código.
-2. Instala las dependencias con `pip install -r requirements.txt`.
-
-3. Asegúrate de tener **Python 3**, `tkinter`, `matplotlib` y `numpy` instalados.
+2. Asegúrate de tener **Python 3**, `tkinter`, `matplotlib` y `numpy` instalados.
    Para un aspecto moderno instala opcionalmente `ttkbootstrap` con `pip install ttkbootstrap`.
-4. Ejecuta `python3 simulador_viga_mejorado.py`.
-5. Configura la viga y agrega las cargas necesarias.
-6. Usa **Par en Punto** para consultar el momento torsor si lo necesitas.
-7. Revisa los resultados en la pestaña de **Resultados**.
-
-### 11. Análisis de Armaduras y Bastidores
-
-El análisis de armaduras planas está integrado directamente en `simulador_viga_mejorado.py`. Las clases `Nodo`, `Barra` y `Armadura2D` usan solo las ecuaciones de equilibrio (`ΣFx = 0` y `ΣFy = 0`) para calcular las fuerzas internas de las barras y las reacciones.
-
-Para marcos o **bastidores** se utiliza la clase `Bastidor2D`, ahora incluida directamente en `simulador_viga_mejorado.py`. Esta clase ensambla la matriz de rigidez de cada elemento (\(K\)) y resuelve el sistema \(K\,d = F\) para obtener los desplazamientos y reacciones del bastidor plano. La interfaz cuenta con una nueva pestaña **Bastidor 2D** para ingresar nodos y barras.
-
-Asimismo se añadió una pestaña **Armadura 2D**. En esta sección se definen los
-nodos con sus cargas y restricciones y las barras que los conectan. El programa
-resuelve la armadura usando únicamente las ecuaciones de equilibrio y cada
-barra se pinta en rojo cuando se encuentra en tensión y en azul cuando está en
-compresión.
-
-### 12. Formulario de Cálculos
-
-A continuación se listan las fórmulas utilizadas en cada apartado del programa:
-
-* **Reacciones de la viga**: se aplica el equilibrio estático
-  \(\sum F_y = 0\) y \(\sum M = 0\) para obtener `RA`, `RB` y `RC`.
-* **Cargas distribuidas**: la fuerza equivalente es
-  \(F = w \times (x_f - x_i)\) ubicada en el centroide del tramo.
-* **Centro de masa**: \(x_{cm} = \sum (x_i F_i) / \sum F_i\).
-* **Par torsor en un punto**: \(M(x) = T + \sum R_i (x - x_i) - \sum P_j
-  (x - x_j)\).
-* **Momento de inercia de la sección**: para cada rectángulo se usa
-  \(I = \tfrac{b h^3}{12}\) y el teorema de ejes paralelos para trasladar al
-  eje global.
-* **Armaduras**: en cada nodo se imponen
-  \(\sum F_x = 0\) y \(\sum F_y = 0\) para obtener las fuerzas internas de las
-  barras y las reacciones.
-* **Bastidores**: se ensambla la matriz global de rigidez y se resuelve
-  \(K\,d = F\) para conocer desplazamientos y reacciones.
-
-Con estas expresiones es posible verificar manualmente cada resultado que
-entrega el simulador.
-
-### 13. Uso programático
-
-Ahora puedes realizar los cálculos sin abrir la interfaz gráfica. El archivo
-`simulador_viga_mejorado.py` incluye (y desde la versión actual puedes usar un CLI en `cli.py`) funciones y dataclasses que facilitan la
-Puedes invocar `python cli.py reacciones --longitud 10 --carga 4 5` para un ejemplo rapido.
-creación de vigas, armaduras o bastidores desde cualquier script.
-
-```python
-from simulador_viga_mejorado import Viga, calcular_reacciones_viga
-
-viga = Viga(longitud=10.0)
-viga.agregar_carga_puntual(pos=4.0, magnitud=5.0)
-ra, rb, rc = calcular_reacciones_viga(viga)
-print(ra, rb, rc)
-```
-
-También incluye `resolver_armadura` y `resolver_bastidor` para utilizar las
-clases de análisis estructural de forma directa.
-
+3. Ejecuta `python3 simulador_viga_mejorado.py`.
+4. Configura la viga y agrega las cargas necesarias.
+5. Usa **Par en Punto** para consultar el momento torsor si lo necesitas.
+6. Revisa los resultados en la pestaña de **Resultados**.
