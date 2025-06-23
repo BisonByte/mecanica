@@ -716,7 +716,7 @@ class SimuladorVigaMejorado:
         h_final = self.altura_final.get()
 
         # Configuración del estilo
-        plt.style.use('ggplot')  # Estilo más atractivo para las gráficas
+        plt.style.use("seaborn-v0_8-darkgrid")  # Estilo más atractivo para las gráficas
         ax.set_facecolor('#f0f0f0')
         fig.patch.set_facecolor('#ffffff')
 
@@ -735,22 +735,25 @@ class SimuladorVigaMejorado:
             apoyo_c = '^' if self.tipo_apoyo_c.get() == 'Fijo' else 'o'
             ax.plot(c, h_c, apoyo_c, markersize=15, color='#2ca02c', label='Apoyo C', zorder=10)
             ax.text(c, h_c-0.15, f'C: {c}m', ha='center', va='top', fontsize=10, color='#2ca02c', fontweight='bold')
-
-        # Dibujar cargas puntuales
+        # Dibujar cargas puntuales con tamaño de texto proporcional
+        max_mag = max([abs(m) for _, m in self.cargas_puntuales] + [1])
         for pos, mag in self.cargas_puntuales:
             h = h_inicial + (h_final - h_inicial) * pos / L
-            ax.arrow(pos, h+0.5, 0, -0.4, head_width=L*0.015, head_length=0.05, fc='#d62728', ec='#d62728', width=0.002, zorder=15)
-            ax.text(pos, h+0.6, f'{mag}N', ha='center', va='bottom', fontsize=10, color='#d62728', fontweight='bold')
+            size = 8 + 4 * abs(mag) / max_mag
+            ax.arrow(pos, h + 0.5, 0, -0.4, head_width=L * 0.015, head_length=0.05, fc='#d62728', ec='#d62728', width=0.002, zorder=15)
+            ax.text(pos, h + 0.6, f'{mag}N', ha='center', va='bottom', fontsize=size, color='#d62728', fontweight='bold')
 
-        # Dibujar cargas distribuidas como carga puntual equivalente
+        # Dibujar cargas distribuidas segmentadas
         for inicio, fin, mag in self.cargas_distribuidas:
-            h_mid = h_inicial + (h_final - h_inicial) * ((inicio+fin)/2) / L
+            h_mid = h_inicial + (h_final - h_inicial) * ((inicio + fin) / 2) / L
             F_eq = mag * (fin - inicio)
-            ax.arrow((inicio+fin)/2, h_mid+0.8, 0, -0.6, head_width=L*0.015, head_length=0.05,
-                     fc='#ff7f0e', ec='#ff7f0e', width=0.002, zorder=15)
-            ax.text((inicio+fin)/2, h_mid+0.85, f'{F_eq:.1f}N', ha='center', va='bottom',
-                    fontsize=10, color='#ff7f0e', fontweight='bold')
-
+            n_arrows = max(2, int((fin - inicio) / (L * 0.1)))
+            for i in range(n_arrows):
+                x = inicio + (fin - inicio) * (i + 0.5) / n_arrows
+                h = h_inicial + (h_final - h_inicial) * x / L
+                ax.arrow(x, h + 0.7, 0, -0.3, head_width=L * 0.01, head_length=0.03, fc='#ff7f0e', ec='#ff7f0e', width=0.0015, zorder=14)
+            ax.arrow((inicio + fin) / 2, h_mid + 0.8, 0, -0.6, head_width=L * 0.015, head_length=0.05, fc='#ff7f0e', ec='#ff7f0e', width=0.002, zorder=15)
+            ax.text((inicio + fin) / 2, h_mid + 0.85, f'{F_eq:.1f}N', ha='center', va='bottom', fontsize=10, color='#ff7f0e', fontweight='bold')
         # Dibujar centro de masa si está disponible
         if x_cm is not None:
             h_cm = h_inicial + (h_final - h_inicial) * x_cm / L
@@ -907,17 +910,21 @@ class SimuladorVigaMejorado:
             ax.text(c, -0.35, f'RC={RC:.2f}N', ha='center', va='top', fontsize=9, color='green', weight='bold')
         
         # Dibujar cargas
-        for pos, mag in self.cargas_puntuales:
-            ax.arrow(pos, 0.5, 0, -0.4, head_width=L*0.015, head_length=0.05, fc='red', ec='red', width=0.002)
-            ax.text(pos, 0.6, f'{mag}N', ha='center', va='bottom', fontsize=8, color='red')
             
+        max_mag = max([abs(m) for _, m in self.cargas_puntuales] + [1])
+        for pos, mag in self.cargas_puntuales:
+            size = 6 + 4 * abs(mag) / max_mag
+            ax.arrow(pos, 0.5, 0, -0.4, head_width=L*0.015, head_length=0.05, fc='red', ec='red', width=0.002)
+            ax.text(pos, 0.6, f'{mag}N', ha='center', va='bottom', fontsize=size, color='red')
+
         for inicio, fin, mag in self.cargas_distribuidas:
             F_eq = mag * (fin - inicio)
-            ax.arrow((inicio+fin)/2, 0.75, 0, -0.5, head_width=L*0.015, head_length=0.03,
-                     fc='red', ec='red', width=0.002)
+            n_arrows = max(2, int((fin - inicio) / (L * 0.1)))
+            for i in range(n_arrows):
+                x = inicio + (fin - inicio) * (i + 0.5) / n_arrows
+                ax.arrow(x, 0.7, 0, -0.3, head_width=L*0.01, head_length=0.03, fc='orange', ec='orange', width=0.0015)
+            ax.arrow((inicio+fin)/2, 0.75, 0, -0.5, head_width=L*0.015, head_length=0.03, fc='red', ec='red', width=0.002)
             ax.text((inicio+fin)/2, 0.8, f'{F_eq:.1f}N', ha='center', va='bottom', fontsize=8, color='red')
-            
-        # Dibujar el par torsor
         par_torsor = self.par_torsor.get()
         if par_torsor != 0:
             # Dibujar una flecha circular para representar el par torsor
@@ -926,13 +933,10 @@ class SimuladorVigaMejorado:
             angle = np.linspace(0, 2*np.pi, 100)
             x = center + radius * np.cos(angle)
             y = radius * np.sin(angle)
-            ax.plot(x, y, 'g-')
-            # Agregar una punta de flecha
-            ax.arrow(center + radius, 0, 0.05, 0.05, head_width=0.05, head_length=0.05, fc='g', ec='g')
-            ax.text(center, 0.3, f'T={par_torsor:.2f}N·m', ha='center', va='bottom', fontsize=9, color='green')
-            
-        ax.set_xlim(-L*0.1, L*1.1)
-        ax.set_ylim(-0.6, 1.0)
+            color = 'green' if par_torsor > 0 else 'purple'
+            ax.plot(x, y, color=color)
+            ax.arrow(center + radius, 0, 0.05, 0.05, head_width=0.05, head_length=0.05, fc=color, ec=color)
+            ax.text(center, 0.3, f'T={par_torsor:.2f}N·m', ha='center', va='bottom', fontsize=9, color=color)
         ax.set_xlabel('Posición (m)', fontsize=10)
         ax.set_title('Viga con Reacciones Calculadas', fontsize=12)
         ax.grid(True, alpha=0.3, linestyle='--')
@@ -996,6 +1000,12 @@ class SimuladorVigaMejorado:
         ax2.grid(True, alpha=0.3, linestyle='--')
         ax2.set_xlim(-L*0.1, L*1.1)
         
+        for pos, _ in self.cargas_puntuales:
+            ax2.plot(pos, 0, 'ko', markersize=4)
+            ax3.plot(pos, 0, 'ko', markersize=4)
+        for inicio, fin, _ in self.cargas_distribuidas:
+            ax2.plot([inicio, fin], [0, 0], 'ks', markersize=3)
+            ax3.plot([inicio, fin], [0, 0], 'ks', markersize=3)
         # Añadir valores máximos y mínimos al diagrama de cortante
         cortante_max = np.max(cortante)
         cortante_min = np.min(cortante)
