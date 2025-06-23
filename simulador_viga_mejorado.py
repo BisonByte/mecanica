@@ -191,10 +191,11 @@ class SimuladorVigaMejorado:
         tab_armaduras = ttk.Frame(notebook)
         tab_result = ttk.Frame(notebook)
 
-        notebook.add(tab_config, text="Configuración y Cargas")
-        notebook.add(tab_seccion, text="Sección y Formas")
-        notebook.add(tab_armaduras, text="🏗️ Armaduras")
-        notebook.add(tab_result, text="Resultados")
+
+        notebook.add(tab_config, text="🏗️Configuración y Cargas")
+        notebook.add(tab_seccion, text="🏗️Sección y Formas")
+        notebook.add(tab_armaduras, text="🏗️Armaduras")
+        notebook.add(tab_result, text="🏗️Resultados")
 
         # Sección configuración y cargas
         tab_config.columnconfigure(0, weight=1)
