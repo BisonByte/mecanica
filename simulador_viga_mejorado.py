@@ -1129,50 +1129,126 @@ class SimuladorVigaMejorado:
         self.dibujar_viga_actual()
         
     def mostrar_ayuda(self):
-        ayuda = """
-🎓 GUÍA RÁPIDA DEL SIMULADOR DE VIGA
+        ayuda_texto = """
+🎓 GUÍA RÁPIDA DEL SIMULADOR DE ESTRUCTURAS
 
-🔹 CONFIGURACIÓN
-• Longitud entre 5 y 50 m
-• Apoyos A y B (Fijo/Móvil) y apoyo C opcional con posición
-• Altura inicial y final para vigas inclinadas
-• Par torsor opcional y modo 3D
+🔹 VIGAS
+• Configuración: Longitud, apoyos (fijo/móvil/ninguno), altura inicial/final, par torsor.
+• Cargas: Puntuales (posición, magnitud), Distribuidas (inicio, fin, magnitud).
 
-🔹 CARGAS
-• Puntuales: posición y magnitud
-• Distribuidas: inicio y fin (dos puntos) y magnitud (N/m)
+---
+📚 FÓRMULAS DE CÁLCULO (VIGAS)
+---
 
-🔹 PAR EN PUNTO
-• Escribe la posición x y presiona "Par en Punto" para conocer el momento torsor interno
+➡️ CÁLCULO DE REACCIONES (Viga Simple con dos apoyos A y B):
+Las reacciones (RA, RB) se calculan usando las ecuaciones de equilibrio.
+Consideramos:
+ΣFy = Suma de fuerzas verticales = 0
+ΣMA = Suma de momentos alrededor del apoyo A = 0
 
-🔹 QUÉ PUEDE HACER
-• 🧮 Calcular Reacciones
-• 📍 Calcular Centro de Masa de las cargas
-• 📊 Mostrar Diagramas de cortante y momento
-• Calcular Propiedades de la Sección (área, CG e inercia)
-• Figuras Irregulares: añada rectángulos, triángulos o círculos y obtenga su centro de gravedad
-• 🔍 Ampliar la gráfica en otra ventana
-• 🗑️ Limpiar Todo para reiniciar
+Fórmulas principales:
+1. ΣFy = RA + RB - ΣF_cargas = 0
+   Donde:
+   RA: Reacción en apoyo A (N)
+   RB: Reacción en apoyo B (N)
+   ΣF_cargas: Suma de todas las cargas puntuales y resultantes de distribuidas (N)
+
+2. ΣMA = (RB * L) - Σ(F_carga_i * x_i) + T = 0
+   Donde:
+   L: Longitud total de la viga (m)
+   F_carga_i: Magnitud de cada carga (N o resultante de N/m)
+   x_i: Posición de cada carga desde A (m)
+   T: Par torsor externo (N·m)
+
+   De aquí, podemos despejar RB y luego RA.
+
+---
+➡️ DIAGRAMA DE FUERZA CORTANTE (V(x)):
+La fuerza cortante en un punto 'x' es la suma algebraica de todas las fuerzas verticales a la izquierda de 'x'.
+
+Fórmula general:
+V(x) = ΣF_verticales_izq
+   Donde:
+   Las fuerzas hacia arriba son positivas, hacia abajo negativas.
+
+---
+➡️ DIAGRAMA DE MOMENTO FLECTOR (M(x)):
+El momento flector en un punto 'x' es la suma algebraica de los momentos causados por todas las fuerzas a la izquierda de 'x'.
+
+Fórmula general:
+M(x) = Σ(F_vertical_izq_i * distancia_i) + ΣT_externos
+   Donde:
+   distancia_i: Distancia de la fuerza 'F_vertical_izq_i' al punto 'x'.
+   Los momentos que causan compresión en la parte superior de la viga (cara cóncava hacia abajo) se consideran positivos.
+
+---
+➡️ CÁLCULO DEL CENTRO DE MASA (Cargas en viga):
+El centro de masa (x_cm) para un sistema de cargas se calcula como:
+
+Fórmula:
+x_cm = Σ(F_i * x_i) / ΣF_i
+   Donde:
+   F_i: Cada carga puntual o resultante de carga distribuida (N)
+   x_i: Posición de cada carga (m)
+
+---
+➡️ PROPIEDADES DE LA SECCIÓN TRANSVERSAL (para sección en I):
+Para una sección en forma de I (3 rectángulos), el centro de gravedad (y_cg) y el momento de inercia (I_total) se calculan usando el teorema de los ejes paralelos.
+
+Fórmulas (simplified):
+Área Total = A_sup + A_alma + A_inf
+y_cg = (A_sup*y_sup + A_alma*y_alma + A_inf*y_inf) / Área_Total
+I_total = Σ(I_barra_i + A_i * d_i²)
+   Donde:
+   A: Área de cada rectángulo
+   y: Posición del centroide de cada rectángulo desde la base
+   I_barra: Momento de inercia de cada rectángulo alrededor de su propio centroide (bh³/12)
+   d: Distancia del centroide de cada rectángulo al centro de gravedad total (y_cg)
+
+---
+🔹 ARMADURAS/BASTIDORES (PRÓXIMAMENTE)
+• Se añadirán las fórmulas correspondientes para el método de nodos y el método de secciones una vez implementado el cálculo.
+
+---
+🔹 HERRAMIENTAS GENERALES
+• 🧮 Calcular: Realiza los cálculos para la estructura activa.
+• 📍 Calcular Centro de Masa: Para cargas de viga o formas irregulares.
+• 📊 Mostrar Diagramas: Para viga.
+• 🌀 Par en Punto: Para viga.
+• 🔍 Ampliar Gráfica: Abre las gráficas en una ventana aparte.
+• 🎞️ Animar 3D: Animación 3D de la viga.
+• ❓ Ayuda: Despliega este resumen de uso.
+• 🗑️ Limpiar Todo: Borra todas las configuraciones y reinicia.
+• 🌓/🌞 Modo Oscuro/Claro: Alterna el tema visual.
 
 🔹 PASOS BÁSICOS
-1. Configure la viga y apoyos
-2. Agregue las cargas necesarias
-3. Presione "Calcular Reacciones"
-4. (Opcional) use "Par en Punto" para consultar el momento torsor
-5. Revise resultados y diagramas en la pestaña de Resultados
+1. Seleccione la pestaña "Viga" o "Armaduras".
+2. Configure la estructura y agregue las cargas.
+3. Presione "Calcular" en la sección correspondiente.
+4. Revise resultados y diagramas en la pestaña de Resultados.
         """
-        
+
         ventana_ayuda = tk.Toplevel(self.root)
-        ventana_ayuda.title("📚 Guía de Usuario")
-        ventana_ayuda.geometry("600x500")
-        
-        texto_ayuda = tk.Text(ventana_ayuda, wrap="word", font=("Arial", 10))
+        ventana_ayuda.title("📚 Guía de Usuario y Fórmulas")
+        ventana_ayuda.geometry("700x700")
+
+        texto_ayuda = tk.Text(ventana_ayuda, wrap="word", font=("Arial", 10), padx=10, pady=10)
         scroll_ayuda = ttk.Scrollbar(ventana_ayuda, orient="vertical", command=texto_ayuda.yview)
         texto_ayuda.configure(yscrollcommand=scroll_ayuda.set)
-        
-        texto_ayuda.insert("1.0", ayuda)
+
+        texto_ayuda.insert("1.0", ayuda_texto)
+
+        texto_ayuda.tag_config("title_formula", font=("Arial", 11, "bold", "underline"), foreground="#005a9e")
+        texto_ayuda.tag_config("formula", font=("Consolas", 10, "italic"), foreground="#333333")
+        texto_ayuda.tag_config("variable_def", font=("Arial", 9), foreground="#555555")
+
+        start_index = texto_ayuda.search("FÓRMULAS DE CÁLCULO", "1.0", tk.END)
+        if start_index:
+            end_index = texto_ayuda.search("\n", start_index, tk.END)
+            texto_ayuda.tag_add("title_formula", start_index, end_index)
+
         texto_ayuda.config(state="disabled")  # Solo lectura
-        
+
         texto_ayuda.pack(side="left", fill="both", expand=True)
         scroll_ayuda.pack(side="right", fill="y")
 
