@@ -101,6 +101,11 @@ class SimuladorVigaMejorado:
         self.inicio_escala_y = 0
         self.ancho_inicial = 0
         self.alto_inicial = 0
+        # Datos para armaduras/bastidores
+        self.nodos_arm = []
+        self.miembros_arm = []
+        self.cargas_arm = []
+        self.id_nodo_actual = 1
         # Espaciado de la cuadrícula para el lienzo de formas
         self.grid_spacing = 20
         self.crear_widgets()
@@ -183,10 +188,12 @@ class SimuladorVigaMejorado:
 
         tab_config = ttk.Frame(notebook)
         tab_seccion = ttk.Frame(notebook)
+        tab_armaduras = ttk.Frame(notebook)
         tab_result = ttk.Frame(notebook)
 
         notebook.add(tab_config, text="Configuración y Cargas")
         notebook.add(tab_seccion, text="Sección y Formas")
+        notebook.add(tab_armaduras, text="🏗️ Armaduras")
         notebook.add(tab_result, text="Resultados")
 
         # Sección configuración y cargas
@@ -206,6 +213,9 @@ class SimuladorVigaMejorado:
         # Sección propiedades de la sección y formas irregulares
         self.crear_seccion_propiedades_seccion(tab_seccion)
         self.crear_widgets_formas_irregulares(tab_seccion)
+
+        # Armaduras
+        self.crear_seccion_armaduras(tab_armaduras)
 
         # Resultados y gráficos
         self.crear_seccion_resultados(tab_result)
@@ -1086,12 +1096,21 @@ class SimuladorVigaMejorado:
         self.ancho_inferior.set(15)
         self.altura_inferior.set(5)
 
+        # Limpiar datos de armaduras
+        self.nodos_arm.clear()
+        self.miembros_arm.clear()
+        self.cargas_arm.clear()
+        self.id_nodo_actual = 1
+
         # Limpiar área de resultados
         self.limpiar_resultados()
 
         # Limpiar área gráfica
         for widget in self.frame_grafico.winfo_children():
             widget.destroy()
+
+        if hasattr(self, 'canvas_armadura'):
+            self.canvas_armadura.delete('all')
 
         # Mostrar mensaje inicial
         self.mostrar_mensaje_inicial()
@@ -1292,6 +1311,50 @@ class SimuladorVigaMejorado:
         self.cg_label = ttk.Label(frame_formas, text="CG: -")
         self.cg_label.grid(row=8, column=0, columnspan=4, pady=2)
 
+    def crear_seccion_armaduras(self, parent):
+        frame_arm = ttk.Frame(parent)
+        frame_arm.pack(fill="both", expand=True, padx=10, pady=10)
+
+        frame_nodo = ttk.LabelFrame(frame_arm, text="Nodos")
+        frame_nodo.pack(fill="x", pady=5)
+        ttk.Label(frame_nodo, text="X:").grid(row=0, column=0, padx=5, pady=2)
+        self.nodo_x = tk.DoubleVar(value=0.0)
+        ttk.Entry(frame_nodo, textvariable=self.nodo_x, width=8).grid(row=0, column=1, padx=5, pady=2)
+        ttk.Label(frame_nodo, text="Y:").grid(row=0, column=2, padx=5, pady=2)
+        self.nodo_y = tk.DoubleVar(value=0.0)
+        ttk.Entry(frame_nodo, textvariable=self.nodo_y, width=8).grid(row=0, column=3, padx=5, pady=2)
+        ttk.Label(frame_nodo, text="Apoyo:").grid(row=0, column=4, padx=5, pady=2)
+        self.nodo_apoyo = tk.StringVar(value="Libre")
+        ttk.Combobox(frame_nodo, textvariable=self.nodo_apoyo, values=["Libre", "Fijo", "Móvil"], width=8).grid(row=0, column=5, padx=5, pady=2)
+        ttk.Button(frame_nodo, text="Agregar Nodo", command=self.agregar_nodo).grid(row=0, column=6, padx=5, pady=2)
+
+        frame_miem = ttk.LabelFrame(frame_arm, text="Miembros")
+        frame_miem.pack(fill="x", pady=5)
+        ttk.Label(frame_miem, text="Inicio:").grid(row=0, column=0, padx=5, pady=2)
+        self.miembro_inicio = tk.IntVar(value=1)
+        ttk.Entry(frame_miem, textvariable=self.miembro_inicio, width=5).grid(row=0, column=1, padx=5, pady=2)
+        ttk.Label(frame_miem, text="Fin:").grid(row=0, column=2, padx=5, pady=2)
+        self.miembro_fin = tk.IntVar(value=2)
+        ttk.Entry(frame_miem, textvariable=self.miembro_fin, width=5).grid(row=0, column=3, padx=5, pady=2)
+        ttk.Button(frame_miem, text="Agregar Miembro", command=self.agregar_miembro).grid(row=0, column=4, padx=5, pady=2)
+
+        frame_carga = ttk.LabelFrame(frame_arm, text="Cargas en Nodos")
+        frame_carga.pack(fill="x", pady=5)
+        ttk.Label(frame_carga, text="Nodo:").grid(row=0, column=0, padx=5, pady=2)
+        self.carga_nodo = tk.IntVar(value=1)
+        ttk.Entry(frame_carga, textvariable=self.carga_nodo, width=5).grid(row=0, column=1, padx=5, pady=2)
+        ttk.Label(frame_carga, text="Fx:").grid(row=0, column=2, padx=5, pady=2)
+        self.carga_fx = tk.DoubleVar(value=0.0)
+        ttk.Entry(frame_carga, textvariable=self.carga_fx, width=8).grid(row=0, column=3, padx=5, pady=2)
+        ttk.Label(frame_carga, text="Fy:").grid(row=0, column=4, padx=5, pady=2)
+        self.carga_fy = tk.DoubleVar(value=0.0)
+        ttk.Entry(frame_carga, textvariable=self.carga_fy, width=8).grid(row=0, column=5, padx=5, pady=2)
+        ttk.Button(frame_carga, text="Agregar Carga", command=self.agregar_carga_armadura).grid(row=0, column=6, padx=5, pady=2)
+
+        ttk.Button(frame_arm, text="Calcular Armadura", command=self.calcular_armadura).pack(pady=10)
+        self.canvas_armadura = tk.Canvas(frame_arm, width=600, height=400, bg="white")
+        self.canvas_armadura.pack(fill="both", expand=True)
+
     def agregar_forma(self):
         try:
             tipo = self.tipo_forma.get()
@@ -1427,6 +1490,147 @@ class SimuladorVigaMejorado:
     def mostrar_coordenadas_ampliado(self, event):
         if hasattr(self, "coord_label_ampliado"):
             self.coord_label_ampliado.config(text=f"x={event.x}, y={event.y}")
+
+    # ----- Funciones para Armaduras -----
+    def agregar_nodo(self):
+        x = self.nodo_x.get()
+        y = self.nodo_y.get()
+        apoyo = self.nodo_apoyo.get()
+        self.nodos_arm.append({'id': self.id_nodo_actual, 'x': x, 'y': y, 'apoyo': apoyo})
+        self.log(f"Nodo {self.id_nodo_actual} agregado en ({x}, {y})\n", "data")
+        self.id_nodo_actual += 1
+        self.dibujar_armadura()
+
+    def agregar_miembro(self):
+        ini = self.miembro_inicio.get()
+        fin = self.miembro_fin.get()
+        self.miembros_arm.append({'inicio': ini, 'fin': fin, 'fuerza': 0.0})
+        self.log(f"Miembro {ini}-{fin} agregado\n", "data")
+        self.dibujar_armadura()
+
+    def agregar_carga_armadura(self):
+        nodo = self.carga_nodo.get()
+        fx = self.carga_fx.get()
+        fy = self.carga_fy.get()
+        self.cargas_arm.append({'nodo': nodo, 'Fx': fx, 'Fy': fy})
+        self.log(f"Carga en nodo {nodo}: Fx={fx}, Fy={fy}\n", "data")
+        self.dibujar_armadura()
+
+    def calcular_armadura(self):
+        try:
+            n_miembros = len(self.miembros_arm)
+            var_map = {}
+            idx = 0
+            for i in range(n_miembros):
+                var_map[f"m{i}"] = idx
+                idx += 1
+            for nodo in self.nodos_arm:
+                if nodo['apoyo'] == 'Fijo':
+                    var_map[f"Rx{nodo['id']}"] = idx; idx += 1
+                    var_map[f"Ry{nodo['id']}"] = idx; idx += 1
+                elif nodo['apoyo'] == 'Móvil':
+                    var_map[f"Ry{nodo['id']}"] = idx; idx += 1
+            num_vars = idx
+            num_eqs = len(self.nodos_arm) * 2
+            A = np.zeros((num_eqs, num_vars))
+            b = np.zeros(num_eqs)
+            node_lookup = {n['id']: n for n in self.nodos_arm}
+            loads = {}
+            for nodo in self.nodos_arm:
+                loads[nodo['id']] = {'Fx': 0.0, 'Fy': 0.0}
+            for c in self.cargas_arm:
+                loads[c['nodo']]['Fx'] += c['Fx']
+                loads[c['nodo']]['Fy'] += c['Fy']
+            eq = 0
+            for nodo in self.nodos_arm:
+                # ecuación en X
+                for j, m in enumerate(self.miembros_arm):
+                    if m['inicio'] == nodo['id'] or m['fin'] == nodo['id']:
+                        n2 = m['fin'] if m['inicio'] == nodo['id'] else m['inicio']
+                        nd1 = node_lookup[nodo['id']]
+                        nd2 = node_lookup[n2]
+                        dx = nd2['x'] - nd1['x']
+                        dy = nd2['y'] - nd1['y']
+                        L = (dx**2 + dy**2) ** 0.5
+                        cos = dx / L
+                        sin = dy / L
+                        sign = 1 if m['inicio'] == nodo['id'] else -1
+                        A[eq, var_map[f"m{j}"]] += sign * cos
+                if nodo['apoyo'] == 'Fijo':
+                    A[eq, var_map[f"Rx{nodo['id']}"]] = 1
+                b[eq] = -loads[nodo['id']]['Fx']
+                eq += 1
+
+                # ecuación en Y
+                for j, m in enumerate(self.miembros_arm):
+                    if m['inicio'] == nodo['id'] or m['fin'] == nodo['id']:
+                        n2 = m['fin'] if m['inicio'] == nodo['id'] else m['inicio']
+                        nd1 = node_lookup[nodo['id']]
+                        nd2 = node_lookup[n2]
+                        dx = nd2['x'] - nd1['x']
+                        dy = nd2['y'] - nd1['y']
+                        L = (dx**2 + dy**2) ** 0.5
+                        cos = dx / L
+                        sin = dy / L
+                        sign = 1 if m['inicio'] == nodo['id'] else -1
+                        A[eq, var_map[f"m{j}"]] += sign * sin
+                if nodo['apoyo'] in ('Fijo', 'Móvil'):
+                    A[eq, var_map[f"Ry{nodo['id']}"]] = 1
+                b[eq] = -loads[nodo['id']]['Fy']
+                eq += 1
+
+            soluciones = np.linalg.solve(A, b)
+            for j, m in enumerate(self.miembros_arm):
+                m['fuerza'] = soluciones[var_map[f"m{j}"]]
+            self.reacciones_arm = {}
+            for nodo in self.nodos_arm:
+                if nodo['apoyo'] == 'Fijo':
+                    rx = soluciones[var_map[f"Rx{nodo['id']}"]]
+                    ry = soluciones[var_map[f"Ry{nodo['id']}"]]
+                    self.reacciones_arm[nodo['id']] = (rx, ry)
+                elif nodo['apoyo'] == 'Móvil':
+                    ry = soluciones[var_map[f"Ry{nodo['id']}"]]
+                    self.reacciones_arm[nodo['id']] = (0.0, ry)
+
+            self.log("\n📐 ANÁLISIS DE ARMADURA:\n", "title")
+            for j, m in enumerate(self.miembros_arm):
+                tipo = "tensión" if m['fuerza'] >= 0 else "compresión"
+                self.log(f"Miembro {m['inicio']}-{m['fin']}: {m['fuerza']:.2f} N ({tipo})\n", "data")
+            for nid, r in self.reacciones_arm.items():
+                self.log(f"Reacciones nodo {nid}: Rx={r[0]:.2f} N, Ry={r[1]:.2f} N\n", "data")
+
+            self.dibujar_armadura()
+        except Exception as e:
+            messagebox.showerror("Error", f"Error en cálculo de armadura: {e}")
+
+    def dibujar_armadura(self):
+        if not hasattr(self, 'canvas_armadura'):
+            return
+        c = self.canvas_armadura
+        c.delete('all')
+        for nodo in self.nodos_arm:
+            x = nodo['x'] * 20 + 50
+            y = 350 - nodo['y'] * 20
+            c.create_oval(x-5, y-5, x+5, y+5, fill='black')
+            c.create_text(x, y-10, text=str(nodo['id']))
+        for m in self.miembros_arm:
+            n1 = next(n for n in self.nodos_arm if n['id']==m['inicio'])
+            n2 = next(n for n in self.nodos_arm if n['id']==m['fin'])
+            x1 = n1['x'] * 20 + 50
+            y1 = 350 - n1['y'] * 20
+            x2 = n2['x'] * 20 + 50
+            y2 = 350 - n2['y'] * 20
+            color = 'blue'
+            if 'fuerza' in m:
+                color = 'red' if m['fuerza'] < 0 else 'blue'
+            c.create_line(x1, y1, x2, y2, fill=color, width=2)
+            if 'fuerza' in m:
+                c.create_text((x1+x2)/2, (y1+y2)/2, text=f"{m['fuerza']:.1f}")
+        for carg in self.cargas_arm:
+            nodo = next(n for n in self.nodos_arm if n['id']==carg['nodo'])
+            x = nodo['x'] * 20 + 50
+            y = 350 - nodo['y'] * 20
+            c.create_line(x, y, x + carg['Fx'], y - carg['Fy'], arrow=tk.LAST, fill='green')
 
     def obtener_forma_en(self, x, y):
         """Devuelve el índice de la forma que contiene el punto (x, y) o None."""
