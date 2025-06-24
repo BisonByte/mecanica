@@ -1447,6 +1447,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         ttk.Button(frame_secc, text="DCL Nodos", command=self.mostrar_dcl_nodos).grid(row=0, column=3, padx=5, pady=2)
 
         ttk.Button(frame_arm, text="Calcular Armadura", command=self.calcular_armadura).pack(pady=10)
+        ttk.Button(frame_arm, text="Instrucciones", command=self.mostrar_instrucciones_armadura).pack(pady=5)
         self.canvas_armadura = tk.Canvas(frame_arm, width=600, height=400, bg="white")
         self.canvas_armadura.pack(fill="both", expand=True)
 
@@ -1674,7 +1675,14 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                 b[eq] = -loads[nodo['id']]['Fy']
                 eq += 1
 
-            soluciones = np.linalg.solve(A, b)
+            if A.shape[0] != A.shape[1]:
+                messagebox.showwarning(
+                    "Advertencia",
+                    "Sistema indeterminado o sobredeterminado. Se resolverá por mínimos cuadrados",
+                )
+                soluciones, *_ = np.linalg.lstsq(A, b, rcond=None)
+            else:
+                soluciones = np.linalg.solve(A, b)
             for j, m in enumerate(self.miembros_arm):
                 m['fuerza'] = soluciones[var_map[f"m{j}"]]
             self.reacciones_arm = {}
@@ -1726,6 +1734,13 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             x = nodo['x'] * 20 + 50
             y = 350 - nodo['y'] * 20
             c.create_line(x, y, x + carg['Fx'], y - carg['Fy'], arrow=tk.LAST, fill='green')
+        if hasattr(self, 'reacciones_arm'):
+            for nodo in self.nodos_arm:
+                if nodo['apoyo'] in ('Fijo', 'Móvil'):
+                    rx, ry = self.reacciones_arm.get(nodo['id'], (0,0))
+                    x = nodo['x'] * 20 + 50
+                    y = 350 - nodo['y'] * 20
+                    c.create_line(x, y, x + rx, y - ry, arrow=tk.LAST, fill='orange')
 
     def mostrar_dcl_nodos(self):
         if not self.miembros_arm:
@@ -1823,6 +1838,18 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         canvas = FigureCanvasTkAgg(fig, master=ventana)
         canvas.draw()
         canvas.get_tk_widget().pack(fill='both', expand=True)
+
+    def mostrar_instrucciones_armadura(self):
+        texto = (
+            "PASOS PARA ANALIZAR UNA ARMADURA:\n"
+            "1. Agregue los nodos indicando sus coordenadas y tipo de apoyo.\n"
+            "2. Defina los miembros especificando nodo inicial y final.\n"
+            "3. Coloque las cargas en los nodos correspondientes.\n"
+            "4. Presione 'Calcular Armadura' para obtener fuerzas y reacciones.\n"
+            "   Las barras en rojo están en compresión y en azul en tensión.\n"
+            "   Las reacciones se muestran en naranja en los apoyos." 
+        )
+        messagebox.showinfo("Instrucciones Armaduras", texto)
 
     def obtener_forma_en(self, x, y):
         """Devuelve el índice de la forma que contiene el punto (x, y) o None."""
