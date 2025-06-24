@@ -1438,6 +1438,14 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         ttk.Entry(frame_carga, textvariable=self.carga_fy, width=8).grid(row=0, column=5, padx=5, pady=2)
         ttk.Button(frame_carga, text="Agregar Carga", command=self.agregar_carga_armadura).grid(row=0, column=6, padx=5, pady=2)
 
+        frame_secc = ttk.LabelFrame(frame_arm, text="Método de Secciones")
+        frame_secc.pack(fill="x", pady=5)
+        ttk.Label(frame_secc, text="Corte x:").grid(row=0, column=0, padx=5, pady=2)
+        self.corte_x = tk.DoubleVar(value=0.0)
+        ttk.Entry(frame_secc, textvariable=self.corte_x, width=8).grid(row=0, column=1, padx=5, pady=2)
+        ttk.Button(frame_secc, text="Calcular Sección", command=self.calcular_seccion_armadura).grid(row=0, column=2, padx=5, pady=2)
+        ttk.Button(frame_secc, text="DCL Nodos", command=self.mostrar_dcl_nodos).grid(row=0, column=3, padx=5, pady=2)
+
         ttk.Button(frame_arm, text="Calcular Armadura", command=self.calcular_armadura).pack(pady=10)
         self.canvas_armadura = tk.Canvas(frame_arm, width=600, height=400, bg="white")
         self.canvas_armadura.pack(fill="both", expand=True)
@@ -1718,6 +1726,103 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             x = nodo['x'] * 20 + 50
             y = 350 - nodo['y'] * 20
             c.create_line(x, y, x + carg['Fx'], y - carg['Fy'], arrow=tk.LAST, fill='green')
+
+    def mostrar_dcl_nodos(self):
+        if not self.miembros_arm:
+            messagebox.showwarning("Advertencia", "Calcule primero la armadura")
+            return
+        for nodo in self.nodos_arm:
+            self.dibujar_dcl_nodo(nodo)
+
+    def dibujar_dcl_nodo(self, nodo):
+        ventana = tk.Toplevel(self.root)
+        ventana.title(f"DCL Nodo {nodo['id']}")
+        fig, ax = plt.subplots(figsize=(4,4))
+        ax.plot(0,0,'ko')
+        node_lookup = {n['id']: n for n in self.nodos_arm}
+        for m in self.miembros_arm:
+            if m['inicio']==nodo['id'] or m['fin']==nodo['id']:
+                other = m['fin'] if m['inicio']==nodo['id'] else m['inicio']
+                n2 = node_lookup[other]
+                dx = n2['x'] - nodo['x']
+                dy = n2['y'] - nodo['y']
+                L = (dx**2 + dy**2)**0.5
+                u = (dx/L, dy/L)
+                fuerza = m.get('fuerza',0)
+                color = 'red' if fuerza < 0 else 'blue'
+                ax.arrow(0,0,u[0],u[1],color=color,head_width=0.1,length_includes_head=True)
+                ax.text(u[0],u[1],f"{fuerza:.1f}",color=color)
+        for c in self.cargas_arm:
+            if c['nodo']==nodo['id']:
+                ax.arrow(0,0,c['Fx']/10,-c['Fy']/10,color='green',head_width=0.1,length_includes_head=True)
+        if nodo['apoyo'] in ('Fijo','Móvil') and hasattr(self,'reacciones_arm'):
+            rx, ry = self.reacciones_arm.get(nodo['id'], (0,0))
+            ax.arrow(0,0,rx/10,ry/10,color='orange',head_width=0.1,length_includes_head=True)
+        ax.set_xlim(-1.5,1.5)
+        ax.set_ylim(-1.5,1.5)
+        ax.set_aspect('equal')
+        ax.axis('off')
+        canvas = FigureCanvasTkAgg(fig, master=ventana)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill='both', expand=True)
+
+    def calcular_seccion_armadura(self):
+        corte = self.corte_x.get()
+        if not self.miembros_arm:
+            messagebox.showwarning("Advertencia", "Calcule primero la armadura")
+            return
+        node_lookup = {n['id']: n for n in self.nodos_arm}
+        miembros_corte = []
+        for m in self.miembros_arm:
+            x1 = node_lookup[m['inicio']]['x']
+            x2 = node_lookup[m['fin']]['x']
+            if (x1 - corte)*(x2 - corte) < 0:
+                miembros_corte.append(m)
+        if not miembros_corte:
+            messagebox.showinfo("Sección", "Ningún miembro intersecta el corte")
+            return
+        self.log(f"\n📐 MÉTODO DE SECCIONES (x={corte})\n", "title")
+        for m in miembros_corte:
+            tipo = "tensión" if m['fuerza'] >= 0 else "compresión"
+            self.log(f"Miembro {m['inicio']}-{m['fin']}: {m['fuerza']:.2f} N ({tipo})\n", "data")
+        self.dibujar_dcl_seccion(corte, miembros_corte)
+
+    def dibujar_dcl_seccion(self, corte, miembros):
+        ventana = tk.Toplevel(self.root)
+        ventana.title("DCL Sección")
+        fig, ax = plt.subplots(figsize=(6,4))
+        node_lookup = {n['id']: n for n in self.nodos_arm}
+        for m in self.miembros_arm:
+            n1 = node_lookup[m['inicio']]
+            n2 = node_lookup[m['fin']]
+            if n1['x']<=corte and n2['x']<=corte:
+                ax.plot([n1['x'], n2['x']], [n1['y'], n2['y']], 'k-')
+        for nodo in self.nodos_arm:
+            if nodo['x']<=corte:
+                ax.plot(nodo['x'], nodo['y'], 'ko')
+                for c in self.cargas_arm:
+                    if c['nodo']==nodo['id']:
+                        ax.arrow(nodo['x'], nodo['y'], c['Fx']/10, -c['Fy']/10, color='green', head_width=0.1)
+                if nodo['apoyo'] in ('Fijo','Móvil') and hasattr(self,'reacciones_arm'):
+                    rx, ry = self.reacciones_arm.get(nodo['id'], (0,0))
+                    ax.arrow(nodo['x'], nodo['y'], rx/10, ry/10, color='orange', head_width=0.1)
+        ax.axvline(corte, color='red', linestyle='--')
+        for m in miembros:
+            n1 = node_lookup[m['inicio']]
+            n2 = node_lookup[m['fin']]
+            t = (corte - n1['x'])/(n2['x']-n1['x'])
+            ycut = n1['y'] + t*(n2['y']-n1['y'])
+            fuerza = m.get('fuerza',0)
+            color = 'purple'
+            sign = 1 if fuerza>=0 else -1
+            ax.arrow(corte, ycut, 0, sign*0.5, color=color, head_width=0.1)
+            ax.text(corte+0.1, ycut, f"{fuerza:.1f}", color=color)
+        ax.set_aspect('equal')
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        canvas = FigureCanvasTkAgg(fig, master=ventana)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill='both', expand=True)
 
     def obtener_forma_en(self, x, y):
         """Devuelve el índice de la forma que contiene el punto (x, y) o None."""
