@@ -1697,7 +1697,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
 
             self.log("\n📐 ANÁLISIS DE ARMADURA:\n", "title")
             for j, m in enumerate(self.miembros_arm):
-                tipo = "tensión" if m['fuerza'] >= 0 else "compresión"
+                tipo = "compresión" if m['fuerza'] >= 0 else "tensión"
                 self.log(f"Miembro {m['inicio']}-{m['fin']}: {m['fuerza']:.2f} N ({tipo})\n", "data")
             for nid, r in self.reacciones_arm.items():
                 self.log(f"Reacciones nodo {nid}: Rx={r[0]:.2f} N, Ry={r[1]:.2f} N\n", "data")
@@ -1725,7 +1725,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             y2 = 350 - n2['y'] * 20
             color = 'blue'
             if 'fuerza' in m:
-                color = 'red' if m['fuerza'] < 0 else 'blue'
+                color = 'red' if m['fuerza'] > 0 else 'blue'
             c.create_line(x1, y1, x2, y2, fill=color, width=2)
             if 'fuerza' in m:
                 c.create_text((x1+x2)/2, (y1+y2)/2, text=f"{m['fuerza']:.1f}")
@@ -1798,7 +1798,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             return
         self.log(f"\n📐 MÉTODO DE SECCIONES (x={corte})\n", "title")
         for m in miembros_corte:
-            tipo = "tensión" if m['fuerza'] >= 0 else "compresión"
+            tipo = "compresión" if m['fuerza'] >= 0 else "tensión"
             self.log(f"Miembro {m['inicio']}-{m['fin']}: {m['fuerza']:.2f} N ({tipo})\n", "data")
         self.dibujar_dcl_seccion(corte, miembros_corte)
 
