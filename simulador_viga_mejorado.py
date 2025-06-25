@@ -1752,18 +1752,37 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             c.create_line(x1, y1, x2, y2, fill=color, width=2)
             if 'fuerza' in m:
                 c.create_text((x1+x2)/2, (y1+y2)/2, text=f"{m['fuerza']:.1f}")
+        arrow_len = 40
         for carg in self.cargas_arm:
             nodo = next(n for n in self.nodos_arm if n['id']==carg['nodo'])
             x = nodo['x'] * 20 + 50
             y = 350 - nodo['y'] * 20
-            c.create_line(x, y, x + carg['Fx'], y - carg['Fy'], arrow=tk.LAST, fill='green')
+            mag = (carg['Fx']**2 + carg['Fy']**2) ** 0.5
+            if mag:
+                ux, uy = carg['Fx']/mag, carg['Fy']/mag
+                c.create_line(x, y, x + ux*arrow_len, y - uy*arrow_len,
+                              arrow=tk.LAST, fill='green')
+                c.create_text(x + ux*arrow_len, y - uy*arrow_len - 10,
+                              text=f"{mag:.1f}", fill='green')
         if hasattr(self, 'reacciones_arm'):
             for nodo in self.nodos_arm:
                 if nodo['apoyo'] in ('Fijo', 'Móvil'):
                     rx, ry = self.reacciones_arm.get(nodo['id'], (0,0))
                     x = nodo['x'] * 20 + 50
                     y = 350 - nodo['y'] * 20
-                    c.create_line(x, y, x + rx, y - ry, arrow=tk.LAST, fill='orange')
+                    if nodo['apoyo'] == 'Fijo':
+                        if abs(rx) > 0:
+                            signx = 1 if rx >= 0 else -1
+                            c.create_line(x, y, x + signx*arrow_len, y,
+                                          arrow=tk.LAST, fill='orange')
+                            c.create_text(x + signx*arrow_len, y - 10,
+                                          text=f"{rx:.1f}", fill='orange')
+                    if abs(ry) > 0:
+                        signy = 1 if ry >= 0 else -1
+                        c.create_line(x, y, x, y - signy*arrow_len,
+                                      arrow=tk.LAST, fill='orange')
+                        c.create_text(x + 10, y - signy*arrow_len,
+                                      text=f"{ry:.1f}", fill='orange')
 
     def mostrar_dcl_nodos(self):
         if not self.miembros_arm:
@@ -1802,11 +1821,15 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                     ax.text(ux*arrow_len,uy*arrow_len,f"{mag:.1f}",color='green')
         if nodo['apoyo'] in ('Fijo','Móvil') and hasattr(self,'reacciones_arm'):
             rx, ry = self.reacciones_arm.get(nodo['id'], (0,0))
-            mag = np.hypot(rx, ry)
-            if mag:
-                ux, uy = rx/mag, ry/mag
-                ax.arrow(0,0,ux*arrow_len,uy*arrow_len,color='orange',head_width=0.1,length_includes_head=True)
-                ax.text(ux*arrow_len,uy*arrow_len,f"{mag:.1f}",color='orange')
+            if nodo['apoyo'] == 'Fijo':
+                if abs(rx) > 0:
+                    signx = 1 if rx >= 0 else -1
+                    ax.arrow(0,0,signx*arrow_len,0,color='orange',head_width=0.1,length_includes_head=True)
+                    ax.text(signx*arrow_len,0,f"{rx:.1f}",color='orange')
+            if abs(ry) > 0:
+                signy = 1 if ry >= 0 else -1
+                ax.arrow(0,0,0,signy*arrow_len,color='orange',head_width=0.1,length_includes_head=True)
+                ax.text(0,signy*arrow_len,f"{ry:.1f}",color='orange')
         ax.set_xlim(-1.5,1.5)
         ax.set_ylim(-1.5,1.5)
         ax.set_aspect('equal')
