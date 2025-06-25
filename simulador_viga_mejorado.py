@@ -1473,6 +1473,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         ttk.Button(frame_arm, text="Instrucciones", command=self.mostrar_instrucciones_armadura).pack(pady=5)
         self.canvas_armadura = tk.Canvas(frame_arm, width=600, height=400, bg="white")
         self.canvas_armadura.pack(fill="both", expand=True)
+        self.canvas_armadura.bind("<Configure>", lambda e: self.dibujar_armadura())
 
     def agregar_forma(self):
         try:
@@ -1720,7 +1721,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
 
             self.log("\n📐 ANÁLISIS DE ARMADURA:\n", "title")
             for j, m in enumerate(self.miembros_arm):
-                tipo = "compresión" if m['fuerza'] >= 0 else "tensión"
+                tipo = "tensión" if m['fuerza'] >= 0 else "compresión"
                 self.log(f"Miembro {m['inicio']}-{m['fin']}: {m['fuerza']:.2f} N ({tipo})\n", "data")
             for nid, r in self.reacciones_arm.items():
                 self.log(f"Reacciones nodo {nid}: Rx={r[0]:.2f} N, Ry={r[1]:.2f} N\n", "data")
@@ -1729,34 +1730,58 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         except Exception as e:
             messagebox.showerror("Error", f"Error en cálculo de armadura: {e}")
 
+    def ajustar_vista_armadura(self):
+        """Calcula la escala y desplazamiento para dibujar la armadura"""
+        if not hasattr(self, 'canvas_armadura') or not self.nodos_arm:
+            self.escala_arm = 20
+            self.offset_x_arm = 50
+            self.offset_y_arm = 350
+            return
+        c = self.canvas_armadura
+        width = c.winfo_width() or int(c['width'])
+        height = c.winfo_height() or int(c['height'])
+        margin = 50
+        xs = [n['x'] for n in self.nodos_arm]
+        ys = [n['y'] for n in self.nodos_arm]
+        min_x, max_x = min(xs), max(xs)
+        min_y, max_y = min(ys), max(ys)
+        rango_x = max(max_x - min_x, 1e-6)
+        rango_y = max(max_y - min_y, 1e-6)
+        escala_x = (width - 2*margin) / rango_x
+        escala_y = (height - 2*margin) / rango_y
+        self.escala_arm = min(escala_x, escala_y)
+        self.offset_x_arm = margin - min_x * self.escala_arm
+        self.offset_y_arm = height - margin + min_y * self.escala_arm
+
     def dibujar_armadura(self):
         if not hasattr(self, 'canvas_armadura'):
             return
         c = self.canvas_armadura
+        self.ajustar_vista_armadura()
         c.delete('all')
         for nodo in self.nodos_arm:
-            x = nodo['x'] * 20 + 50
-            y = 350 - nodo['y'] * 20
+            x = nodo['x'] * self.escala_arm + self.offset_x_arm
+            y = self.offset_y_arm - nodo['y'] * self.escala_arm
             c.create_oval(x-5, y-5, x+5, y+5, fill='black')
             c.create_text(x, y-10, text=str(nodo['id']))
         for m in self.miembros_arm:
             n1 = next(n for n in self.nodos_arm if n['id']==m['inicio'])
             n2 = next(n for n in self.nodos_arm if n['id']==m['fin'])
-            x1 = n1['x'] * 20 + 50
-            y1 = 350 - n1['y'] * 20
-            x2 = n2['x'] * 20 + 50
-            y2 = 350 - n2['y'] * 20
+            x1 = n1['x'] * self.escala_arm + self.offset_x_arm
+            y1 = self.offset_y_arm - n1['y'] * self.escala_arm
+            x2 = n2['x'] * self.escala_arm + self.offset_x_arm
+            y2 = self.offset_y_arm - n2['y'] * self.escala_arm
             color = 'blue'
             if 'fuerza' in m:
-                color = 'red' if m['fuerza'] > 0 else 'blue'
+                color = 'red' if m['fuerza'] < 0 else 'blue'
             c.create_line(x1, y1, x2, y2, fill=color, width=2)
             if 'fuerza' in m:
                 c.create_text((x1+x2)/2, (y1+y2)/2, text=f"{m['fuerza']:.1f}")
-        arrow_len = 40
+        arrow_len = max(20, self.escala_arm * 2)
         for carg in self.cargas_arm:
             nodo = next(n for n in self.nodos_arm if n['id']==carg['nodo'])
-            x = nodo['x'] * 20 + 50
-            y = 350 - nodo['y'] * 20
+            x = nodo['x'] * self.escala_arm + self.offset_x_arm
+            y = self.offset_y_arm - nodo['y'] * self.escala_arm
             mag = (carg['Fx']**2 + carg['Fy']**2) ** 0.5
             if mag:
                 ux, uy = carg['Fx']/mag, carg['Fy']/mag
@@ -1768,8 +1793,8 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             for nodo in self.nodos_arm:
                 if nodo['apoyo'] in ('Fijo', 'Móvil'):
                     rx, ry = self.reacciones_arm.get(nodo['id'], (0,0))
-                    x = nodo['x'] * 20 + 50
-                    y = 350 - nodo['y'] * 20
+                    x = nodo['x'] * self.escala_arm + self.offset_x_arm
+                    y = self.offset_y_arm - nodo['y'] * self.escala_arm
                     if nodo['apoyo'] == 'Fijo':
                         if abs(rx) > 0:
                             signx = 1 if rx >= 0 else -1
@@ -1860,7 +1885,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             return
         self.log(f"\n📐 MÉTODO DE SECCIONES ({eje}={corte})\n", "title")
         for m in miembros_corte:
-            tipo = "compresión" if m['fuerza'] >= 0 else "tensión"
+            tipo = "tensión" if m['fuerza'] >= 0 else "compresión"
             self.log(f"Miembro {m['inicio']}-{m['fin']}: {m['fuerza']:.2f} N ({tipo})\n", "data")
         self.dibujar_dcl_seccion(corte, miembros_corte, eje)
 
