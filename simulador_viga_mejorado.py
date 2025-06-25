@@ -64,6 +64,13 @@ class SimuladorVigaMejorado:
         self.reaccion_a = 0.0
         self.reaccion_b = 0.0
         self.reaccion_c = 0.0
+        # Componentes en X e Y
+        self.reaccion_a_x = 0.0
+        self.reaccion_a_y = 0.0
+        self.reaccion_b_x = 0.0
+        self.reaccion_b_y = 0.0
+        self.reaccion_c_x = 0.0
+        self.reaccion_c_y = 0.0
 
         # Lista de puntos para centro de masa 3D (x, y, z, m)
         self.puntos_masa_3d = []
@@ -106,6 +113,9 @@ class SimuladorVigaMejorado:
         self.miembros_arm = []
         self.cargas_arm = []
         self.id_nodo_actual = 1
+        # Valores por defecto para el método de secciones
+        self.corte_valor = tk.DoubleVar(value=0.0)
+        self.corte_eje = tk.StringVar(value="X")
         # Espaciado de la cuadrícula para el lienzo de formas
         self.grid_spacing = 20
         self.crear_widgets()
@@ -505,10 +515,20 @@ class SimuladorVigaMejorado:
             else:
                 self.log("❌ Error en equilibrio\n", "error")
 
-            # Guardar reacciones para cálculos posteriores
+            # Descomposición de reacciones en X e Y
             self.reaccion_a = RA
             self.reaccion_b = RB
             self.reaccion_c = RC
+            self.reaccion_a_x = RA * np.tan(angulo) if self.tipo_apoyo_a.get() == "Fijo" else 0.0
+            self.reaccion_b_x = RB * np.tan(angulo) if self.tipo_apoyo_b.get() == "Fijo" else 0.0
+            self.reaccion_c_x = RC * np.tan(angulo) if self.tipo_apoyo_c.get() == "Fijo" else 0.0
+            self.reaccion_a_y = RA
+            self.reaccion_b_y = RB
+            self.reaccion_c_y = RC
+            self.log(f"RxA={self.reaccion_a_x:.2f} N, RyA={self.reaccion_a_y:.2f} N\n", "data")
+            self.log(f"RxB={self.reaccion_b_x:.2f} N, RyB={self.reaccion_b_y:.2f} N\n", "data")
+            if self.tipo_apoyo_c.get() != "Ninguno":
+                self.log(f"RxC={self.reaccion_c_x:.2f} N, RyC={self.reaccion_c_y:.2f} N\n", "data")
 
             self.dibujar_viga_con_reacciones(RA, RB, RC)
             
@@ -1440,11 +1460,14 @@ I_total = Σ(I_barra_i + A_i * d_i²)
 
         frame_secc = ttk.LabelFrame(frame_arm, text="Método de Secciones")
         frame_secc.pack(fill="x", pady=5)
-        ttk.Label(frame_secc, text="Corte x:").grid(row=0, column=0, padx=5, pady=2)
-        self.corte_x = tk.DoubleVar(value=0.0)
-        ttk.Entry(frame_secc, textvariable=self.corte_x, width=8).grid(row=0, column=1, padx=5, pady=2)
-        ttk.Button(frame_secc, text="Calcular Sección", command=self.calcular_seccion_armadura).grid(row=0, column=2, padx=5, pady=2)
-        ttk.Button(frame_secc, text="DCL Nodos", command=self.mostrar_dcl_nodos).grid(row=0, column=3, padx=5, pady=2)
+        ttk.Label(frame_secc, text="Corte:").grid(row=0, column=0, padx=5, pady=2)
+        self.corte_valor = tk.DoubleVar(value=0.0)
+        ttk.Entry(frame_secc, textvariable=self.corte_valor, width=8).grid(row=0, column=1, padx=5, pady=2)
+        ttk.Label(frame_secc, text="Eje:").grid(row=0, column=2, padx=5, pady=2)
+        self.corte_eje = tk.StringVar(value="X")
+        ttk.Combobox(frame_secc, textvariable=self.corte_eje, values=["X", "Y"], width=5).grid(row=0, column=3, padx=5, pady=2)
+        ttk.Button(frame_secc, text="Calcular Sección", command=self.calcular_seccion_armadura).grid(row=0, column=4, padx=5, pady=2)
+        ttk.Button(frame_secc, text="DCL Nodos", command=self.mostrar_dcl_nodos).grid(row=0, column=5, padx=5, pady=2)
 
         ttk.Button(frame_arm, text="Calcular Armadura", command=self.calcular_armadura).pack(pady=10)
         ttk.Button(frame_arm, text="Instrucciones", command=self.mostrar_instrucciones_armadura).pack(pady=5)
@@ -1755,6 +1778,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         fig, ax = plt.subplots(figsize=(4,4))
         ax.plot(0,0,'ko')
         node_lookup = {n['id']: n for n in self.nodos_arm}
+        arrow_len = 1
         for m in self.miembros_arm:
             if m['inicio']==nodo['id'] or m['fin']==nodo['id']:
                 other = m['fin'] if m['inicio']==nodo['id'] else m['inicio']
@@ -1762,17 +1786,27 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                 dx = n2['x'] - nodo['x']
                 dy = n2['y'] - nodo['y']
                 L = (dx**2 + dy**2)**0.5
+                if L == 0:
+                    continue
                 u = (dx/L, dy/L)
                 fuerza = m.get('fuerza',0)
                 color = 'red' if fuerza < 0 else 'blue'
-                ax.arrow(0,0,u[0],u[1],color=color,head_width=0.1,length_includes_head=True)
-                ax.text(u[0],u[1],f"{fuerza:.1f}",color=color)
+                ax.arrow(0,0,u[0]*arrow_len,u[1]*arrow_len,color=color,head_width=0.1,length_includes_head=True)
+                ax.text(u[0]*arrow_len,u[1]*arrow_len,f"{fuerza:.1f}",color=color)
         for c in self.cargas_arm:
             if c['nodo']==nodo['id']:
-                ax.arrow(0,0,c['Fx']/10,-c['Fy']/10,color='green',head_width=0.1,length_includes_head=True)
+                mag = np.hypot(c['Fx'], c['Fy'])
+                if mag:
+                    ux, uy = c['Fx']/mag, -c['Fy']/mag
+                    ax.arrow(0,0,ux*arrow_len,uy*arrow_len,color='green',head_width=0.1,length_includes_head=True)
+                    ax.text(ux*arrow_len,uy*arrow_len,f"{mag:.1f}",color='green')
         if nodo['apoyo'] in ('Fijo','Móvil') and hasattr(self,'reacciones_arm'):
             rx, ry = self.reacciones_arm.get(nodo['id'], (0,0))
-            ax.arrow(0,0,rx/10,ry/10,color='orange',head_width=0.1,length_includes_head=True)
+            mag = np.hypot(rx, ry)
+            if mag:
+                ux, uy = rx/mag, ry/mag
+                ax.arrow(0,0,ux*arrow_len,uy*arrow_len,color='orange',head_width=0.1,length_includes_head=True)
+                ax.text(ux*arrow_len,uy*arrow_len,f"{mag:.1f}",color='orange')
         ax.set_xlim(-1.5,1.5)
         ax.set_ylim(-1.5,1.5)
         ax.set_aspect('equal')
@@ -1782,56 +1816,103 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         canvas.get_tk_widget().pack(fill='both', expand=True)
 
     def calcular_seccion_armadura(self):
-        corte = self.corte_x.get()
+        corte = self.corte_valor.get()
+        eje = self.corte_eje.get().lower()
         if not self.miembros_arm:
             messagebox.showwarning("Advertencia", "Calcule primero la armadura")
             return
         node_lookup = {n['id']: n for n in self.nodos_arm}
         miembros_corte = []
         for m in self.miembros_arm:
-            x1 = node_lookup[m['inicio']]['x']
-            x2 = node_lookup[m['fin']]['x']
-            if (x1 - corte)*(x2 - corte) < 0:
+            if eje == 'x':
+                p1 = node_lookup[m['inicio']]['x']
+                p2 = node_lookup[m['fin']]['x']
+            else:
+                p1 = node_lookup[m['inicio']]['y']
+                p2 = node_lookup[m['fin']]['y']
+            if (p1 - corte) * (p2 - corte) < 0 or p1 == corte or p2 == corte:
                 miembros_corte.append(m)
         if not miembros_corte:
             messagebox.showinfo("Sección", "Ningún miembro intersecta el corte")
             return
-        self.log(f"\n📐 MÉTODO DE SECCIONES (x={corte})\n", "title")
+        self.log(f"\n📐 MÉTODO DE SECCIONES ({eje}={corte})\n", "title")
         for m in miembros_corte:
             tipo = "compresión" if m['fuerza'] >= 0 else "tensión"
             self.log(f"Miembro {m['inicio']}-{m['fin']}: {m['fuerza']:.2f} N ({tipo})\n", "data")
-        self.dibujar_dcl_seccion(corte, miembros_corte)
+        self.dibujar_dcl_seccion(corte, miembros_corte, eje)
 
-    def dibujar_dcl_seccion(self, corte, miembros):
+    def dibujar_dcl_seccion(self, corte, miembros, eje):
         ventana = tk.Toplevel(self.root)
         ventana.title("DCL Sección")
         fig, ax = plt.subplots(figsize=(6,4))
         node_lookup = {n['id']: n for n in self.nodos_arm}
-        for m in self.miembros_arm:
-            n1 = node_lookup[m['inicio']]
-            n2 = node_lookup[m['fin']]
-            if n1['x']<=corte and n2['x']<=corte:
-                ax.plot([n1['x'], n2['x']], [n1['y'], n2['y']], 'k-')
-        for nodo in self.nodos_arm:
-            if nodo['x']<=corte:
-                ax.plot(nodo['x'], nodo['y'], 'ko')
-                for c in self.cargas_arm:
-                    if c['nodo']==nodo['id']:
-                        ax.arrow(nodo['x'], nodo['y'], c['Fx']/10, -c['Fy']/10, color='green', head_width=0.1)
-                if nodo['apoyo'] in ('Fijo','Móvil') and hasattr(self,'reacciones_arm'):
-                    rx, ry = self.reacciones_arm.get(nodo['id'], (0,0))
-                    ax.arrow(nodo['x'], nodo['y'], rx/10, ry/10, color='orange', head_width=0.1)
-        ax.axvline(corte, color='red', linestyle='--')
-        for m in miembros:
-            n1 = node_lookup[m['inicio']]
-            n2 = node_lookup[m['fin']]
-            t = (corte - n1['x'])/(n2['x']-n1['x'])
-            ycut = n1['y'] + t*(n2['y']-n1['y'])
-            fuerza = m.get('fuerza',0)
-            color = 'purple'
-            sign = 1 if fuerza>=0 else -1
-            ax.arrow(corte, ycut, 0, sign*0.5, color=color, head_width=0.1)
-            ax.text(corte+0.1, ycut, f"{fuerza:.1f}", color=color)
+        arrow_len = 0.8
+        if eje == 'x':
+            for m in self.miembros_arm:
+                n1 = node_lookup[m['inicio']]
+                n2 = node_lookup[m['fin']]
+                if n1['x'] <= corte and n2['x'] <= corte:
+                    ax.plot([n1['x'], n2['x']], [n1['y'], n2['y']], 'k-')
+            for nodo in self.nodos_arm:
+                if nodo['x'] <= corte:
+                    ax.plot(nodo['x'], nodo['y'], 'ko')
+                    for c in self.cargas_arm:
+                        if c['nodo'] == nodo['id']:
+                            mag = np.hypot(c['Fx'], c['Fy'])
+                            if mag:
+                                ux, uy = c['Fx']/mag, -c['Fy']/mag
+                                ax.arrow(nodo['x'], nodo['y'], ux*arrow_len, uy*arrow_len, color='green', head_width=0.1, length_includes_head=True)
+                                ax.text(nodo['x']+ux*arrow_len, nodo['y']+uy*arrow_len, f"{mag:.1f}", color='green')
+                    if nodo['apoyo'] in ('Fijo','Móvil') and hasattr(self,'reacciones_arm'):
+                        rx, ry = self.reacciones_arm.get(nodo['id'], (0,0))
+                        mag = np.hypot(rx, ry)
+                        if mag:
+                            ux, uy = rx/mag, ry/mag
+                            ax.arrow(nodo['x'], nodo['y'], ux*arrow_len, uy*arrow_len, color='orange', head_width=0.1, length_includes_head=True)
+                            ax.text(nodo['x']+ux*arrow_len, nodo['y']+uy*arrow_len, f"{mag:.1f}", color='orange')
+            ax.axvline(corte, color='red', linestyle='--')
+            for m in miembros:
+                n1 = node_lookup[m['inicio']]
+                n2 = node_lookup[m['fin']]
+                t = (corte - n1['x'])/(n2['x']-n1['x'])
+                ycut = n1['y'] + t*(n2['y']-n1['y'])
+                fuerza = m.get('fuerza',0)
+                sign = 1 if fuerza>=0 else -1
+                ax.arrow(corte, ycut, 0, sign*arrow_len, color='purple', head_width=0.1, length_includes_head=True)
+                ax.text(corte, ycut+sign*arrow_len, f"{fuerza:.1f}", color='purple')
+        else:
+            for m in self.miembros_arm:
+                n1 = node_lookup[m['inicio']]
+                n2 = node_lookup[m['fin']]
+                if n1['y'] <= corte and n2['y'] <= corte:
+                    ax.plot([n1['x'], n2['x']], [n1['y'], n2['y']], 'k-')
+            for nodo in self.nodos_arm:
+                if nodo['y'] <= corte:
+                    ax.plot(nodo['x'], nodo['y'], 'ko')
+                    for c in self.cargas_arm:
+                        if c['nodo'] == nodo['id']:
+                            mag = np.hypot(c['Fx'], c['Fy'])
+                            if mag:
+                                ux, uy = c['Fx']/mag, -c['Fy']/mag
+                                ax.arrow(nodo['x'], nodo['y'], ux*arrow_len, uy*arrow_len, color='green', head_width=0.1, length_includes_head=True)
+                                ax.text(nodo['x']+ux*arrow_len, nodo['y']+uy*arrow_len, f"{mag:.1f}", color='green')
+                    if nodo['apoyo'] in ('Fijo','Móvil') and hasattr(self,'reacciones_arm'):
+                        rx, ry = self.reacciones_arm.get(nodo['id'], (0,0))
+                        mag = np.hypot(rx, ry)
+                        if mag:
+                            ux, uy = rx/mag, ry/mag
+                            ax.arrow(nodo['x'], nodo['y'], ux*arrow_len, uy*arrow_len, color='orange', head_width=0.1, length_includes_head=True)
+                            ax.text(nodo['x']+ux*arrow_len, nodo['y']+uy*arrow_len, f"{mag:.1f}", color='orange')
+            ax.axhline(corte, color='red', linestyle='--')
+            for m in miembros:
+                n1 = node_lookup[m['inicio']]
+                n2 = node_lookup[m['fin']]
+                t = (corte - n1['y'])/(n2['y']-n1['y'])
+                xcut = n1['x'] + t*(n2['x']-n1['x'])
+                fuerza = m.get('fuerza',0)
+                sign = 1 if fuerza>=0 else -1
+                ax.arrow(xcut, corte, sign*arrow_len, 0, color='purple', head_width=0.1, length_includes_head=True)
+                ax.text(xcut+sign*arrow_len, corte, f"{fuerza:.1f}", color='purple')
         ax.set_aspect('equal')
         ax.set_xlabel('x')
         ax.set_ylabel('y')
