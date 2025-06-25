@@ -906,6 +906,7 @@ class SimuladorVigaMejorado:
             widget.destroy()
         
         fig, ax = plt.subplots(figsize=(12, 6))
+        plt.style.use("seaborn-v0_8-whitegrid")
         L = self.longitud.get()
         
         # Dibujar viga
@@ -961,7 +962,8 @@ class SimuladorVigaMejorado:
         ax.set_xlabel('Posición (m)', fontsize=10)
         ax.set_title('Viga con Reacciones Calculadas', fontsize=12)
         ax.grid(True, alpha=0.3, linestyle='--')
-        
+        ax.margins(x=0.05, y=0.3)
+
         plt.tight_layout()
         canvas = FigureCanvasTkAgg(fig, master=self.frame_grafico)
         canvas.draw()
@@ -975,6 +977,7 @@ class SimuladorVigaMejorado:
         fig, (ax1, ax2, ax3, ax4) = plt.subplots(
             4, 1, figsize=(12, 24), constrained_layout=True
         )
+        plt.style.use("seaborn-v0_8-whitegrid")
         
         L = self.longitud.get()
         
@@ -1007,6 +1010,7 @@ class SimuladorVigaMejorado:
         
         ax1.set_xlim(-L*0.1, L*1.1)
         ax1.set_ylim(-0.6, 0.7)
+        ax1.margins(x=0.05, y=0.2)
         ax1.set_title('Configuración de Cargas y Reacciones', fontsize=12)
         ax1.grid(True, alpha=0.3, linestyle='--')
         ax1.set_xlabel('Posición (m)', fontsize=10)
@@ -1020,6 +1024,7 @@ class SimuladorVigaMejorado:
         ax2.set_title('Diagrama de Fuerza Cortante', fontsize=12)
         ax2.grid(True, alpha=0.3, linestyle='--')
         ax2.set_xlim(-L*0.1, L*1.1)
+        ax2.margins(x=0.05)
         
         for pos, _ in self.cargas_puntuales:
             ax2.plot(pos, 0, 'ko', markersize=4)
@@ -1042,6 +1047,7 @@ class SimuladorVigaMejorado:
         ax3.set_title('Diagrama de Momento Flector', fontsize=12)
         ax3.grid(True, alpha=0.3, linestyle='--')
         ax3.set_xlim(-L*0.1, L*1.1)
+        ax3.margins(x=0.05)
         
         # Añadir valores máximos y mínimos al diagrama de momento
         momento_max = np.max(momento)
@@ -1060,11 +1066,12 @@ class SimuladorVigaMejorado:
         ax4.set_title('Diagrama de Torsión', fontsize=12)
         ax4.grid(True, alpha=0.3, linestyle='--')
         ax4.set_xlim(-L*0.1, L*1.1)
+        ax4.margins(x=0.05)
 
         # Añadir valor del par torsor al diagrama de torsión
         ax4.text(L*1.05, par_torsor, f'T: {par_torsor:.2f}N·m', va='center', ha='left', fontsize=8)
-        
 
+        plt.tight_layout()
         canvas = FigureCanvasTkAgg(fig, master=self.frame_grafico)
         canvas.draw()
         canvas.get_tk_widget().pack(fill="both", expand=True)
@@ -1893,6 +1900,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         ventana = tk.Toplevel(self.root)
         ventana.title("DCL Sección")
         fig, ax = plt.subplots(figsize=(6,4))
+        plt.style.use("seaborn-v0_8-whitegrid")
         node_lookup = {n['id']: n for n in self.nodos_arm}
         arrow_len = 0.8
         if eje == 'x':
@@ -1913,11 +1921,22 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                                 ax.text(nodo['x']+ux*arrow_len, nodo['y']+uy*arrow_len, f"{mag:.1f}", color='green')
                     if nodo['apoyo'] in ('Fijo','Móvil') and hasattr(self,'reacciones_arm'):
                         rx, ry = self.reacciones_arm.get(nodo['id'], (0,0))
-                        mag = np.hypot(rx, ry)
-                        if mag:
-                            ux, uy = rx/mag, ry/mag
-                            ax.arrow(nodo['x'], nodo['y'], ux*arrow_len, uy*arrow_len, color='orange', head_width=0.1, length_includes_head=True)
-                            ax.text(nodo['x']+ux*arrow_len, nodo['y']+uy*arrow_len, f"{mag:.1f}", color='orange')
+                        if abs(rx) > 0:
+                            signx = 1 if rx >= 0 else -1
+                            ax.arrow(nodo['x'], nodo['y'], signx*arrow_len, 0,
+                                     color='orange', head_width=0.1,
+                                     length_includes_head=True)
+                            ax.text(nodo['x'] + signx*arrow_len, nodo['y'] + 0.05,
+                                    f"Rx={rx:.1f}", color='orange', ha='center',
+                                    va='bottom')
+                        if abs(ry) > 0:
+                            signy = 1 if ry >= 0 else -1
+                            ax.arrow(nodo['x'], nodo['y'], 0, signy*arrow_len,
+                                     color='orange', head_width=0.1,
+                                     length_includes_head=True)
+                            ax.text(nodo['x'] + 0.05, nodo['y'] + signy*arrow_len,
+                                    f"Ry={ry:.1f}", color='orange', ha='left',
+                                    va='bottom' if signy > 0 else 'top')
             ax.axvline(corte, color='red', linestyle='--')
             for m in miembros:
                 n1 = node_lookup[m['inicio']]
@@ -1946,11 +1965,22 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                                 ax.text(nodo['x']+ux*arrow_len, nodo['y']+uy*arrow_len, f"{mag:.1f}", color='green')
                     if nodo['apoyo'] in ('Fijo','Móvil') and hasattr(self,'reacciones_arm'):
                         rx, ry = self.reacciones_arm.get(nodo['id'], (0,0))
-                        mag = np.hypot(rx, ry)
-                        if mag:
-                            ux, uy = rx/mag, ry/mag
-                            ax.arrow(nodo['x'], nodo['y'], ux*arrow_len, uy*arrow_len, color='orange', head_width=0.1, length_includes_head=True)
-                            ax.text(nodo['x']+ux*arrow_len, nodo['y']+uy*arrow_len, f"{mag:.1f}", color='orange')
+                        if abs(rx) > 0:
+                            signx = 1 if rx >= 0 else -1
+                            ax.arrow(nodo['x'], nodo['y'], signx*arrow_len, 0,
+                                     color='orange', head_width=0.1,
+                                     length_includes_head=True)
+                            ax.text(nodo['x'] + signx*arrow_len, nodo['y'] + 0.05,
+                                    f"Rx={rx:.1f}", color='orange', ha='center',
+                                    va='bottom')
+                        if abs(ry) > 0:
+                            signy = 1 if ry >= 0 else -1
+                            ax.arrow(nodo['x'], nodo['y'], 0, signy*arrow_len,
+                                     color='orange', head_width=0.1,
+                                     length_includes_head=True)
+                            ax.text(nodo['x'] + 0.05, nodo['y'] + signy*arrow_len,
+                                    f"Ry={ry:.1f}", color='orange', ha='left',
+                                    va='bottom' if signy > 0 else 'top')
             ax.axhline(corte, color='red', linestyle='--')
             for m in miembros:
                 n1 = node_lookup[m['inicio']]
@@ -1964,6 +1994,9 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         ax.set_aspect('equal')
         ax.set_xlabel('x')
         ax.set_ylabel('y')
+        ax.set_title('Diagrama de Cuerpo Libre de la Sección')
+        ax.margins(0.2)
+        plt.tight_layout()
         canvas = FigureCanvasTkAgg(fig, master=ventana)
         canvas.draw()
         canvas.get_tk_widget().pack(fill='both', expand=True)
