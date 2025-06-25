@@ -1404,9 +1404,13 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         ttk.Button(frame_formas, text="Limpiar Lienzo", command=self.limpiar_lienzo_formas).grid(row=4, column=0, columnspan=2, pady=5)
         ttk.Button(frame_formas, text="Ampliar Lienzo", command=self.ampliar_lienzo_formas).grid(row=4, column=2, columnspan=2, pady=5)
 
-        ttk.Label(frame_formas, text="⚡ También puede hacer clic en el lienzo para agregar").grid(row=5, column=0, columnspan=4, pady=2)
+        # Botón para cargar el proyecto 3 (Mesa)
+        ttk.Button(frame_formas, text="Cargar Proyecto 3 (Mesa)",
+                   command=self.cargar_proyecto_3_cg_mesa).grid(row=5, column=0, columnspan=4, pady=5)
+
+        ttk.Label(frame_formas, text="⚡ También puede hacer clic en el lienzo para agregar").grid(row=6, column=0, columnspan=4, pady=2)
         self.canvas_formas = tk.Canvas(frame_formas, width=400, height=300, bg="white")
-        self.canvas_formas.grid(row=6, column=0, columnspan=4, pady=5)
+        self.canvas_formas.grid(row=7, column=0, columnspan=4, pady=5)
         self.canvas_formas.bind("<Button-1>", self.iniciar_accion_formas)
         self.canvas_formas.bind("<B1-Motion>", self.arrastrar_forma)
         self.canvas_formas.bind("<ButtonRelease-1>", self.soltar_forma)
@@ -1573,8 +1577,9 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         ax.text(cg_x, cg_y, f'CG ({cg_x:.2f}, {cg_y:.2f})', ha='right', va='bottom')
         
         ax.set_aspect('equal', 'box')
-        ax.set_xlim(min(forma[1] for forma in self.formas)-1, max(forma[1]+forma[3] for forma in self.formas)+1)
-        ax.set_ylim(min(forma[2] for forma in self.formas)-1, max(forma[2]+forma[4] for forma in self.formas)+1)
+        # Ajustar límites para abarcar una mesa de hasta 100x50 con un pequeño margen
+        ax.set_xlim(-10, 110)
+        ax.set_ylim(-10, 60)
         ax.set_title('Formas Irregulares y Centro de Gravedad')
         
         plt.tight_layout()
@@ -2178,6 +2183,38 @@ I_total = Σ(I_barra_i + A_i * d_i²)
 
         self.coord_label_ampliado = ttk.Label(self.ventana_lienzo, text="x=0, y=0")
         self.coord_label_ampliado.pack()
+
+    def cargar_proyecto_3_cg_mesa(self):
+        """Carga los datos del Proyecto 3 (Mesa) y muestra su centro de gravedad."""
+        self.limpiar_lienzo_formas()
+
+        # Rectángulo representativo de la mesa (100 x 50)
+        mesa_ancho = 100
+        mesa_alto = 50
+        self.formas.append(("Rectángulo", 0, 0, mesa_ancho, mesa_alto))
+
+        # Datos del proyecto calculados previamente
+        area_total_proyecto = 746
+        sum_XA_proyecto = 22501
+        sum_YA_proyecto = 12338
+
+        if area_total_proyecto != 0:
+            cg_x_proyecto = sum_XA_proyecto / area_total_proyecto
+            cg_y_proyecto = sum_YA_proyecto / area_total_proyecto
+        else:
+            cg_x_proyecto = 0
+            cg_y_proyecto = 0
+            self.log("Error: El área total del proyecto es cero, no se puede calcular el CG.\n", "error")
+
+        self.cg_label.config(text=f"CG Proyecto 3: ({cg_x_proyecto:.2f}, {cg_y_proyecto:.2f})")
+        self.redibujar_formas()
+
+        self.log("\n\U0001F4CA Datos del Proyecto 3 (Mesa) cargados:\n", "title")
+        self.log(f"Centro de Gravedad calculado: X={cg_x_proyecto:.2f}, Y={cg_y_proyecto:.2f}\n", "data")
+        self.log("Se ha agregado un rect\u00e1ngulo representativo de la forma exterior de la mesa.\n", "info")
+        self.log("Nota: El c\u00e1lculo considera las \u00e1reas compuestas seg\u00fan el documento.\n", "info")
+
+        self.dibujar_formas_irregulares(cg_x_proyecto, cg_y_proyecto)
 
     def crear_seccion_resultados(self, parent):
         frame_resultados = ttk.LabelFrame(parent, text="Resultados")
