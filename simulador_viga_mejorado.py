@@ -1636,6 +1636,10 @@ I_total = Σ(I_barra_i + A_i * d_i²)
     def agregar_miembro(self):
         ini = self.miembro_inicio.get()
         fin = self.miembro_fin.get()
+        if not any(n['id'] == ini for n in self.nodos_arm) or not any(n['id'] == fin for n in self.nodos_arm):
+            messagebox.showerror("Error", "Los nodos inicial y final deben existir.")
+            return
+
         self.miembros_arm.append({'inicio': ini, 'fin': fin, 'fuerza': 0.0})
         self.log(f"Miembro {ini}-{fin} agregado\n", "data")
         self.dibujar_armadura()
@@ -1644,83 +1648,109 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         nodo = self.carga_nodo.get()
         fx = self.carga_fx.get()
         fy = self.carga_fy.get()
+        if not any(n['id'] == nodo for n in self.nodos_arm):
+            messagebox.showerror("Error", "El nodo al que se aplica la carga debe existir.")
+            return
+
         self.cargas_arm.append({'nodo': nodo, 'Fx': fx, 'Fy': fy})
         self.log(f"Carga en nodo {nodo}: Fx={fx}, Fy={fy}\n", "data")
         self.dibujar_armadura()
 
     def calcular_armadura(self):
         try:
+            if not self.nodos_arm or not self.miembros_arm:
+                messagebox.showwarning("Advertencia", "Agrega nodos y miembros a la armadura primero.")
+                return
+
             n_miembros = len(self.miembros_arm)
             var_map = {}
             idx = 0
             for i in range(n_miembros):
                 var_map[f"m{i}"] = idx
                 idx += 1
+
             for nodo in self.nodos_arm:
                 if nodo['apoyo'] == 'Fijo':
                     var_map[f"Rx{nodo['id']}"] = idx; idx += 1
                     var_map[f"Ry{nodo['id']}"] = idx; idx += 1
                 elif nodo['apoyo'] == 'Móvil':
                     var_map[f"Ry{nodo['id']}"] = idx; idx += 1
+
             num_vars = idx
             num_eqs = len(self.nodos_arm) * 2
+
+            if num_vars > num_eqs:
+                messagebox.showwarning("Advertencia", "La armadura es estáticamente indeterminada. Puede que no tenga una solución única o sea inestable.")
+            elif num_vars < num_eqs:
+                messagebox.showwarning("Advertencia", "La armadura es estáticamente sobredeterminada. Puede que no sea soluble con las condiciones dadas.")
+
             A = np.zeros((num_eqs, num_vars))
             b = np.zeros(num_eqs)
+
             node_lookup = {n['id']: n for n in self.nodos_arm}
-            loads = {}
-            for nodo in self.nodos_arm:
-                loads[nodo['id']] = {'Fx': 0.0, 'Fy': 0.0}
+            loads = {n['id']: {'Fx': 0.0, 'Fy': 0.0} for n in self.nodos_arm}
             for c in self.cargas_arm:
                 loads[c['nodo']]['Fx'] += c['Fx']
                 loads[c['nodo']]['Fy'] += c['Fy']
+
             eq = 0
             for nodo in self.nodos_arm:
-                # ecuación en X
                 for j, m in enumerate(self.miembros_arm):
                     if m['inicio'] == nodo['id'] or m['fin'] == nodo['id']:
-                        n2 = m['fin'] if m['inicio'] == nodo['id'] else m['inicio']
+                        n2_id = m['fin'] if m['inicio'] == nodo['id'] else m['inicio']
                         nd1 = node_lookup[nodo['id']]
-                        nd2 = node_lookup[n2]
+                        nd2 = node_lookup[n2_id]
                         dx = nd2['x'] - nd1['x']
                         dy = nd2['y'] - nd1['y']
                         L = (dx**2 + dy**2) ** 0.5
-                        cos = dx / L
-                        sin = dy / L
-                        sign = 1 if m['inicio'] == nodo['id'] else -1
-                        A[eq, var_map[f"m{j}"]] += sign * cos
+                        if L == 0:
+                            continue
+                        cos_theta = dx / L
+                        if m['inicio'] == nodo['id']:
+                            A[eq, var_map[f"m{j}"]] += cos_theta
+                        else:
+                            A[eq, var_map[f"m{j}"]] -= cos_theta
+
                 if nodo['apoyo'] == 'Fijo':
                     A[eq, var_map[f"Rx{nodo['id']}"]] = 1
+
                 b[eq] = -loads[nodo['id']]['Fx']
                 eq += 1
 
-                # ecuación en Y
                 for j, m in enumerate(self.miembros_arm):
                     if m['inicio'] == nodo['id'] or m['fin'] == nodo['id']:
-                        n2 = m['fin'] if m['inicio'] == nodo['id'] else m['inicio']
+                        n2_id = m['fin'] if m['inicio'] == nodo['id'] else m['inicio']
                         nd1 = node_lookup[nodo['id']]
-                        nd2 = node_lookup[n2]
+                        nd2 = node_lookup[n2_id]
                         dx = nd2['x'] - nd1['x']
                         dy = nd2['y'] - nd1['y']
                         L = (dx**2 + dy**2) ** 0.5
-                        cos = dx / L
-                        sin = dy / L
-                        sign = 1 if m['inicio'] == nodo['id'] else -1
-                        A[eq, var_map[f"m{j}"]] += sign * sin
+                        if L == 0:
+                            continue
+                        sin_theta = dy / L
+                        if m['inicio'] == nodo['id']:
+                            A[eq, var_map[f"m{j}"]] += sin_theta
+                        else:
+                            A[eq, var_map[f"m{j}"]] -= sin_theta
+
                 if nodo['apoyo'] in ('Fijo', 'Móvil'):
                     A[eq, var_map[f"Ry{nodo['id']}"]] = 1
+
                 b[eq] = -loads[nodo['id']]['Fy']
                 eq += 1
 
             if A.shape[0] != A.shape[1]:
-                messagebox.showwarning(
-                    "Advertencia",
-                    "Sistema indeterminado o sobredeterminado. Se resolverá por mínimos cuadrados",
+                self.log(
+                    "Advertencia: El sistema de ecuaciones no es cuadrado. Se resolverá por mínimos cuadrados.\n",
+                    "warning",
                 )
                 soluciones, *_ = np.linalg.lstsq(A, b, rcond=None)
             else:
                 soluciones = np.linalg.solve(A, b)
+
             for j, m in enumerate(self.miembros_arm):
                 m['fuerza'] = soluciones[var_map[f"m{j}"]]
+
             self.reacciones_arm = {}
             for nodo in self.nodos_arm:
                 if nodo['apoyo'] == 'Fijo':
@@ -1731,39 +1761,59 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                     ry = soluciones[var_map[f"Ry{nodo['id']}"]]
                     self.reacciones_arm[nodo['id']] = (0.0, ry)
 
-            self.log("\n📐 ANÁLISIS DE ARMADURA:\n", "title")
+            self.log(f"\n{'='*50}\n", "title")
+            self.log("📐 ANÁLISIS DE ARMADURA:\n", "title")
+            self.log(f"{'='*50}\n", "title")
             for j, m in enumerate(self.miembros_arm):
                 tipo = "tensión" if m['fuerza'] >= 0 else "compresión"
                 self.log(f"Miembro {m['inicio']}-{m['fin']}: {m['fuerza']:.2f} N ({tipo})\n", "data")
+
             for nid, r in self.reacciones_arm.items():
                 self.log(f"Reacciones nodo {nid}: Rx={r[0]:.2f} N, Ry={r[1]:.2f} N\n", "data")
 
             self.dibujar_armadura()
+
+        except np.linalg.LinAlgError as e:
+            messagebox.showerror("Error de Cálculo", f"El sistema de ecuaciones no pudo resolverse (singular o mal condicionado): {e}. Verifica la estabilidad de la armadura.")
         except Exception as e:
             messagebox.showerror("Error", f"Error en cálculo de armadura: {e}")
 
     def ajustar_vista_armadura(self):
-        """Calcula la escala y desplazamiento para dibujar la armadura"""
+        """Calcula la escala y desplazamiento para dibujar la armadura dentro del canvas."""
         if not hasattr(self, 'canvas_armadura') or not self.nodos_arm:
             self.escala_arm = 20
             self.offset_x_arm = 50
             self.offset_y_arm = 350
             return
+
         c = self.canvas_armadura
-        width = c.winfo_width() or int(c['width'])
-        height = c.winfo_height() or int(c['height'])
+        width = c.winfo_width() if c.winfo_width() > 1 else int(c['width'])
+        height = c.winfo_height() if c.winfo_height() > 1 else int(c['height'])
+
         margin = 50
+
         xs = [n['x'] for n in self.nodos_arm]
         ys = [n['y'] for n in self.nodos_arm]
+
+        if not xs:
+            self.escala_arm = 20
+            self.offset_x_arm = width / 2
+            self.offset_y_arm = height / 2
+            return
+
         min_x, max_x = min(xs), max(xs)
         min_y, max_y = min(ys), max(ys)
+
         rango_x = max(max_x - min_x, 1e-6)
         rango_y = max(max_y - min_y, 1e-6)
-        escala_x = (width - 2*margin) / rango_x
-        escala_y = (height - 2*margin) / rango_y
+
+        escala_x = (width - 2 * margin) / rango_x
+        escala_y = (height - 2 * margin) / rango_y
+
         self.escala_arm = min(escala_x, escala_y)
-        self.offset_x_arm = margin - min_x * self.escala_arm
-        self.offset_y_arm = height - margin + min_y * self.escala_arm
+
+        self.offset_x_arm = margin - min_x * self.escala_arm + (width - 2 * margin - rango_x * self.escala_arm) / 2
+        self.offset_y_arm = height - margin + min_y * self.escala_arm - (height - 2 * margin - rango_y * self.escala_arm) / 2
 
     def dibujar_armadura(self):
         if not hasattr(self, 'canvas_armadura'):
@@ -1771,60 +1821,82 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         c = self.canvas_armadura
         self.ajustar_vista_armadura()
         c.delete('all')
+
         for nodo in self.nodos_arm:
             x = nodo['x'] * self.escala_arm + self.offset_x_arm
             y = self.offset_y_arm - nodo['y'] * self.escala_arm
-            c.create_oval(x-5, y-5, x+5, y+5, fill='black')
-            c.create_text(x, y-10, text=str(nodo['id']))
+            c.create_oval(x-5, y-5, x+5, y+5, fill='black', tags="nodo")
+            c.create_text(x, y-10, text=str(nodo['id']), fill='black', tags="nodo_id")
+
+            if nodo['apoyo'] == 'Fijo':
+                c.create_polygon(x-10, y+10, x+10, y+10, x, y, fill='blue', outline='blue', tags="apoyo")
+                c.create_line(x-15, y+10, x+15, y+10, fill='gray', tags="apoyo")
+                for i in range(-1, 2):
+                    c.create_line(x + i*5, y + 10, x + i*5 + 5, y + 15, fill='gray', tags="apoyo")
+            elif nodo['apoyo'] == 'Móvil':
+                c.create_oval(x-8, y+2, x+8, y+18, fill='blue', outline='blue', tags="apoyo")
+                c.create_line(x-15, y+20, x+15, y+20, fill='gray', tags="apoyo")
+                for i in range(-1, 2):
+                    c.create_line(x + i*5, y + 20, x + i*5 + 5, y + 25, fill='gray', tags="apoyo")
+
         for m in self.miembros_arm:
             n1 = next(n for n in self.nodos_arm if n['id']==m['inicio'])
             n2 = next(n for n in self.nodos_arm if n['id']==m['fin'])
+
             x1 = n1['x'] * self.escala_arm + self.offset_x_arm
             y1 = self.offset_y_arm - n1['y'] * self.escala_arm
             x2 = n2['x'] * self.escala_arm + self.offset_x_arm
             y2 = self.offset_y_arm - n2['y'] * self.escala_arm
-            color = 'blue'
+
+            color = 'black'
             if 'fuerza' in m:
                 color = 'red' if m['fuerza'] < 0 else 'blue'
-            c.create_line(x1, y1, x2, y2, fill=color, width=2)
+
+            c.create_line(x1, y1, x2, y2, fill=color, width=2, tags="miembro")
+
             if 'fuerza' in m:
-                c.create_text((x1+x2)/2, (y1+y2)/2, text=f"{m['fuerza']:.1f}")
-        arrow_len = max(20, self.escala_arm * 2)
+                mid_x = (x1+x2)/2
+                mid_y = (y1+y2)/2
+                c.create_text(mid_x, mid_y, text=f"{m['fuerza']:.1f} N", fill=color, font=("Arial", 8, "bold"), tags="miembro_fuerza")
+
+        arrow_len = 20
         for carg in self.cargas_arm:
             nodo = next(n for n in self.nodos_arm if n['id']==carg['nodo'])
             x = nodo['x'] * self.escala_arm + self.offset_x_arm
             y = self.offset_y_arm - nodo['y'] * self.escala_arm
-            mag = (carg['Fx']**2 + carg['Fy']**2) ** 0.5
-            if mag:
-                ux, uy = carg['Fx']/mag, carg['Fy']/mag
-                c.create_line(x, y, x + ux*arrow_len, y - uy*arrow_len,
-                              arrow=tk.LAST, fill='green')
-                c.create_text(x + ux*arrow_len, y - uy*arrow_len - 10,
-                              text=f"{mag:.1f}", fill='green')
+
+            fx = carg['Fx']
+            fy = carg['Fy']
+            mag = (fx**2 + fy**2) ** 0.5
+            if mag > 0:
+                ux, uy = fx / mag, fy / mag
+                c.create_line(x, y, x + ux * arrow_len, y - uy * arrow_len, arrow=tk.LAST, fill='green', width=2, tags="carga")
+                c.create_text(x + ux * arrow_len + 15 * ux, y - uy * arrow_len - 15 * uy, text=f"{mag:.1f} N", fill='green', font=("Arial", 8, "bold"), tags="carga_mag")
+
         if hasattr(self, 'reacciones_arm'):
+            reaction_arrow_len = 25
             for nodo in self.nodos_arm:
                 if nodo['apoyo'] in ('Fijo', 'Móvil'):
-                    rx, ry = self.reacciones_arm.get(nodo['id'], (0,0))
-                    x = nodo['x'] * self.escala_arm + self.offset_x_arm
-                    y = self.offset_y_arm - nodo['y'] * self.escala_arm
-                    if nodo['apoyo'] == 'Fijo':
-                        if abs(rx) > 0:
-                            signx = 1 if rx >= 0 else -1
-                            c.create_line(x, y, x + signx*arrow_len, y,
-                                          arrow=tk.LAST, fill='orange')
-                            c.create_text(x + signx*arrow_len, y - 10,
-                                          text=f"{rx:.1f}", fill='orange')
-                    if abs(ry) > 0:
-                        signy = 1 if ry >= 0 else -1
-                        c.create_line(x, y, x, y - signy*arrow_len,
-                                      arrow=tk.LAST, fill='orange')
-                        c.create_text(x + 10, y - signy*arrow_len,
-                                      text=f"{ry:.1f}", fill='orange')
+                    if nodo['id'] in self.reacciones_arm:
+                        rx, ry = self.reacciones_arm[nodo['id']]
+                        x_node = nodo['x'] * self.escala_arm + self.offset_x_arm
+                        y_node = self.offset_y_arm - nodo['y'] * self.escala_arm
+
+                        if abs(rx) > 0.1:
+                            x_end = x_node + (1 if rx > 0 else -1) * reaction_arrow_len
+                            c.create_line(x_node, y_node, x_end, y_node, arrow=tk.LAST, fill='orange', width=2, tags="reaccion")
+                            c.create_text(x_end, y_node - 10, text=f"{rx:.1f}", fill='orange', font=("Arial", 8, "bold"), tags="reaccion_mag")
+
+                        if abs(ry) > 0.1:
+                            y_end = y_node - (1 if ry > 0 else -1) * reaction_arrow_len
+                            c.create_line(x_node, y_node, x_node, y_end, arrow=tk.LAST, fill='orange', width=2, tags="reaccion")
+                            c.create_text(x_node + 10, y_end, text=f"{ry:.1f}", fill='orange', font=("Arial", 8, "bold"), tags="reaccion_mag")
 
     def mostrar_dcl_nodos(self):
-        if not self.miembros_arm:
-            messagebox.showwarning("Advertencia", "Calcule primero la armadura")
+        if not self.miembros_arm or not hasattr(self, 'reacciones_arm'):
+            messagebox.showwarning("Advertencia", "Calcule primero la armadura para ver los DCLs.")
             return
+
         for nodo in self.nodos_arm:
             self.dibujar_dcl_nodo(nodo)
 
@@ -1832,9 +1904,13 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         ventana = tk.Toplevel(self.root)
         ventana.title(f"DCL Nodo {nodo['id']}")
         fig, ax = plt.subplots(figsize=(4,4))
-        ax.plot(0,0,'ko')
+
+        ax.plot(0,0,'ko', markersize=8)
+        ax.text(0, 0.2, f"Nodo {nodo['id']}", ha='center', va='bottom', fontsize=10, fontweight='bold')
+
         node_lookup = {n['id']: n for n in self.nodos_arm}
-        arrow_len = 1
+        arrow_len = 1.0
+
         for m in self.miembros_arm:
             if m['inicio']==nodo['id'] or m['fin']==nodo['id']:
                 other = m['fin'] if m['inicio']==nodo['id'] else m['inicio']
@@ -1842,35 +1918,47 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                 dx = n2['x'] - nodo['x']
                 dy = n2['y'] - nodo['y']
                 L = (dx**2 + dy**2)**0.5
-                if L == 0:
-                    continue
+                if L == 0: continue
                 u = (dx/L, dy/L)
-                fuerza = m.get('fuerza',0)
+                fuerza = m.get('fuerza', 0)
                 color = 'red' if fuerza < 0 else 'blue'
-                ax.arrow(0,0,u[0]*arrow_len,u[1]*arrow_len,color=color,head_width=0.1,length_includes_head=True)
-                ax.text(u[0]*arrow_len,u[1]*arrow_len,f"{fuerza:.1f}",color=color)
+
+                vec_x = u[0] * arrow_len * (1 if fuerza >= 0 else -1)
+                vec_y = u[1] * arrow_len * (1 if fuerza >= 0 else -1)
+
+                ax.arrow(0, 0, vec_x, vec_y, color=color, head_width=0.1, length_includes_head=True,
+                         label=f"M{m['inicio']}-{m['fin']}: {fuerza:.1f} N")
+                ax.text(vec_x*1.1, vec_y*1.1, f"{abs(fuerza):.1f}", color=color, ha='center', va='center')
+
         for c in self.cargas_arm:
             if c['nodo']==nodo['id']:
                 mag = np.hypot(c['Fx'], c['Fy'])
-                if mag:
-                    ux, uy = c['Fx']/mag, -c['Fy']/mag
-                    ax.arrow(0,0,ux*arrow_len,uy*arrow_len,color='green',head_width=0.1,length_includes_head=True)
-                    ax.text(ux*arrow_len,uy*arrow_len,f"{mag:.1f}",color='green')
+                if mag > 0:
+                    ux, uy = c['Fx']/mag, c['Fy']/mag
+                    ax.arrow(0, 0, ux*arrow_len, uy*arrow_len, color='green', head_width=0.1, length_includes_head=True,
+                             label=f"Carga: {mag:.1f} N")
+                    ax.text(ux*arrow_len*1.1, uy*arrow_len*1.1, f"{mag:.1f}", color='green', ha='center', va='center')
+
         if nodo['apoyo'] in ('Fijo','Móvil') and hasattr(self,'reacciones_arm'):
-            rx, ry = self.reacciones_arm.get(nodo['id'], (0,0))
-            if nodo['apoyo'] == 'Fijo':
-                if abs(rx) > 0:
-                    signx = 1 if rx >= 0 else -1
-                    ax.arrow(0,0,signx*arrow_len,0,color='orange',head_width=0.1,length_includes_head=True)
-                    ax.text(signx*arrow_len,0,f"{rx:.1f}",color='orange')
-            if abs(ry) > 0:
-                signy = 1 if ry >= 0 else -1
-                ax.arrow(0,0,0,signy*arrow_len,color='orange',head_width=0.1,length_includes_head=True)
-                ax.text(0,signy*arrow_len,f"{ry:.1f}",color='orange')
+            if nodo['id'] in self.reacciones_arm:
+                rx, ry = self.reacciones_arm[nodo['id']]
+
+                if abs(rx) > 0.01:
+                    ax.arrow(0,0,(1 if rx > 0 else -1)*arrow_len,0,color='orange',head_width=0.1,length_includes_head=True,
+                             label=f"Rx: {rx:.1f} N")
+                    ax.text((1 if rx > 0 else -1)*arrow_len*1.1,0.1,f"{abs(rx):.1f}",color='orange',ha='center',va='center')
+
+                if abs(ry) > 0.01:
+                    ax.arrow(0,0,0,(1 if ry > 0 else -1)*arrow_len,color='orange',head_width=0.1,length_includes_head=True,
+                             label=f"Ry: {ry:.1f} N")
+                    ax.text(0.1,(1 if ry > 0 else -1)*arrow_len*1.1,f"{abs(ry):.1f}",color='orange',ha='center',va='center')
+
         ax.set_xlim(-1.5,1.5)
         ax.set_ylim(-1.5,1.5)
         ax.set_aspect('equal')
         ax.axis('off')
+        ax.set_title(f"DCL Nodo {nodo['id']}")
+
         canvas = FigureCanvasTkAgg(fig, master=ventana)
         canvas.draw()
         canvas.get_tk_widget().pack(fill='both', expand=True)
@@ -1878,27 +1966,35 @@ I_total = Σ(I_barra_i + A_i * d_i²)
     def calcular_seccion_armadura(self):
         corte = self.corte_valor.get()
         eje = self.corte_eje.get().lower()
-        if not self.miembros_arm:
-            messagebox.showwarning("Advertencia", "Calcule primero la armadura")
+
+        if not self.miembros_arm or not hasattr(self, 'reacciones_arm'):
+            messagebox.showwarning("Advertencia", "Calcule primero la armadura para aplicar el método de secciones.")
             return
+
         node_lookup = {n['id']: n for n in self.nodos_arm}
         miembros_corte = []
+
         for m in self.miembros_arm:
-            if eje == 'x':
-                p1 = node_lookup[m['inicio']]['x']
-                p2 = node_lookup[m['fin']]['x']
-            else:
-                p1 = node_lookup[m['inicio']]['y']
-                p2 = node_lookup[m['fin']]['y']
-            if (p1 - corte) * (p2 - corte) < 0 or p1 == corte or p2 == corte:
+            n1 = node_lookup[m['inicio']]
+            n2 = node_lookup[m['fin']]
+            p1 = n1['x'] if eje == 'x' else n1['y']
+            p2 = n2['x'] if eje == 'x' else n2['y']
+
+            if (p1 < corte < p2) or (p2 < corte < p1) or p1 == corte or p2 == corte:
                 miembros_corte.append(m)
+
         if not miembros_corte:
-            messagebox.showinfo("Sección", "Ningún miembro intersecta el corte")
+            messagebox.showinfo("Sección", "Ningún miembro intersecta el corte especificado.")
             return
-        self.log(f"\n📐 MÉTODO DE SECCIONES ({eje}={corte})\n", "title")
+
+        self.log(f"\n{'='*50}\n", "title")
+        self.log(f"📐 MÉTODO DE SECCIONES ({eje}={corte:.2f})\n", "title")
+        self.log(f"{'='*50}\n", "title")
+        self.log("Miembros intersectados por el corte:\n", "data")
         for m in miembros_corte:
             tipo = "tensión" if m['fuerza'] >= 0 else "compresión"
-            self.log(f"Miembro {m['inicio']}-{m['fin']}: {m['fuerza']:.2f} N ({tipo})\n", "data")
+            self.log(f"  - Miembro {m['inicio']}-{m['fin']}: {m['fuerza']:.2f} N ({tipo})\n", "data")
+
         self.dibujar_dcl_seccion(corte, miembros_corte, eje)
 
     def dibujar_dcl_seccion(self, corte, miembros, eje):
@@ -2010,11 +2106,16 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         texto = (
             "PASOS PARA ANALIZAR UNA ARMADURA:\n"
             "1. Agregue los nodos indicando sus coordenadas y tipo de apoyo.\n"
-            "2. Defina los miembros especificando nodo inicial y final.\n"
-            "3. Coloque las cargas en los nodos correspondientes.\n"
-            "4. Presione 'Calcular Armadura' para obtener fuerzas y reacciones.\n"
+            "   (Ej: Nodo 1: X=0, Y=0, Apoyo=Fijo)\n"
+            "2. Defina los miembros especificando el ID del nodo inicial y final.\n"
+            "   (Ej: Miembro 1-2 conecta el nodo 1 con el nodo 2)\n"
+            "3. Coloque las cargas en los nodos correspondientes, indicando componentes Fx y Fy.\n"
+            "   (Ej: Carga en Nodo 2: Fx=0, Fy=-1000)\n"
+            "4. Presione 'Calcular Armadura' para obtener las fuerzas internas en cada miembro y las reacciones.\n"
             "   Las barras en rojo están en compresión y en azul en tensión.\n"
-            "   Las reacciones se muestran en naranja en los apoyos." 
+            "   Las reacciones se muestran en naranja en los apoyos.\n"
+            "5. Use 'DCL Nodos' para ver el diagrama de cuerpo libre de cada nodo.\n"
+            "6. Use 'Método de Secciones' para analizar las fuerzas en un corte específico." 
         )
         messagebox.showinfo("Instrucciones Armaduras", texto)
 
