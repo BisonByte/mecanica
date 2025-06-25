@@ -116,6 +116,13 @@ class SimuladorVigaMejorado:
         # Valores por defecto para el método de secciones
         self.corte_valor = tk.DoubleVar(value=0.0)
         self.corte_eje = tk.StringVar(value="X")
+        # Datos para bastidores
+        self.nodos_bast = []
+        self.miembros_bast = []
+        self.cargas_bast = []
+        self.id_nodo_bast = 1
+        self.corte_valor_bast = tk.DoubleVar(value=0.0)
+        self.corte_eje_bast = tk.StringVar(value="X")
         # Espaciado de la cuadrícula para el lienzo de formas
         self.grid_spacing = 20
         self.crear_widgets()
@@ -199,12 +206,14 @@ class SimuladorVigaMejorado:
         tab_config = ttk.Frame(notebook)
         tab_seccion = ttk.Frame(notebook)
         tab_armaduras = ttk.Frame(notebook)
+        tab_bastidores = ttk.Frame(notebook)
         tab_result = ttk.Frame(notebook)
 
 
         notebook.add(tab_config, text="🏗️Configuración y Cargas")
         notebook.add(tab_seccion, text="🏗️Sección y Formas")
         notebook.add(tab_armaduras, text="🏗️Armaduras")
+        notebook.add(tab_bastidores, text="🏗️Bastidores")
         notebook.add(tab_result, text="🏗️Resultados")
 
         # Sección configuración y cargas
@@ -227,6 +236,8 @@ class SimuladorVigaMejorado:
 
         # Armaduras
         self.crear_seccion_armaduras(tab_armaduras)
+        # Bastidores
+        self.crear_seccion_bastidores(tab_bastidores)
 
         # Resultados y gráficos
         self.crear_seccion_resultados(tab_result)
@@ -1139,6 +1150,11 @@ class SimuladorVigaMejorado:
         self.miembros_arm.clear()
         self.cargas_arm.clear()
         self.id_nodo_actual = 1
+        # Limpiar datos de bastidores
+        self.nodos_bast.clear()
+        self.miembros_bast.clear()
+        self.cargas_bast.clear()
+        self.id_nodo_bast = 1
 
         # Limpiar área de resultados
         self.limpiar_resultados()
@@ -1149,6 +1165,8 @@ class SimuladorVigaMejorado:
 
         if hasattr(self, 'canvas_armadura'):
             self.canvas_armadura.delete('all')
+        if hasattr(self, 'canvas_bastidor'):
+            self.canvas_bastidor.delete('all')
 
         # Mostrar mensaje inicial
         self.mostrar_mensaje_inicial()
@@ -1485,6 +1503,63 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         self.canvas_armadura = tk.Canvas(frame_arm, width=600, height=400, bg="white")
         self.canvas_armadura.pack(fill="both", expand=True)
         self.canvas_armadura.bind("<Configure>", lambda e: self.dibujar_armadura())
+
+    def crear_seccion_bastidores(self, parent):
+        frame_arm = ttk.Frame(parent)
+        frame_arm.pack(fill="both", expand=True, padx=10, pady=10)
+
+        frame_nodo = ttk.LabelFrame(frame_arm, text="Nodos")
+        frame_nodo.pack(fill="x", pady=5)
+        ttk.Label(frame_nodo, text="X:").grid(row=0, column=0, padx=5, pady=2)
+        self.nodo_x_bast = tk.DoubleVar(value=0.0)
+        ttk.Entry(frame_nodo, textvariable=self.nodo_x_bast, width=8).grid(row=0, column=1, padx=5, pady=2)
+        ttk.Label(frame_nodo, text="Y:").grid(row=0, column=2, padx=5, pady=2)
+        self.nodo_y_bast = tk.DoubleVar(value=0.0)
+        ttk.Entry(frame_nodo, textvariable=self.nodo_y_bast, width=8).grid(row=0, column=3, padx=5, pady=2)
+        ttk.Label(frame_nodo, text="Apoyo:").grid(row=0, column=4, padx=5, pady=2)
+        self.nodo_apoyo_bast = tk.StringVar(value="Libre")
+        ttk.Combobox(frame_nodo, textvariable=self.nodo_apoyo_bast, values=["Libre", "Fijo", "Móvil"], width=8).grid(row=0, column=5, padx=5, pady=2)
+        ttk.Button(frame_nodo, text="Agregar Nodo", command=self.agregar_nodo_bastidor).grid(row=0, column=6, padx=5, pady=2)
+
+        frame_miem = ttk.LabelFrame(frame_arm, text="Miembros")
+        frame_miem.pack(fill="x", pady=5)
+        ttk.Label(frame_miem, text="Inicio:").grid(row=0, column=0, padx=5, pady=2)
+        self.miembro_inicio_bast = tk.IntVar(value=1)
+        ttk.Entry(frame_miem, textvariable=self.miembro_inicio_bast, width=5).grid(row=0, column=1, padx=5, pady=2)
+        ttk.Label(frame_miem, text="Fin:").grid(row=0, column=2, padx=5, pady=2)
+        self.miembro_fin_bast = tk.IntVar(value=2)
+        ttk.Entry(frame_miem, textvariable=self.miembro_fin_bast, width=5).grid(row=0, column=3, padx=5, pady=2)
+        ttk.Button(frame_miem, text="Agregar Miembro", command=self.agregar_miembro_bastidor).grid(row=0, column=4, padx=5, pady=2)
+
+        frame_carga = ttk.LabelFrame(frame_arm, text="Cargas en Nodos")
+        frame_carga.pack(fill="x", pady=5)
+        ttk.Label(frame_carga, text="Nodo:").grid(row=0, column=0, padx=5, pady=2)
+        self.carga_nodo_bast = tk.IntVar(value=1)
+        ttk.Entry(frame_carga, textvariable=self.carga_nodo_bast, width=5).grid(row=0, column=1, padx=5, pady=2)
+        ttk.Label(frame_carga, text="Fx:").grid(row=0, column=2, padx=5, pady=2)
+        self.carga_fx_bast = tk.DoubleVar(value=0.0)
+        ttk.Entry(frame_carga, textvariable=self.carga_fx_bast, width=8).grid(row=0, column=3, padx=5, pady=2)
+        ttk.Label(frame_carga, text="Fy:").grid(row=0, column=4, padx=5, pady=2)
+        self.carga_fy_bast = tk.DoubleVar(value=0.0)
+        ttk.Entry(frame_carga, textvariable=self.carga_fy_bast, width=8).grid(row=0, column=5, padx=5, pady=2)
+        ttk.Button(frame_carga, text="Agregar Carga", command=self.agregar_carga_bastidor).grid(row=0, column=6, padx=5, pady=2)
+
+        frame_secc = ttk.LabelFrame(frame_arm, text="Método de Secciones")
+        frame_secc.pack(fill="x", pady=5)
+        ttk.Label(frame_secc, text="Corte:").grid(row=0, column=0, padx=5, pady=2)
+        self.corte_valor_bast = tk.DoubleVar(value=0.0)
+        ttk.Entry(frame_secc, textvariable=self.corte_valor_bast, width=8).grid(row=0, column=1, padx=5, pady=2)
+        ttk.Label(frame_secc, text="Eje:").grid(row=0, column=2, padx=5, pady=2)
+        self.corte_eje_bast = tk.StringVar(value="X")
+        ttk.Combobox(frame_secc, textvariable=self.corte_eje_bast, values=["X", "Y"], width=5).grid(row=0, column=3, padx=5, pady=2)
+        ttk.Button(frame_secc, text="Calcular Sección", command=self.calcular_seccion_bastidor).grid(row=0, column=4, padx=5, pady=2)
+        ttk.Button(frame_secc, text="DCL Nodos", command=self.mostrar_dcl_nodos_bastidor).grid(row=0, column=5, padx=5, pady=2)
+
+        ttk.Button(frame_arm, text="Calcular Bastidor", command=self.calcular_bastidor).pack(pady=10)
+        ttk.Button(frame_arm, text="Instrucciones", command=self.mostrar_instrucciones_bastidor).pack(pady=5)
+        self.canvas_bastidor = tk.Canvas(frame_arm, width=600, height=400, bg="white")
+        self.canvas_bastidor.pack(fill="both", expand=True)
+        self.canvas_bastidor.bind("<Configure>", lambda e: self.dibujar_bastidor())
 
     def agregar_forma(self):
         try:
@@ -2118,6 +2193,527 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             "6. Use 'Método de Secciones' para analizar las fuerzas en un corte específico." 
         )
         messagebox.showinfo("Instrucciones Armaduras", texto)
+
+    def agregar_nodo_bastidor(self):
+        x = self.nodo_x_bast.get()
+        y = self.nodo_y_bast.get()
+        apoyo = self.nodo_apoyo_bast.get()
+        self.nodos_bast.append({'id': self.id_nodo_bast, 'x': x, 'y': y, 'apoyo': apoyo})
+        self.log(f"Nodo {self.id_nodo_bast} agregado en ({x}, {y})\n", "data")
+        self.id_nodo_bast += 1
+        self.dibujar_bastidor()
+
+    def agregar_miembro_bastidor(self):
+        ini = self.miembro_inicio_bast.get()
+        fin = self.miembro_fin_bast.get()
+        if not any(n['id'] == ini for n in self.nodos_bast) or not any(n['id'] == fin for n in self.nodos_bast):
+            messagebox.showerror("Error", "Los nodos inicial y final deben existir.")
+            return
+
+        self.miembros_bast.append({'inicio': ini, 'fin': fin, 'fuerza': 0.0})
+        self.log(f"Miembro {ini}-{fin} agregado\n", "data")
+        self.dibujar_bastidor()
+
+    def agregar_carga_bastidor(self):
+        nodo = self.carga_nodo_bast.get()
+        fx = self.carga_fx_bast.get()
+        fy = self.carga_fy_bast.get()
+        if not any(n['id'] == nodo for n in self.nodos_bast):
+            messagebox.showerror("Error", "El nodo al que se aplica la carga debe existir.")
+            return
+        self.cargas_bast.append({'nodo': nodo, 'Fx': fx, 'Fy': fy})
+        self.log(f"Carga en nodo {nodo}: Fx={fx}, Fy={fy}\n", "data")
+        self.dibujar_bastidor()
+
+    def calcular_bastidor(self):
+        try:
+            if not self.nodos_bast or not self.miembros_bast:
+                messagebox.showwarning("Advertencia", "Agrega nodos y miembros a la bastidor primero.")
+                return
+
+            n_miembros = len(self.miembros_bast)
+            var_map = {}
+            idx = 0
+            for i in range(n_miembros):
+                var_map[f"m{i}"] = idx
+                idx += 1
+
+            for nodo in self.nodos_bast:
+                if nodo['apoyo'] == 'Fijo':
+                    var_map[f"Rx{nodo['id']}"] = idx; idx += 1
+                    var_map[f"Ry{nodo['id']}"] = idx; idx += 1
+                elif nodo['apoyo'] == 'Móvil':
+                    var_map[f"Ry{nodo['id']}"] = idx; idx += 1
+
+            num_vars = idx
+            num_eqs = len(self.nodos_bast) * 2
+
+            if num_vars > num_eqs:
+                messagebox.showwarning("Advertencia", "La bastidor es estáticamente indeterminada. Puede que no tenga una solución única o sea inestable.")
+            elif num_vars < num_eqs:
+                messagebox.showwarning("Advertencia", "La bastidor es estáticamente sobredeterminada. Puede que no sea soluble con las condiciones dadas.")
+
+            A = np.zeros((num_eqs, num_vars))
+            b = np.zeros(num_eqs)
+
+            node_lookup = {n['id']: n for n in self.nodos_bast}
+            loads = {n['id']: {'Fx': 0.0, 'Fy': 0.0} for n in self.nodos_bast}
+            for c in self.cargas_bast:
+                loads[c['nodo']]['Fx'] += c['Fx']
+                loads[c['nodo']]['Fy'] += c['Fy']
+
+            eq = 0
+            for nodo in self.nodos_bast:
+                for j, m in enumerate(self.miembros_bast):
+                    if m['inicio'] == nodo['id'] or m['fin'] == nodo['id']:
+                        n2_id = m['fin'] if m['inicio'] == nodo['id'] else m['inicio']
+                        nd1 = node_lookup[nodo['id']]
+                        nd2 = node_lookup[n2_id]
+                        dx = nd2['x'] - nd1['x']
+                        dy = nd2['y'] - nd1['y']
+                        L = (dx**2 + dy**2) ** 0.5
+                        if L == 0:
+                            continue
+                        cos_theta = dx / L
+                        if m['inicio'] == nodo['id']:
+                            A[eq, var_map[f"m{j}"]] += cos_theta
+                        else:
+                            A[eq, var_map[f"m{j}"]] -= cos_theta
+
+                if nodo['apoyo'] == 'Fijo':
+                    A[eq, var_map[f"Rx{nodo['id']}"]] = 1
+
+                b[eq] = -loads[nodo['id']]['Fx']
+                eq += 1
+
+                for j, m in enumerate(self.miembros_bast):
+                    if m['inicio'] == nodo['id'] or m['fin'] == nodo['id']:
+                        n2_id = m['fin'] if m['inicio'] == nodo['id'] else m['inicio']
+                        nd1 = node_lookup[nodo['id']]
+                        nd2 = node_lookup[n2_id]
+                        dx = nd2['x'] - nd1['x']
+                        dy = nd2['y'] - nd1['y']
+                        L = (dx**2 + dy**2) ** 0.5
+                        if L == 0:
+                            continue
+                        sin_theta = dy / L
+                        if m['inicio'] == nodo['id']:
+                            A[eq, var_map[f"m{j}"]] += sin_theta
+                        else:
+                            A[eq, var_map[f"m{j}"]] -= sin_theta
+
+                if nodo['apoyo'] in ('Fijo', 'Móvil'):
+                    A[eq, var_map[f"Ry{nodo['id']}"]] = 1
+
+                b[eq] = -loads[nodo['id']]['Fy']
+                eq += 1
+
+            if A.shape[0] != A.shape[1]:
+                self.log(
+                    "Advertencia: El sistema de ecuaciones no es cuadrado. Se resolverá por mínimos cuadrados.\n",
+                    "warning",
+                )
+                soluciones, *_ = np.linalg.lstsq(A, b, rcond=None)
+            else:
+                soluciones = np.linalg.solve(A, b)
+
+            for j, m in enumerate(self.miembros_bast):
+                m['fuerza'] = soluciones[var_map[f"m{j}"]]
+
+            self.reacciones_bast = {}
+            for nodo in self.nodos_bast:
+                if nodo['apoyo'] == 'Fijo':
+                    rx = soluciones[var_map[f"Rx{nodo['id']}"]]
+                    ry = soluciones[var_map[f"Ry{nodo['id']}"]]
+                    self.reacciones_bast[nodo['id']] = (rx, ry)
+                elif nodo['apoyo'] == 'Móvil':
+                    ry = soluciones[var_map[f"Ry{nodo['id']}"]]
+                    self.reacciones_bast[nodo['id']] = (0.0, ry)
+
+            self.log(f"\n{'='*50}\n", "title")
+            self.log("📐 ANÁLISIS DE BASTIDOR:\n", "title")
+            self.log(f"{'='*50}\n", "title")
+            for j, m in enumerate(self.miembros_bast):
+                tipo = "tensión" if m['fuerza'] >= 0 else "compresión"
+                self.log(f"Miembro {m['inicio']}-{m['fin']}: {m['fuerza']:.2f} N ({tipo})\n", "data")
+
+            for nid, r in self.reacciones_bast.items():
+                self.log(f"Reacciones nodo {nid}: Rx={r[0]:.2f} N, Ry={r[1]:.2f} N\n", "data")
+
+            self.dibujar_bastidor()
+
+        except np.linalg.LinAlgError as e:
+            messagebox.showerror("Error de Cálculo", f"El sistema de ecuaciones no pudo resolverse (singular o mal condicionado): {e}. Verifica la estabilidad del bastidor.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error en cálculo de bastidor: {e}")
+
+    def ajustar_vista_bastidor(self):
+        if not hasattr(self, 'canvas_bastidor') or not self.nodos_bast:
+            self.escala_bast = 20
+            self.offset_x_bast = 50
+            self.offset_y_bast = 350
+            return
+
+        c = self.canvas_bastidor
+        width = c.winfo_width() if c.winfo_width() > 1 else int(c['width'])
+        height = c.winfo_height() if c.winfo_height() > 1 else int(c['height'])
+
+        margin = 50
+        xs = [n['x'] for n in self.nodos_bast]
+        ys = [n['y'] for n in self.nodos_bast]
+        if not xs:
+            self.escala_bast = 20
+            self.offset_x_bast = width / 2
+            self.offset_y_bast = height / 2
+            return
+
+        min_x, max_x = min(xs), max(xs)
+        min_y, max_y = min(ys), max(ys)
+
+        rango_x = max(max_x - min_x, 1e-6)
+        rango_y = max(max_y - min_y, 1e-6)
+
+        escala_x = (width - 2 * margin) / rango_x
+        escala_y = (height - 2 * margin) / rango_y
+
+        self.escala_bast = min(escala_x, escala_y)
+
+        self.offset_x_bast = margin - min_x * self.escala_bast + (width - 2 * margin - rango_x * self.escala_bast) / 2
+        self.offset_y_bast = height - margin + min_y * self.escala_bast - (height - 2 * margin - rango_y * self.escala_bast) / 2
+
+    def dibujar_bastidor(self):
+        if not hasattr(self, 'canvas_bastidor'):
+            return
+        c = self.canvas_bastidor
+        self.ajustar_vista_bastidor()
+        c.delete('all')
+
+        for nodo in self.nodos_bast:
+            x = nodo['x'] * self.escala_bast + self.offset_x_bast
+            y = self.offset_y_bast - nodo['y'] * self.escala_bast
+            c.create_oval(x-5, y-5, x+5, y+5, fill='black', tags="nodo")
+            c.create_text(x, y-10, text=str(nodo['id']), fill='black', tags="nodo_id")
+
+            if nodo['apoyo'] == 'Fijo':
+                c.create_polygon(x-10, y+10, x+10, y+10, x, y, fill='blue', outline='blue', tags="apoyo")
+                c.create_line(x-15, y+10, x+15, y+10, fill='gray', tags="apoyo")
+                for i in range(-1, 2):
+                    c.create_line(x + i*5, y + 10, x + i*5 + 5, y + 15, fill='gray', tags="apoyo")
+            elif nodo['apoyo'] == 'Móvil':
+                c.create_oval(x-8, y+2, x+8, y+18, fill='blue', outline='blue', tags="apoyo")
+                c.create_line(x-15, y+20, x+15, y+20, fill='gray', tags="apoyo")
+                for i in range(-1, 2):
+                    c.create_line(x + i*5, y + 20, x + i*5 + 5, y + 25, fill='gray', tags="apoyo")
+
+        for m in self.miembros_bast:
+            n1 = next(n for n in self.nodos_bast if n['id']==m['inicio'])
+            n2 = next(n for n in self.nodos_bast if n['id']==m['fin'])
+
+            x1 = n1['x'] * self.escala_bast + self.offset_x_bast
+            y1 = self.offset_y_bast - n1['y'] * self.escala_bast
+            x2 = n2['x'] * self.escala_bast + self.offset_x_bast
+            y2 = self.offset_y_bast - n2['y'] * self.escala_bast
+
+            color = 'black'
+            if 'fuerza' in m:
+                color = 'red' if m['fuerza'] < 0 else 'blue'
+
+            c.create_line(x1, y1, x2, y2, fill=color, width=2, tags="miembro")
+
+            if 'fuerza' in m:
+                mid_x = (x1+x2)/2
+                mid_y = (y1+y2)/2
+                c.create_text(mid_x, mid_y, text=f"{m['fuerza']:.1f} N", fill=color, font=("Arial", 8, "bold"), tags="miembro_fuerza")
+
+        arrow_len = 20
+        for carg in self.cargas_bast:
+            nodo = next(n for n in self.nodos_bast if n['id']==carg['nodo'])
+            x = nodo['x'] * self.escala_bast + self.offset_x_bast
+            y = self.offset_y_bast - nodo['y'] * self.escala_bast
+
+            fx = carg['Fx']
+            fy = carg['Fy']
+            mag = (fx**2 + fy**2) ** 0.5
+            if mag > 0:
+                ux, uy = fx / mag, fy / mag
+                c.create_line(x, y, x + ux * arrow_len, y - uy * arrow_len, arrow=tk.LAST, fill='green', width=2, tags="carga")
+                c.create_text(x + ux * arrow_len + 15 * ux, y - uy * arrow_len - 15 * uy, text=f"{mag:.1f} N", fill='green', font=("Arial", 8, "bold"), tags="carga_mag")
+
+        if hasattr(self, 'reacciones_bast'):
+            reaction_arrow_len = 25
+            for nodo in self.nodos_bast:
+                if nodo['apoyo'] in ('Fijo', 'Móvil'):
+                    if nodo['id'] in self.reacciones_bast:
+                        rx, ry = self.reacciones_bast[nodo['id']]
+                        x_node = nodo['x'] * self.escala_bast + self.offset_x_bast
+                        y_node = self.offset_y_bast - nodo['y'] * self.escala_bast
+
+                        if abs(rx) > 0.1:
+                            x_end = x_node + (1 if rx > 0 else -1) * reaction_arrow_len
+                            c.create_line(x_node, y_node, x_end, y_node, arrow=tk.LAST, fill='orange', width=2, tags="reaccion")
+                            c.create_text(x_end, y_node - 10, text=f"{rx:.1f}", fill='orange', font=("Arial", 8, "bold"), tags="reaccion_mag")
+
+                        if abs(ry) > 0.1:
+                            y_end = y_node - (1 if ry > 0 else -1) * reaction_arrow_len
+                            c.create_line(x_node, y_node, x_node, y_end, arrow=tk.LAST, fill='orange', width=2, tags="reaccion")
+                            c.create_text(x_node + 10, y_end, text=f"{ry:.1f}", fill='orange', font=("Arial", 8, "bold"), tags="reaccion_mag")
+
+    def mostrar_dcl_nodos_bastidor(self):
+        if not self.miembros_bast or not hasattr(self, 'reacciones_bast'):
+            messagebox.showwarning("Advertencia", "Calcule primero el bastidor para ver los DCLs.")
+            return
+        for nodo in self.nodos_bast:
+            self.dibujar_dcl_nodo_bastidor(nodo)
+
+    def dibujar_dcl_nodo_bastidor(self, nodo):
+        ventana = tk.Toplevel(self.root)
+        ventana.title(f"DCL Nodo {nodo['id']}")
+        fig, ax = plt.subplots(figsize=(4,4))
+
+        ax.plot(0,0,'ko', markersize=8)
+        ax.text(0, 0.2, f"Nodo {nodo['id']}", ha='center', va='bottom', fontsize=10, fontweight='bold')
+
+        node_lookup = {n['id']: n for n in self.nodos_bast}
+        arrow_len = 1.0
+
+        for m in self.miembros_bast:
+            if m['inicio']==nodo['id'] or m['fin']==nodo['id']:
+                other = m['fin'] if m['inicio']==nodo['id'] else m['inicio']
+                n2 = node_lookup[other]
+                dx = n2['x'] - nodo['x']
+                dy = n2['y'] - nodo['y']
+                L = (dx**2 + dy**2)**0.5
+                if L == 0: continue
+                u = (dx/L, dy/L)
+                fuerza = m.get('fuerza', 0)
+                color = 'red' if fuerza < 0 else 'blue'
+
+                vec_x = u[0] * arrow_len * (1 if fuerza >= 0 else -1)
+                vec_y = u[1] * arrow_len * (1 if fuerza >= 0 else -1)
+
+                ax.arrow(0, 0, vec_x, vec_y, color=color, head_width=0.1, length_includes_head=True)
+                ax.text(vec_x*1.1, vec_y*1.1, f"{abs(fuerza):.1f}", color=color, ha='center', va='center')
+
+        for c in self.cargas_bast:
+            if c['nodo']==nodo['id']:
+                mag = np.hypot(c['Fx'], c['Fy'])
+                if mag > 0:
+                    ux, uy = c['Fx']/mag, c['Fy']/mag
+                    ax.arrow(0, 0, ux*arrow_len, uy*arrow_len, color='green', head_width=0.1, length_includes_head=True)
+                    ax.text(ux*arrow_len*1.1, uy*arrow_len*1.1, f"{mag:.1f}", color='green', ha='center', va='center')
+
+        if nodo['apoyo'] in ('Fijo','Móvil') and hasattr(self,'reacciones_bast'):
+            if nodo['id'] in self.reacciones_bast:
+                rx, ry = self.reacciones_bast[nodo['id']]
+                if abs(rx) > 0.01:
+                    ax.arrow(0, 0, (1 if rx > 0 else -1) * arrow_len, 0, color='orange', head_width=0.1, length_includes_head=True)
+                    ax.text((1 if rx > 0 else -1) * arrow_len * 1.1, 0.1, f"{abs(rx):.1f}", color='orange', ha='center', va='center')
+                if abs(ry) > 0.01:
+                    ax.arrow(0, 0, 0, (1 if ry > 0 else -1) * arrow_len, color='orange', head_width=0.1, length_includes_head=True)
+                    ax.text(0.1, (1 if ry > 0 else -1) * arrow_len * 1.1, f"{abs(ry):.1f}", color='orange', ha='center', va='center')
+
+        ax.set_xlim(-1.5,1.5)
+        ax.set_ylim(-1.5,1.5)
+        ax.set_aspect('equal')
+        ax.axis('off')
+        ax.set_title(f"DCL Nodo {nodo['id']}")
+
+        canvas = FigureCanvasTkAgg(fig, master=ventana)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill='both', expand=True)
+
+    def calcular_seccion_bastidor(self):
+        corte = self.corte_valor_bast.get()
+        eje = self.corte_eje_bast.get().lower()
+
+        if not self.miembros_bast or not hasattr(self, 'reacciones_bast'):
+            messagebox.showwarning("Advertencia", "Calcule primero el bastidor para aplicar el método de secciones.")
+            return
+
+        node_lookup = {n['id']: n for n in self.nodos_bast}
+        miembros_corte = []
+
+        for m in self.miembros_bast:
+            n1 = node_lookup[m['inicio']]
+            n2 = node_lookup[m['fin']]
+
+            p1 = n1['x'] if eje == 'x' else n1['y']
+            p2 = n2['x'] if eje == 'x' else n2['y']
+
+            if (p1 < corte < p2) or (p2 < corte < p1) or p1 == corte or p2 == corte:
+                miembros_corte.append(m)
+
+        if not miembros_corte:
+            messagebox.showinfo("Sección", "Ningún miembro intersecta el corte especificado.")
+            return
+
+        self.log(f"\n{'='*50}\n", "title")
+        self.log(f"📐 MÉTODO DE SECCIONES ({eje}={corte:.2f})\n", "title")
+        self.log(f"{'='*50}\n", "title")
+        self.log("Miembros intersectados por el corte:\n", "data")
+        for m in miembros_corte:
+            tipo = "tensión" if m['fuerza'] >= 0 else "compresión"
+            self.log(f"  - Miembro {m['inicio']}-{m['fin']}: {m['fuerza']:.2f} N ({tipo})\n", "data")
+
+        self.dibujar_dcl_seccion_bastidor(corte, miembros_corte, eje)
+
+    def dibujar_dcl_seccion_bastidor(self, corte, miembros_cortados, eje):
+        ventana = tk.Toplevel(self.root)
+        ventana.title("Diagrama de Cuerpo Libre de la Sección")
+        fig, ax = plt.subplots(figsize=(8, 6))
+        plt.style.use("seaborn-v0_8-whitegrid")
+
+        node_lookup = {n['id']: n for n in self.nodos_bast}
+        arrow_scale = 0.8
+
+        if eje == 'x':
+            ax.axvline(corte, color='red', linestyle='--', linewidth=2, label=f'Corte en X={corte:.2f}')
+
+            for m in self.miembros_bast:
+                n1 = node_lookup[m['inicio']]
+                n2 = node_lookup[m['fin']]
+
+                if n1['x'] <= corte and n2['x'] <= corte:
+                    ax.plot([n1['x'], n2['x']], [n1['y'], n2['y']], 'k-', linewidth=1.5, alpha=0.7)
+
+            for nodo in self.nodos_bast:
+                if nodo['x'] <= corte:
+                    ax.plot(nodo['x'], nodo['y'], 'ko', markersize=6)
+                    ax.text(nodo['x'], nodo['y']+0.2, str(nodo['id']), fontsize=8, ha='center', va='bottom')
+
+                    for c in self.cargas_bast:
+                        if c['nodo'] == nodo['id']:
+                            mag_c = np.hypot(c['Fx'], c['Fy'])
+                            if mag_c > 0:
+                                ux_c, uy_c = c['Fx']/mag_c, c['Fy']/mag_c
+                                ax.arrow(nodo['x'], nodo['y'], ux_c*arrow_scale, uy_c*arrow_scale, color='green', head_width=0.08, length_includes_head=True)
+                                ax.text(nodo['x'] + ux_c*arrow_scale*1.1, nodo['y'] + uy_c*arrow_scale*1.1, f"{mag_c:.1f}", color='green', fontsize=7, ha='center', va='center')
+
+                    if nodo['apoyo'] in ('Fijo', 'Móvil') and hasattr(self, 'reacciones_bast'):
+                        if nodo['id'] in self.reacciones_bast:
+                            rx, ry = self.reacciones_bast[nodo['id']]
+                            if abs(rx) > 0.01:
+                                ax.arrow(nodo['x'], nodo['y'], (1 if rx > 0 else -1) * arrow_scale, 0, color='orange', head_width=0.08, length_includes_head=True)
+                                ax.text(nodo['x'] + (1 if rx > 0 else -1) * arrow_scale * 1.1, nodo['y'] + 0.1, f"{abs(rx):.1f}", color='orange', fontsize=7, ha='center', va='center')
+                            if abs(ry) > 0.01:
+                                ax.arrow(nodo['x'], nodo['y'], 0, (1 if ry > 0 else -1) * arrow_scale, color='orange', head_width=0.08, length_includes_head=True)
+                                ax.text(nodo['x'] + 0.1, nodo['y'] + (1 if ry > 0 else -1) * arrow_scale * 1.1, f"{abs(ry):.1f}", color='orange', fontsize=7, ha='center', va='center')
+
+            for m in miembros_cortados:
+                n1 = node_lookup[m['inicio']]
+                n2 = node_lookup[m['fin']]
+
+                if (n2['x'] - n1['x']) == 0:
+                    x_cut = corte
+                    y_cut = (n1['y'] + n2['y']) / 2
+                else:
+                    slope = (n2['y'] - n1['y']) / (n2['x'] - n1['x'])
+                    y_cut = n1['y'] + slope * (corte - n1['x'])
+                    x_cut = corte
+
+                fuerza = m.get('fuerza', 0)
+                color = 'red' if fuerza < 0 else 'blue'
+
+                dx = n2['x'] - n1['x']
+                dy = n2['y'] - n1['y']
+                mag_m = (dx**2 + dy**2)**0.5
+                if mag_m == 0: continue
+                ux_m, uy_m = dx / mag_m, dy / mag_m
+
+                vec_x = ux_m * arrow_scale * (1 if fuerza >= 0 else -1)
+                vec_y = uy_m * arrow_scale * (1 if fuerza >= 0 else -1)
+
+                ax.arrow(x_cut, y_cut, vec_x, vec_y, color=color, head_width=0.08, length_includes_head=True)
+                ax.text(x_cut + vec_x*1.1, y_cut + vec_y*1.1, f"{abs(fuerza):.1f}", color=color, fontsize=7, ha='center', va='center')
+
+        elif eje == 'y':
+            ax.axhline(corte, color='red', linestyle='--', linewidth=2, label=f'Corte en Y={corte:.2f}')
+
+            for m in self.miembros_bast:
+                n1 = node_lookup[m['inicio']]
+                n2 = node_lookup[m['fin']]
+
+                if n1['y'] <= corte and n2['y'] <= corte:
+                    ax.plot([n1['x'], n2['x']], [n1['y'], n2['y']], 'k-', linewidth=1.5, alpha=0.7)
+
+            for nodo in self.nodos_bast:
+                if nodo['y'] <= corte:
+                    ax.plot(nodo['x'], nodo['y'], 'ko', markersize=6)
+                    ax.text(nodo['x'], nodo['y']+0.2, str(nodo['id']), fontsize=8, ha='center', va='bottom')
+
+                    for c in self.cargas_bast:
+                        if c['nodo'] == nodo['id']:
+                            mag_c = np.hypot(c['Fx'], c['Fy'])
+                            if mag_c > 0:
+                                ux_c, uy_c = c['Fx']/mag_c, c['Fy']/mag_c
+                                ax.arrow(nodo['x'], nodo['y'], ux_c*arrow_scale, uy_c*arrow_scale, color='green', head_width=0.08, length_includes_head=True)
+                                ax.text(nodo['x'] + ux_c*arrow_scale*1.1, nodo['y'] + uy_c*arrow_scale*1.1, f"{mag_c:.1f}", color='green', fontsize=7, ha='center', va='center')
+
+                    if nodo['apoyo'] in ('Fijo', 'Móvil') and hasattr(self, 'reacciones_bast'):
+                        if nodo['id'] in self.reacciones_bast:
+                            rx, ry = self.reacciones_bast[nodo['id']]
+                            if abs(rx) > 0.01:
+                                ax.arrow(nodo['x'], nodo['y'], (1 if rx > 0 else -1) * arrow_scale, 0, color='orange', head_width=0.08, length_includes_head=True)
+                                ax.text(nodo['x'] + (1 if rx > 0 else -1) * arrow_scale * 1.1, nodo['y'] + 0.1, f"{abs(rx):.1f}", color='orange', fontsize=7, ha='center', va='center')
+                            if abs(ry) > 0.01:
+                                ax.arrow(nodo['x'], nodo['y'], 0, (1 if ry > 0 else -1) * arrow_scale, color='orange', head_width=0.08, length_includes_head=True)
+                                ax.text(nodo['x'] + 0.1, nodo['y'] + (1 if ry > 0 else -1) * arrow_scale * 1.1, f"{abs(ry):.1f}", color='orange', fontsize=7, ha='center', va='center')
+
+            for m in miembros_cortados:
+                n1 = node_lookup[m['inicio']]
+                n2 = node_lookup[m['fin']]
+
+                if (n2['y'] - n1['y']) == 0:
+                    y_cut = corte
+                    x_cut = (n1['x'] + n2['x']) / 2
+                else:
+                    slope_inv = (n2['x'] - n1['x']) / (n2['y'] - n1['y'])
+                    x_cut = n1['x'] + slope_inv * (corte - n1['y'])
+                    y_cut = corte
+
+                fuerza = m.get('fuerza', 0)
+                color = 'red' if fuerza < 0 else 'blue'
+
+                dx = n2['x'] - n1['x']
+                dy = n2['y'] - n1['y']
+                mag_m = (dx**2 + dy**2)**0.5
+                if mag_m == 0: continue
+                ux_m, uy_m = dx / mag_m, dy / mag_m
+
+                vec_x = ux_m * arrow_scale * (1 if fuerza >= 0 else -1)
+                vec_y = uy_m * arrow_scale * (1 if fuerza >= 0 else -1)
+
+                ax.arrow(x_cut, y_cut, vec_x, vec_y, color=color, head_width=0.08, length_includes_head=True)
+                ax.text(x_cut + vec_x*1.1, y_cut + vec_y*1.1, f"{abs(fuerza):.1f}", color=color, fontsize=7, ha='center', va='center')
+
+        ax.set_aspect('equal', adjustable='box')
+        ax.set_xlabel('Coordenada X')
+        ax.set_ylabel('Coordenada Y')
+        ax.set_title('Diagrama de Cuerpo Libre de la Sección')
+        ax.legend(loc='best', fontsize=8)
+        ax.grid(True, linestyle='--', alpha=0.6)
+        plt.tight_layout()
+
+        canvas = FigureCanvasTkAgg(fig, master=ventana)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill='both', expand=True)
+
+    def mostrar_instrucciones_bastidor(self):
+        texto = (
+            "PASOS PARA ANALIZAR UNA ARMADURA:\n"
+            "1. Agregue los nodos indicando sus coordenadas y tipo de apoyo.\n"
+            "   (Ej: Nodo 1: X=0, Y=0, Apoyo=Fijo)\n"
+            "2. Defina los miembros especificando el ID del nodo inicial y final.\n"
+            "   (Ej: Miembro 1-2 conecta el nodo 1 con el nodo 2)\n"
+            "3. Coloque las cargas en los nodos correspondientes, indicando componentes Fx y Fy.\n"
+            "   (Ej: Carga en Nodo 2: Fx=0, Fy=-1000)\n"
+            "4. Presione 'Calcular Bastidor' para obtener las fuerzas internas en cada miembro y las reacciones.\n"
+            "   Las barras en rojo están en compresión y en azul en tensión.\n"
+            "   Las reacciones se muestran en naranja en los apoyos.\n"
+            "5. Use 'DCL Nodos' para ver el diagrama de cuerpo libre de cada nodo.\n"
+            "6. Use 'Método de Secciones' para analizar las fuerzas en un corte específico."
+        )
+        messagebox.showinfo("Instrucciones Bastidores", texto)
 
     def obtener_forma_en(self, x, y):
         """Devuelve el índice de la forma que contiene el punto (x, y) o None."""
