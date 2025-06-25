@@ -2699,19 +2699,19 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         canvas.get_tk_widget().pack(fill='both', expand=True)
 
     def mostrar_instrucciones_bastidor(self):
+        """Mostrar guía de uso para el análisis de bastidores."""
         texto = (
-            "PASOS PARA ANALIZAR UNA ARMADURA:\n"
-            "1. Agregue los nodos indicando sus coordenadas y tipo de apoyo.\n"
-            "   (Ej: Nodo 1: X=0, Y=0, Apoyo=Fijo)\n"
+            "PASOS PARA ANALIZAR UN BASTIDOR:\n"
+            "1. Agregue los nodos indicando sus coordenadas y el tipo de apoyo (Libre, Fijo o Móvil).\n"
             "2. Defina los miembros especificando el ID del nodo inicial y final.\n"
-            "   (Ej: Miembro 1-2 conecta el nodo 1 con el nodo 2)\n"
-            "3. Coloque las cargas en los nodos correspondientes, indicando componentes Fx y Fy.\n"
-            "   (Ej: Carga en Nodo 2: Fx=0, Fy=-1000)\n"
-            "4. Presione 'Calcular Bastidor' para obtener las fuerzas internas en cada miembro y las reacciones.\n"
-            "   Las barras en rojo están en compresión y en azul en tensión.\n"
-            "   Las reacciones se muestran en naranja en los apoyos.\n"
-            "5. Use 'DCL Nodos' para ver el diagrama de cuerpo libre de cada nodo.\n"
-            "6. Use 'Método de Secciones' para analizar las fuerzas en un corte específico."
+            "3. Coloque las cargas sobre los nodos correspondientes, indicando las componentes Fx y Fy.\n"
+            "4. Presione 'Calcular Bastidor' para obtener las fuerzas internas en cada miembro y las reacciones en los apoyos.\n"
+            "   Las barras en rojo indican compresión y en azul tensión.\n"
+            "5. Utilice 'DCL Nodos' para visualizar el diagrama de cuerpo libre de cada nodo.\n"
+            "6. El botón 'Método de Secciones' permite mostrar el DCL de una porción del bastidor.\n"
+            "\nLimitaciones: el análisis está pensado para bastidores planos de dos dimensiones, "
+            "con miembros de dos fuerzas y uniones mediante pasadores lisos. "
+            "Si el bastidor es indeterminado o inestable, el programa mostrará una advertencia y los resultados pueden no ser únicos."
         )
         messagebox.showinfo("Instrucciones Bastidores", texto)
 
