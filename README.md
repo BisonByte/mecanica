@@ -48,6 +48,7 @@ El programa usa **variables `tk.DoubleVar` y `tk.StringVar`** para guardar valor
 * También calcula propiedades como el **área total**, **centro de gravedad de la sección transversal**, y **momento de inercia**.
 * **Nuevo**: análisis de **armaduras** mediante el método de nodos.
 * **Nuevo**: análisis de **bastidores** (marcos 2D) con cálculo automático de reacciones y fuerzas internas.
+* **Nuevo**: botón **Ejemplo** que carga un bastidor de muestra y muestra sus resultados.
 * **Extra**: cálculo por el **método de secciones** y visualización de **diagramas de cuerpo libre** de cada nodo y secciones del bastidor.
 
 ---
@@ -97,6 +98,7 @@ El botón de tema permite alternar entre un estilo claro (*flatly*) y uno oscuro
 * **🗑️ Limpiar Todo**: borra todas las cargas y reinicia la configuración.
 * **🌓/🌞 Modo Oscuro/Claro**: alterna el tema visual de la aplicación.
 * **🏗️ Calcular Armadura**: resuelve fuerzas internas en nodos y miembros.
+* **🏗️ Ejemplo Bastidor**: carga un marco de ejemplo y muestra sus resultados.
 
 ### 9. Par torsor en un punto
 

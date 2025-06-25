@@ -1556,6 +1556,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         ttk.Button(frame_secc, text="DCL Nodos", command=self.mostrar_dcl_nodos_bastidor).grid(row=0, column=5, padx=5, pady=2)
 
         ttk.Button(frame_arm, text="Calcular Bastidor", command=self.calcular_bastidor).pack(pady=10)
+        ttk.Button(frame_arm, text="Ejemplo", command=self.cargar_ejemplo_bastidor).pack(pady=5)
         ttk.Button(frame_arm, text="Instrucciones", command=self.mostrar_instrucciones_bastidor).pack(pady=5)
         self.canvas_bastidor = tk.Canvas(frame_arm, width=600, height=400, bg="white")
         self.canvas_bastidor.pack(fill="both", expand=True)
@@ -2225,6 +2226,34 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         self.log(f"Carga en nodo {nodo}: Fx={fx}, Fy={fy}\n", "data")
         self.dibujar_bastidor()
 
+    def cargar_ejemplo_bastidor(self):
+        """Carga un bastidor de ejemplo y muestra inmediatamente sus resultados."""
+        # Reiniciar listas
+        self.nodos_bast.clear()
+        self.miembros_bast.clear()
+        self.cargas_bast.clear()
+        self.id_nodo_bast = 1
+
+        # Definir nodos (portal simple)
+        self.nodos_bast.append({'id': 1, 'x': 0.0, 'y': 0.0, 'apoyo': 'Fijo'})
+        self.nodos_bast.append({'id': 2, 'x': 4.0, 'y': 0.0, 'apoyo': 'Fijo'})
+        self.nodos_bast.append({'id': 3, 'x': 0.0, 'y': 3.0, 'apoyo': 'Libre'})
+        self.nodos_bast.append({'id': 4, 'x': 4.0, 'y': 3.0, 'apoyo': 'Libre'})
+        self.id_nodo_bast = 5
+
+        # Miembros
+        self.miembros_bast.append({'inicio': 1, 'fin': 3, 'fuerza': 0.0})
+        self.miembros_bast.append({'inicio': 3, 'fin': 4, 'fuerza': 0.0})
+        self.miembros_bast.append({'inicio': 4, 'fin': 2, 'fuerza': 0.0})
+        self.miembros_bast.append({'inicio': 1, 'fin': 2, 'fuerza': 0.0})
+
+        # Carga en el nodo superior derecho
+        self.cargas_bast.append({'nodo': 4, 'Fx': 0.0, 'Fy': -1000.0})
+
+        self.log("\nEjemplo de bastidor cargado.\n", "title")
+        self.dibujar_bastidor()
+        self.calcular_bastidor()
+
     def calcular_bastidor(self):
         try:
             if not self.nodos_bast or not self.miembros_bast:
@@ -2709,6 +2738,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             "   Las barras en rojo indican compresión y en azul tensión.\n"
             "5. Utilice 'DCL Nodos' para visualizar el diagrama de cuerpo libre de cada nodo.\n"
             "6. El botón 'Método de Secciones' permite mostrar el DCL de una porción del bastidor.\n"
+            "7. El botón 'Ejemplo' carga un bastidor de muestra y calcula sus resultados automáticamente.\n"
             "\nLimitaciones: el análisis está pensado para bastidores planos de dos dimensiones, "
             "con miembros de dos fuerzas y uniones mediante pasadores lisos. "
             "Si el bastidor es indeterminado o inestable, el programa mostrará una advertencia y los resultados pueden no ser únicos."
