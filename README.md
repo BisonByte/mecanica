@@ -49,7 +49,8 @@ El programa usa **variables `tk.DoubleVar` y `tk.StringVar`** para guardar valor
 * **Nuevo**: análisis de **armaduras** mediante el método de nodos.
 * **Nuevo**: análisis de **bastidores articulados** (marcos 2D) con cálculo automático de reacciones.
 * **Extra**: cálculo de fuerzas en un nodo seleccionado aplicando equilibrio en los pasadores.
-* **Nuevo**: posibilidad de indicar cuántos pasadores hay en un nodo para estimar la carga por cada uno.
+* **Nuevo**: cada nodo permite indicar su número de pasadores para estimar la carga sobre cada rótula.
+* **Nuevo**: al calcular un bastidor se muestran automáticamente las fuerzas en todos los nodos y la carga por pasador.
 * **Nuevo**: botones de *Ayuda* y *Ejemplo* en la sección de bastidores para guiar el uso de los pasadores.
 
 ---

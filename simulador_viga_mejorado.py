@@ -1520,8 +1520,13 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         ttk.Entry(frame_nodo, textvariable=self.nodo_y_bast, width=8).grid(row=0, column=3, padx=5, pady=2)
         ttk.Label(frame_nodo, text="Apoyo:").grid(row=0, column=4, padx=5, pady=2)
         self.nodo_apoyo_bast = tk.StringVar(value="Libre")
-        ttk.Combobox(frame_nodo, textvariable=self.nodo_apoyo_bast, values=["Libre", "Fijo", "Móvil"], width=8).grid(row=0, column=5, padx=5, pady=2)
-        ttk.Button(frame_nodo, text="Agregar Nodo", command=self.agregar_nodo_bastidor).grid(row=0, column=6, padx=5, pady=2)
+        ttk.Combobox(frame_nodo, textvariable=self.nodo_apoyo_bast,
+                     values=["Libre", "Fijo", "Móvil"], width=8).grid(row=0, column=5, padx=5, pady=2)
+        ttk.Label(frame_nodo, text="Pasadores:").grid(row=0, column=6, padx=5, pady=2)
+        self.nodo_pasadores_bast = tk.IntVar(value=1)
+        ttk.Spinbox(frame_nodo, from_=1, to=10, textvariable=self.nodo_pasadores_bast,
+                    width=5).grid(row=0, column=7, padx=5, pady=2)
+        ttk.Button(frame_nodo, text="Agregar Nodo", command=self.agregar_nodo_bastidor).grid(row=0, column=8, padx=5, pady=2)
 
         frame_miem = ttk.LabelFrame(frame_arm, text="Miembros")
         frame_miem.pack(fill="x", pady=5)
@@ -1551,10 +1556,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         ttk.Label(frame_fuerza, text="Nodo:").grid(row=0, column=0, padx=5, pady=2)
         self.nodo_fuerza_bast = tk.IntVar(value=1)
         ttk.Entry(frame_fuerza, textvariable=self.nodo_fuerza_bast, width=5).grid(row=0, column=1, padx=5, pady=2)
-        ttk.Label(frame_fuerza, text="Pasadores:").grid(row=0, column=2, padx=5, pady=2)
-        self.num_pasadores_bast = tk.IntVar(value=1)
-        ttk.Spinbox(frame_fuerza, textvariable=self.num_pasadores_bast, from_=1, to=10, width=5).grid(row=0, column=3, padx=5, pady=2)
-        ttk.Button(frame_fuerza, text="Calcular", command=self.calcular_fuerza_nodo_bastidor).grid(row=0, column=4, padx=5, pady=2)
+        ttk.Button(frame_fuerza, text="Calcular", command=self.calcular_fuerza_nodo_bastidor).grid(row=0, column=2, padx=5, pady=2)
 
         ttk.Button(frame_arm, text="Calcular Bastidor", command=self.calcular_bastidor).pack(pady=10)
 
@@ -2218,8 +2220,10 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         x = self.nodo_x_bast.get()
         y = self.nodo_y_bast.get()
         apoyo = self.nodo_apoyo_bast.get()
-        self.nodos_bast.append({'id': self.id_nodo_bast, 'x': x, 'y': y, 'apoyo': apoyo})
-        self.log(f"Nodo {self.id_nodo_bast} agregado en ({x}, {y})\n", "data")
+        pas = self.nodo_pasadores_bast.get()
+        self.nodos_bast.append({'id': self.id_nodo_bast, 'x': x, 'y': y,
+                                'apoyo': apoyo, 'pasadores': pas})
+        self.log(f"Nodo {self.id_nodo_bast} agregado en ({x}, {y}) con {pas} pasadores\n", "data")
         self.id_nodo_bast += 1
         self.dibujar_bastidor()
 
@@ -2254,10 +2258,14 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         self.id_nodo_bast = 1
 
         # Definir nodos (portal simple)
-        self.nodos_bast.append({'id': 1, 'x': 0.0, 'y': 0.0, 'apoyo': 'Fijo'})
-        self.nodos_bast.append({'id': 2, 'x': 4.0, 'y': 0.0, 'apoyo': 'Fijo'})
-        self.nodos_bast.append({'id': 3, 'x': 0.0, 'y': 3.0, 'apoyo': 'Libre'})
-        self.nodos_bast.append({'id': 4, 'x': 4.0, 'y': 3.0, 'apoyo': 'Libre'})
+        self.nodos_bast.append({'id': 1, 'x': 0.0, 'y': 0.0,
+                                'apoyo': 'Fijo', 'pasadores': 1})
+        self.nodos_bast.append({'id': 2, 'x': 4.0, 'y': 0.0,
+                                'apoyo': 'Fijo', 'pasadores': 1})
+        self.nodos_bast.append({'id': 3, 'x': 0.0, 'y': 3.0,
+                                'apoyo': 'Libre', 'pasadores': 1})
+        self.nodos_bast.append({'id': 4, 'x': 4.0, 'y': 3.0,
+                                'apoyo': 'Libre', 'pasadores': 1})
         self.id_nodo_bast = 5
 
         # Miembros
@@ -2310,6 +2318,9 @@ I_total = Σ(I_barra_i + A_i * d_i²)
 
             self.dibujar_bastidor()
 
+            # Mostrar fuerzas resultantes en cada nodo y por pasador
+            self.mostrar_fuerzas_pasadores()
+
         except np.linalg.LinAlgError as e:
             messagebox.showerror("Error de Cálculo", f"El sistema de ecuaciones no pudo resolverse (singular o mal condicionado): {e}. Verifica la estabilidad del bastidor.")
         except Exception as e:
@@ -2359,11 +2370,55 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         self.log(f"\nFuerzas en nodo {nodo_id}: Fx={fx_total:.2f} N, Fy={fy_total:.2f} N\n", "data")
 
         total = (fx_total ** 2 + fy_total ** 2) ** 0.5
-        n_pas = self.num_pasadores_bast.get()
+        n_pas = node_lookup[nodo_id].get('pasadores', 1)
         if n_pas <= 0:
             n_pas = 1
         fuerza_pasador = total / n_pas
         self.log(f"Fuerza por pasador ({n_pas}): {fuerza_pasador:.2f} N\n", "data")
+
+    def obtener_fuerzas_nodo_bastidor(self, nodo_id):
+        """Devuelve la resultante Fx,Fy en un nodo del bastidor."""
+        node_lookup = {n['id']: n for n in self.nodos_bast}
+        fx_total = 0.0
+        fy_total = 0.0
+        for c in self.cargas_bast:
+            if c['nodo'] == nodo_id:
+                fx_total += c['Fx']
+                fy_total += c['Fy']
+
+        if nodo_id in self.reacciones_bast:
+            rx, ry = self.reacciones_bast[nodo_id]
+            fx_total += rx
+            fy_total += ry
+
+        for m in self.miembros_bast:
+            if m['inicio'] == nodo_id or m['fin'] == nodo_id:
+                n1 = node_lookup[m['inicio']]
+                n2 = node_lookup[m['fin']]
+                dx = n2['x'] - n1['x']
+                dy = n2['y'] - n1['y']
+                L = (dx**2 + dy**2) ** 0.5
+                if L == 0:
+                    continue
+                ux = dx / L
+                uy = dy / L
+                sign = 1 if m['fin'] == nodo_id else -1
+                fx_total += sign * m['fuerza'] * ux
+                fy_total += sign * m['fuerza'] * uy
+
+        return fx_total, fy_total
+
+    def mostrar_fuerzas_pasadores(self):
+        """Muestra en el registro las fuerzas en cada nodo y por pasador."""
+        for nodo in self.nodos_bast:
+            fx, fy = self.obtener_fuerzas_nodo_bastidor(nodo['id'])
+            self.log(f"Fuerzas en nodo {nodo['id']}: Fx={fx:.2f} N, Fy={fy:.2f} N\n", "data")
+            total = (fx**2 + fy**2) ** 0.5
+            n_pas = nodo.get('pasadores', 1)
+            if n_pas <= 0:
+                n_pas = 1
+            fuerza_pasador = total / n_pas
+            self.log(f"Fuerza por pasador ({n_pas}): {fuerza_pasador:.2f} N\n", "data")
 
     def ajustar_vista_bastidor(self):
         if not hasattr(self, 'canvas_bastidor') or not self.nodos_bast:
