@@ -1547,12 +1547,17 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         # Botón para cargar el proyecto 3 (Mesa)
         ttk.Button(frame_formas, text="Cargar Proyecto 3 (Mesa)",
                    command=self.cargar_proyecto_3_cg_mesa).grid(row=5, column=0, columnspan=4, pady=5)
-        ttk.Button(frame_formas, text="Cargar Proyecto (Mancuerna)",
-                   command=self.cargar_proyecto_mancuerna_cg).grid(row=6, column=0, columnspan=4, pady=5)
 
-        ttk.Label(frame_formas, text="⚡ También puede hacer clic en el lienzo para agregar").grid(row=7, column=0, columnspan=4, pady=2)
+        # Botón para cargar el centro de gravedad predefinido de la figura "Solar"
+        ttk.Button(frame_formas, text="Cargar CG (Solar)",
+                   command=self.cargar_cg_solar).grid(row=6, column=0, columnspan=4, pady=5)
+
+        ttk.Button(frame_formas, text="Cargar Proyecto (Mancuerna)",
+                   command=self.cargar_proyecto_mancuerna_cg).grid(row=7, column=0, columnspan=4, pady=5)
+
+        ttk.Label(frame_formas, text="⚡ También puede hacer clic en el lienzo para agregar").grid(row=8, column=0, columnspan=4, pady=2)
         self.canvas_formas = tk.Canvas(frame_formas, width=400, height=300, bg="white")
-        self.canvas_formas.grid(row=8, column=0, columnspan=4, pady=5)
+        self.canvas_formas.grid(row=9, column=0, columnspan=4, pady=5)
         self.canvas_formas.bind("<Button-1>", self.iniciar_accion_formas)
         self.canvas_formas.bind("<B1-Motion>", self.arrastrar_forma)
         self.canvas_formas.bind("<ButtonRelease-1>", self.soltar_forma)
@@ -1566,10 +1571,10 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         self.dibujar_cuadricula(self.canvas_formas)
 
         self.coord_label = ttk.Label(frame_formas, text="x=0, y=0")
-        self.coord_label.grid(row=9, column=0, columnspan=4, pady=2)
+        self.coord_label.grid(row=10, column=0, columnspan=4, pady=2)
 
         self.cg_label = ttk.Label(frame_formas, text="CG: -")
-        self.cg_label.grid(row=10, column=0, columnspan=4, pady=2)
+        self.cg_label.grid(row=11, column=0, columnspan=4, pady=2)
 
     def crear_seccion_armaduras(self, parent):
         frame_arm = ttk.Frame(parent)
@@ -3119,6 +3124,42 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         self.log("Nota: El c\u00e1lculo considera las \u00e1reas compuestas seg\u00fan el documento.\n", "info")
 
         self.dibujar_formas_irregulares(cg_x_proyecto, cg_y_proyecto)
+
+    def cargar_cg_solar(self):
+        """Carga los datos predefinidos del centro de gravedad para la figura 'Solar'."""
+        self.limpiar_lienzo_formas()
+
+        cg_x_solar = 5.0
+        cg_y_solar = 6.55
+
+        self.cg_label.config(text=f"CG Solar: ({cg_x_solar:.2f}, {cg_y_solar:.2f})")
+
+        self.log("\n\U0001F4CA Datos del Centro de Gravedad (Solar) cargados:\n", "title")
+        self.log(f"Centro de Gravedad calculado: X={cg_x_solar:.2f} cm, Y={cg_y_solar:.2f} cm\n", "data")
+        self.log("Se ha cargado y visualizado el Centro de Gravedad de la figura 'Solar'.\n", "info")
+        self.log("Nota: La visualizaci\u00f3n dibuja solo el punto del CG, no las formas individuales. Si tuvieras los detalles de las formas que componen 'Solar', podr\u00edas a\u00f1adirlas aqu\u00ed.\n", "info")
+
+        fig, ax = plt.subplots(figsize=(8, 8))
+        ax.plot(cg_x_solar, cg_y_solar, 'ro', markersize=10, label='Centro de Gravedad')
+        ax.text(cg_x_solar + 0.5, cg_y_solar + 0.5, f'CG ({cg_x_solar:.2f}, {cg_y_solar:.2f})',
+                ha='left', va='bottom', color='red')
+
+        ax.set_aspect('equal', 'box')
+        ax.set_xlim(0, 10)
+        ax.set_ylim(0, 10)
+        ax.set_title('Centro de Gravedad de la Figura Solar')
+        ax.set_xlabel('Coordenada X (cm)')
+        ax.set_ylabel('Coordenada Y (cm)')
+        ax.grid(True, linestyle='--', alpha=0.7)
+        ax.legend()
+
+        plt.tight_layout()
+        for widget in self.frame_grafico.winfo_children():
+            widget.destroy()
+        canvas = FigureCanvasTkAgg(fig, master=self.frame_grafico)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill="both", expand=True)
+        self.ultima_figura = fig
 
     def cargar_proyecto_mancuerna_cg(self):
         """Carga los datos del Centro de Gravedad de la figura de mancuerna."""
