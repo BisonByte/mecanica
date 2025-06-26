@@ -1949,7 +1949,10 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         if A.shape[0] != A.shape[1]:
             soluciones, *_ = np.linalg.lstsq(A, b, rcond=None)
         else:
-            soluciones = np.linalg.solve(A, b)
+            try:
+                soluciones = np.linalg.solve(A, b)
+            except np.linalg.LinAlgError:
+                soluciones, *_ = np.linalg.lstsq(A, b, rcond=None)
 
         fuerzas = [soluciones[var_map[f"m{i}"]] for i in range(n_miembros)]
         reacciones = {}
