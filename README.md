@@ -47,9 +47,9 @@ El programa usa **variables `tk.DoubleVar` y `tk.StringVar`** para guardar valor
 * **Centro de masa en 3D** y cálculo de fuerza a partir de un par torsor.
 * También calcula propiedades como el **área total**, **centro de gravedad de la sección transversal**, y **momento de inercia**.
 * **Nuevo**: análisis de **armaduras** mediante el método de nodos.
-* **Nuevo**: análisis de **bastidores articulados** (marcos 2D) con cálculo automático de reacciones y fuerzas internas.
-* **Nuevo**: botón **Ejemplo** que carga un marco portal simple y muestra sus resultados.
-* **Extra**: cálculo por el **método de secciones** y visualización de **diagramas de cuerpo libre** de cada nodo y secciones del bastidor.
+* **Nuevo**: análisis de **bastidores articulados** (marcos 2D) con cálculo automático de reacciones.
+* **Nuevo**: se pueden agregar **pasadores** como nodos intermedios para evaluar las fuerzas que actúan sobre ellos.
+* **Extra**: cálculo de fuerzas en un nodo seleccionado aplicando equilibrio en los pasadores.
 
 ---
 
@@ -99,6 +99,7 @@ El botón de tema permite alternar entre un estilo claro (*flatly*) y uno oscuro
 * **🌓/🌞 Modo Oscuro/Claro**: alterna el tema visual de la aplicación.
 * **🏗️ Calcular Armadura**: resuelve fuerzas internas en nodos y miembros.
 * **🏗️ Ejemplo Bastidor**: carga un marco de ejemplo y muestra sus resultados.
+* **📌 Pasadores**: se pueden definir nodos tipo pasador (sin apoyo) para calcular las fuerzas en esos puntos.
 
 ### 9. Par torsor en un punto
 
