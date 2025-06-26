@@ -1425,10 +1425,12 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         # Botón para cargar el proyecto 3 (Mesa)
         ttk.Button(frame_formas, text="Cargar Proyecto 3 (Mesa)",
                    command=self.cargar_proyecto_3_cg_mesa).grid(row=5, column=0, columnspan=4, pady=5)
+        ttk.Button(frame_formas, text="Cargar Proyecto (Mancuerna)",
+                   command=self.cargar_proyecto_mancuerna_cg).grid(row=6, column=0, columnspan=4, pady=5)
 
-        ttk.Label(frame_formas, text="⚡ También puede hacer clic en el lienzo para agregar").grid(row=6, column=0, columnspan=4, pady=2)
+        ttk.Label(frame_formas, text="⚡ También puede hacer clic en el lienzo para agregar").grid(row=7, column=0, columnspan=4, pady=2)
         self.canvas_formas = tk.Canvas(frame_formas, width=400, height=300, bg="white")
-        self.canvas_formas.grid(row=7, column=0, columnspan=4, pady=5)
+        self.canvas_formas.grid(row=8, column=0, columnspan=4, pady=5)
         self.canvas_formas.bind("<Button-1>", self.iniciar_accion_formas)
         self.canvas_formas.bind("<B1-Motion>", self.arrastrar_forma)
         self.canvas_formas.bind("<ButtonRelease-1>", self.soltar_forma)
@@ -1442,10 +1444,10 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         self.dibujar_cuadricula(self.canvas_formas)
 
         self.coord_label = ttk.Label(frame_formas, text="x=0, y=0")
-        self.coord_label.grid(row=7, column=0, columnspan=4, pady=2)
+        self.coord_label.grid(row=9, column=0, columnspan=4, pady=2)
 
         self.cg_label = ttk.Label(frame_formas, text="CG: -")
-        self.cg_label.grid(row=8, column=0, columnspan=4, pady=2)
+        self.cg_label.grid(row=10, column=0, columnspan=4, pady=2)
 
     def crear_seccion_armaduras(self, parent):
         frame_arm = ttk.Frame(parent)
@@ -2929,6 +2931,23 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         self.log("Nota: El c\u00e1lculo considera las \u00e1reas compuestas seg\u00fan el documento.\n", "info")
 
         self.dibujar_formas_irregulares(cg_x_proyecto, cg_y_proyecto)
+
+    def cargar_proyecto_mancuerna_cg(self):
+        """Carga los datos del Centro de Gravedad de la figura de mancuerna."""
+        self.limpiar_lienzo_formas()
+
+        # Coordenadas del Centro de Gravedad calculadas para la mancuerna (seg\u00fan la imagen)
+        cg_x_mancuerna = 4.22
+        cg_y_mancuerna = 14.02
+
+        self.cg_label.config(text=f"CG Mancuerna: ({cg_x_mancuerna:.2f}, {cg_y_mancuerna:.2f})")
+
+        self.log("\n\U0001F4CA Datos del Centro de Gravedad (Mancuerna) cargados:\n", "title")
+        self.log(f"Centro de Gravedad calculado: X={cg_x_mancuerna:.2f}, Y={cg_y_mancuerna:.2f}\n", "data")
+        self.log("Se muestra el CG calculado. La visualizaci\u00f3n de la forma completa de la 'Mancuerna' no se dibuja autom\u00e1ticamente en este caso, ya que no se especificaron las formas individuales que la componen en el documento original. Si deseas que se dibuje, necesitar\u00eda los detalles de las formas (rect\u00e1ngulos, c\u00edrculos, etc.) que la componen y sus posiciones.\n", "info")
+
+        # Dibuja el punto del centro de gravedad en la gr\u00e1fica existente
+        self.dibujar_formas_irregulares(cg_x_mancuerna, cg_y_mancuerna)
 
     def crear_seccion_resultados(self, parent):
         frame_resultados = ttk.LabelFrame(parent, text="Resultados")
