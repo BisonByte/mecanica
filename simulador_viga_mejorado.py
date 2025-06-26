@@ -1518,7 +1518,12 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         ttk.Entry(frame_nodo, textvariable=self.nodo_y_bast, width=8).grid(row=0, column=3, padx=5, pady=2)
         ttk.Label(frame_nodo, text="Apoyo:").grid(row=0, column=4, padx=5, pady=2)
         self.nodo_apoyo_bast = tk.StringVar(value="Libre")
-        ttk.Combobox(frame_nodo, textvariable=self.nodo_apoyo_bast, values=["Libre", "Fijo", "Móvil"], width=8).grid(row=0, column=5, padx=5, pady=2)
+        ttk.Combobox(
+            frame_nodo,
+            textvariable=self.nodo_apoyo_bast,
+            values=["Libre", "Fijo", "Móvil", "Pasador"],
+            width=8,
+        ).grid(row=0, column=5, padx=5, pady=2)
         ttk.Button(frame_nodo, text="Agregar Nodo", command=self.agregar_nodo_bastidor).grid(row=0, column=6, padx=5, pady=2)
 
         frame_miem = ttk.LabelFrame(frame_arm, text="Miembros")
@@ -1544,20 +1549,16 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         ttk.Entry(frame_carga, textvariable=self.carga_fy_bast, width=8).grid(row=0, column=5, padx=5, pady=2)
         ttk.Button(frame_carga, text="Agregar Carga", command=self.agregar_carga_bastidor).grid(row=0, column=6, padx=5, pady=2)
 
-        frame_secc = ttk.LabelFrame(frame_arm, text="Método de Secciones")
-        frame_secc.pack(fill="x", pady=5)
-        ttk.Label(frame_secc, text="Corte:").grid(row=0, column=0, padx=5, pady=2)
-        self.corte_valor_bast = tk.DoubleVar(value=0.0)
-        ttk.Entry(frame_secc, textvariable=self.corte_valor_bast, width=8).grid(row=0, column=1, padx=5, pady=2)
-        ttk.Label(frame_secc, text="Eje:").grid(row=0, column=2, padx=5, pady=2)
-        self.corte_eje_bast = tk.StringVar(value="X")
-        ttk.Combobox(frame_secc, textvariable=self.corte_eje_bast, values=["X", "Y"], width=5).grid(row=0, column=3, padx=5, pady=2)
-        ttk.Button(frame_secc, text="Calcular Sección", command=self.calcular_seccion_bastidor).grid(row=0, column=4, padx=5, pady=2)
-        ttk.Button(frame_secc, text="DCL Nodos", command=self.mostrar_dcl_nodos_bastidor).grid(row=0, column=5, padx=5, pady=2)
+        frame_fuerza = ttk.LabelFrame(frame_arm, text="Fuerzas en Nodo")
+        frame_fuerza.pack(fill="x", pady=5)
+        ttk.Label(frame_fuerza, text="Nodo:").grid(row=0, column=0, padx=5, pady=2)
+        self.nodo_fuerza_bast = tk.IntVar(value=1)
+        ttk.Entry(frame_fuerza, textvariable=self.nodo_fuerza_bast, width=5).grid(row=0, column=1, padx=5, pady=2)
+        ttk.Button(frame_fuerza, text="Calcular", command=self.calcular_fuerza_nodo_bastidor).grid(row=0, column=2, padx=5, pady=2)
 
         ttk.Button(frame_arm, text="Calcular Bastidor", command=self.calcular_bastidor).pack(pady=10)
-        ttk.Button(frame_arm, text="Ejemplo", command=self.cargar_ejemplo_bastidor).pack(pady=5)
-        ttk.Button(frame_arm, text="Instrucciones", command=self.mostrar_instrucciones_bastidor).pack(pady=5)
+
+        # Canvas para representar el bastidor
         self.canvas_bastidor = tk.Canvas(frame_arm, width=600, height=400, bg="white")
         self.canvas_bastidor.pack(fill="both", expand=True)
         self.canvas_bastidor.bind("<Configure>", lambda e: self.dibujar_bastidor())
@@ -1926,6 +1927,8 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                 c.create_line(x-15, y+20, x+15, y+20, fill='gray', tags="apoyo")
                 for i in range(-1, 2):
                     c.create_line(x + i*5, y + 20, x + i*5 + 5, y + 25, fill='gray', tags="apoyo")
+            elif nodo['apoyo'] == 'Pasador':
+                c.create_rectangle(x-5, y-5, x+5, y+5, outline='purple', tags="apoyo")
 
         for m in self.miembros_arm:
             n1 = next(n for n in self.nodos_arm if n['id']==m['inicio'])
@@ -2308,6 +2311,49 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         except Exception as e:
             messagebox.showerror("Error", f"Error en cálculo de bastidor: {e}")
 
+    def calcular_fuerza_nodo_bastidor(self):
+        """Calcula y muestra la suma de fuerzas en un nodo específico."""
+        nodo_id = self.nodo_fuerza_bast.get()
+
+        if not self.miembros_bast or not hasattr(self, 'reacciones_bast'):
+            messagebox.showwarning("Advertencia", "Calcule primero el bastidor.")
+            return
+
+        if not any(n['id'] == nodo_id for n in self.nodos_bast):
+            messagebox.showerror("Error", "El nodo seleccionado no existe.")
+            return
+
+        node_lookup = {n['id']: n for n in self.nodos_bast}
+        fx_total = 0.0
+        fy_total = 0.0
+
+        for c in self.cargas_bast:
+            if c['nodo'] == nodo_id:
+                fx_total += c['Fx']
+                fy_total += c['Fy']
+
+        if nodo_id in self.reacciones_bast:
+            rx, ry = self.reacciones_bast[nodo_id]
+            fx_total += rx
+            fy_total += ry
+
+        for m in self.miembros_bast:
+            if m['inicio'] == nodo_id or m['fin'] == nodo_id:
+                n1 = node_lookup[m['inicio']]
+                n2 = node_lookup[m['fin']]
+                dx = n2['x'] - n1['x']
+                dy = n2['y'] - n1['y']
+                L = (dx**2 + dy**2) ** 0.5
+                if L == 0:
+                    continue
+                ux = dx / L
+                uy = dy / L
+                sign = 1 if m['fin'] == nodo_id else -1
+                fx_total += sign * m['fuerza'] * ux
+                fy_total += sign * m['fuerza'] * uy
+
+        self.log(f"\nFuerzas en nodo {nodo_id}: Fx={fx_total:.2f} N, Fy={fy_total:.2f} N\n", "data")
+
     def ajustar_vista_bastidor(self):
         if not hasattr(self, 'canvas_bastidor') or not self.nodos_bast:
             self.escala_bast = 20
@@ -2663,7 +2709,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         """Mostrar guía de uso para el análisis de bastidores."""
         texto = (
             "PASOS PARA ANALIZAR UN BASTIDOR:\n"
-            "1. Agregue los nodos indicando sus coordenadas y el tipo de apoyo (Libre, Fijo o Móvil).\n"
+            "1. Agregue los nodos indicando sus coordenadas y el tipo de apoyo (Libre, Fijo, Móvil o Pasador).\n"
             "2. Defina los miembros especificando el ID del nodo inicial y final.\n"
             "3. Coloque las cargas sobre los nodos correspondientes, indicando las componentes Fx y Fy.\n"
             "4. Presione 'Calcular Bastidor' para obtener las fuerzas internas en cada miembro y las reacciones en los apoyos.\n"
