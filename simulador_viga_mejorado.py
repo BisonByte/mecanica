@@ -1680,6 +1680,15 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         ttk.Entry(frame_fuerza, textvariable=self.nodo_fuerza_bast, width=5).grid(row=0, column=1, padx=5, pady=2)
         ttk.Button(frame_fuerza, text="Calcular", command=self.calcular_fuerza_nodo_bastidor).grid(row=0, column=2, padx=5, pady=2)
 
+        frame_secc = ttk.LabelFrame(frame_arm, text="Método de Secciones")
+        frame_secc.pack(fill="x", pady=5)
+        ttk.Label(frame_secc, text="Corte:").grid(row=0, column=0, padx=5, pady=2)
+        ttk.Entry(frame_secc, textvariable=self.corte_valor_bast, width=8).grid(row=0, column=1, padx=5, pady=2)
+        ttk.Label(frame_secc, text="Eje:").grid(row=0, column=2, padx=5, pady=2)
+        ttk.Combobox(frame_secc, textvariable=self.corte_eje_bast, values=["X", "Y"], width=5).grid(row=0, column=3, padx=5, pady=2)
+        ttk.Button(frame_secc, text="Calcular Sección", command=self.calcular_seccion_bastidor).grid(row=0, column=4, padx=5, pady=2)
+        ttk.Button(frame_secc, text="DCL Nodos", command=self.mostrar_dcl_nodos_bastidor).grid(row=0, column=5, padx=5, pady=2)
+
         ttk.Button(frame_arm, text="Calcular Bastidor", command=self.calcular_bastidor).pack(pady=10)
 
         # Pequeños botones de ayuda y ejemplo
@@ -2738,13 +2747,15 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             if (p1 < corte < p2) or (p2 < corte < p1) or p1 == corte or p2 == corte:
                 miembros_corte.append(m)
 
-        if not miembros_corte:
-            messagebox.showinfo("Sección", "Ningún miembro intersecta el corte especificado.")
-            return
-
         self.log(f"\n{'='*50}\n", "title")
         self.log(f"📐 MÉTODO DE SECCIONES ({eje}={corte:.2f})\n", "title")
         self.log(f"{'='*50}\n", "title")
+
+        if not miembros_corte:
+            self.log("Ningún miembro intersecta el corte especificado.\n", "data")
+            self.dibujar_dcl_seccion_bastidor(corte, [], eje)
+            return
+
         self.log("Miembros intersectados por el corte:\n", "data")
         for m in miembros_corte:
             tipo = "tensión" if m['fuerza'] >= 0 else "compresión"
