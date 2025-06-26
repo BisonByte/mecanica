@@ -47,8 +47,8 @@ El programa usa **variables `tk.DoubleVar` y `tk.StringVar`** para guardar valor
 * **Centro de masa en 3D** y cálculo de fuerza a partir de un par torsor.
 * También calcula propiedades como el **área total**, **centro de gravedad de la sección transversal**, y **momento de inercia**.
 * **Nuevo**: análisis de **armaduras** mediante el método de nodos.
-* **Nuevo**: análisis de **bastidores** (marcos 2D) con cálculo automático de reacciones y fuerzas internas.
-* **Nuevo**: botón **Ejemplo** que carga un bastidor de muestra y muestra sus resultados.
+* **Nuevo**: análisis de **bastidores articulados** (marcos 2D) con cálculo automático de reacciones y fuerzas internas.
+* **Nuevo**: botón **Ejemplo** que carga un marco portal simple y muestra sus resultados.
 * **Extra**: cálculo por el **método de secciones** y visualización de **diagramas de cuerpo libre** de cada nodo y secciones del bastidor.
 
 ---
