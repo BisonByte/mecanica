@@ -1732,110 +1732,122 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         self.log(f"Carga en nodo {nodo}: Fx={fx}, Fy={fy}\n", "data")
         self.dibujar_armadura()
 
+    def resolver_articulado(self, nodos, miembros, cargas):
+        """Resuelve un conjunto de barras articuladas mediante el método de nodos."""
+        n_miembros = len(miembros)
+        var_map = {}
+        idx = 0
+        for i in range(n_miembros):
+            var_map[f"m{i}"] = idx
+            idx += 1
+
+        for nodo in nodos:
+            if nodo['apoyo'] == 'Fijo':
+                var_map[f"Rx{nodo['id']}"] = idx; idx += 1
+                var_map[f"Ry{nodo['id']}"] = idx; idx += 1
+            elif nodo['apoyo'] == 'Móvil':
+                var_map[f"Ry{nodo['id']}"] = idx; idx += 1
+
+        num_vars = idx
+        num_eqs = len(nodos) * 2
+
+        A = np.zeros((num_eqs, num_vars))
+        b = np.zeros(num_eqs)
+
+        node_lookup = {n['id']: n for n in nodos}
+        loads = {n['id']: {'Fx': 0.0, 'Fy': 0.0} for n in nodos}
+        for c in cargas:
+            loads[c['nodo']]['Fx'] += c['Fx']
+            loads[c['nodo']]['Fy'] += c['Fy']
+
+        eq = 0
+        for nodo in nodos:
+            for j, m in enumerate(miembros):
+                if m['inicio'] == nodo['id'] or m['fin'] == nodo['id']:
+                    n2_id = m['fin'] if m['inicio'] == nodo['id'] else m['inicio']
+                    nd1 = node_lookup[nodo['id']]
+                    nd2 = node_lookup[n2_id]
+                    dx = nd2['x'] - nd1['x']
+                    dy = nd2['y'] - nd1['y']
+                    L = (dx**2 + dy**2) ** 0.5
+                    if L == 0:
+                        continue
+                    cos_theta = dx / L
+                    if m['inicio'] == nodo['id']:
+                        A[eq, var_map[f"m{j}"]] += cos_theta
+                    else:
+                        A[eq, var_map[f"m{j}"]] -= cos_theta
+
+            if nodo['apoyo'] == 'Fijo':
+                A[eq, var_map[f"Rx{nodo['id']}"]] = 1
+
+            b[eq] = -loads[nodo['id']]['Fx']
+            eq += 1
+
+            for j, m in enumerate(miembros):
+                if m['inicio'] == nodo['id'] or m['fin'] == nodo['id']:
+                    n2_id = m['fin'] if m['inicio'] == nodo['id'] else m['inicio']
+                    nd1 = node_lookup[nodo['id']]
+                    nd2 = node_lookup[n2_id]
+                    dx = nd2['x'] - nd1['x']
+                    dy = nd2['y'] - nd1['y']
+                    L = (dx**2 + dy**2) ** 0.5
+                    if L == 0:
+                        continue
+                    sin_theta = dy / L
+                    if m['inicio'] == nodo['id']:
+                        A[eq, var_map[f"m{j}"]] += sin_theta
+                    else:
+                        A[eq, var_map[f"m{j}"]] -= sin_theta
+
+            if nodo['apoyo'] in ('Fijo', 'Móvil'):
+                A[eq, var_map[f"Ry{nodo['id']}"]] = 1
+
+            b[eq] = -loads[nodo['id']]['Fy']
+            eq += 1
+
+        if A.shape[0] != A.shape[1]:
+            soluciones, *_ = np.linalg.lstsq(A, b, rcond=None)
+        else:
+            soluciones = np.linalg.solve(A, b)
+
+        fuerzas = [soluciones[var_map[f"m{i}"]] for i in range(n_miembros)]
+        reacciones = {}
+        for nodo in nodos:
+            if nodo['apoyo'] == 'Fijo':
+                rx = soluciones[var_map[f"Rx{nodo['id']}"]]
+                ry = soluciones[var_map[f"Ry{nodo['id']}"]]
+                reacciones[nodo['id']] = (rx, ry)
+            elif nodo['apoyo'] == 'Móvil':
+                ry = soluciones[var_map[f"Ry{nodo['id']}"]]
+                reacciones[nodo['id']] = (0.0, ry)
+
+        return fuerzas, reacciones, num_vars, num_eqs
+
     def calcular_armadura(self):
         try:
             if not self.nodos_arm or not self.miembros_arm:
                 messagebox.showwarning("Advertencia", "Agrega nodos y miembros a la armadura primero.")
                 return
 
-            n_miembros = len(self.miembros_arm)
-            var_map = {}
-            idx = 0
-            for i in range(n_miembros):
-                var_map[f"m{i}"] = idx
-                idx += 1
-
-            for nodo in self.nodos_arm:
-                if nodo['apoyo'] == 'Fijo':
-                    var_map[f"Rx{nodo['id']}"] = idx; idx += 1
-                    var_map[f"Ry{nodo['id']}"] = idx; idx += 1
-                elif nodo['apoyo'] == 'Móvil':
-                    var_map[f"Ry{nodo['id']}"] = idx; idx += 1
-
-            num_vars = idx
-            num_eqs = len(self.nodos_arm) * 2
+            fuerzas, reacciones, num_vars, num_eqs = self.resolver_articulado(
+                self.nodos_arm, self.miembros_arm, self.cargas_arm)
 
             if num_vars > num_eqs:
-                messagebox.showwarning("Advertencia", "La armadura es estáticamente indeterminada. Puede que no tenga una solución única o sea inestable.")
-            elif num_vars < num_eqs:
-                messagebox.showwarning("Advertencia", "La armadura es estáticamente sobredeterminada. Puede que no sea soluble con las condiciones dadas.")
-
-            A = np.zeros((num_eqs, num_vars))
-            b = np.zeros(num_eqs)
-
-            node_lookup = {n['id']: n for n in self.nodos_arm}
-            loads = {n['id']: {'Fx': 0.0, 'Fy': 0.0} for n in self.nodos_arm}
-            for c in self.cargas_arm:
-                loads[c['nodo']]['Fx'] += c['Fx']
-                loads[c['nodo']]['Fy'] += c['Fy']
-
-            eq = 0
-            for nodo in self.nodos_arm:
-                for j, m in enumerate(self.miembros_arm):
-                    if m['inicio'] == nodo['id'] or m['fin'] == nodo['id']:
-                        n2_id = m['fin'] if m['inicio'] == nodo['id'] else m['inicio']
-                        nd1 = node_lookup[nodo['id']]
-                        nd2 = node_lookup[n2_id]
-                        dx = nd2['x'] - nd1['x']
-                        dy = nd2['y'] - nd1['y']
-                        L = (dx**2 + dy**2) ** 0.5
-                        if L == 0:
-                            continue
-                        cos_theta = dx / L
-                        if m['inicio'] == nodo['id']:
-                            A[eq, var_map[f"m{j}"]] += cos_theta
-                        else:
-                            A[eq, var_map[f"m{j}"]] -= cos_theta
-
-                if nodo['apoyo'] == 'Fijo':
-                    A[eq, var_map[f"Rx{nodo['id']}"]] = 1
-
-                b[eq] = -loads[nodo['id']]['Fx']
-                eq += 1
-
-                for j, m in enumerate(self.miembros_arm):
-                    if m['inicio'] == nodo['id'] or m['fin'] == nodo['id']:
-                        n2_id = m['fin'] if m['inicio'] == nodo['id'] else m['inicio']
-                        nd1 = node_lookup[nodo['id']]
-                        nd2 = node_lookup[n2_id]
-                        dx = nd2['x'] - nd1['x']
-                        dy = nd2['y'] - nd1['y']
-                        L = (dx**2 + dy**2) ** 0.5
-                        if L == 0:
-                            continue
-                        sin_theta = dy / L
-                        if m['inicio'] == nodo['id']:
-                            A[eq, var_map[f"m{j}"]] += sin_theta
-                        else:
-                            A[eq, var_map[f"m{j}"]] -= sin_theta
-
-                if nodo['apoyo'] in ('Fijo', 'Móvil'):
-                    A[eq, var_map[f"Ry{nodo['id']}"]] = 1
-
-                b[eq] = -loads[nodo['id']]['Fy']
-                eq += 1
-
-            if A.shape[0] != A.shape[1]:
-                self.log(
-                    "Advertencia: El sistema de ecuaciones no es cuadrado. Se resolverá por mínimos cuadrados.\n",
-                    "warning",
+                messagebox.showwarning(
+                    "Advertencia",
+                    "La armadura es estáticamente indeterminada. Puede que no tenga una solución única o sea inestable.",
                 )
-                soluciones, *_ = np.linalg.lstsq(A, b, rcond=None)
-            else:
-                soluciones = np.linalg.solve(A, b)
+            elif num_vars < num_eqs:
+                messagebox.showwarning(
+                    "Advertencia",
+                    "La armadura es estáticamente sobredeterminada. Puede que no sea soluble con las condiciones dadas.",
+                )
 
             for j, m in enumerate(self.miembros_arm):
-                m['fuerza'] = soluciones[var_map[f"m{j}"]]
+                m['fuerza'] = fuerzas[j]
 
-            self.reacciones_arm = {}
-            for nodo in self.nodos_arm:
-                if nodo['apoyo'] == 'Fijo':
-                    rx = soluciones[var_map[f"Rx{nodo['id']}"]]
-                    ry = soluciones[var_map[f"Ry{nodo['id']}"]]
-                    self.reacciones_arm[nodo['id']] = (rx, ry)
-                elif nodo['apoyo'] == 'Móvil':
-                    ry = soluciones[var_map[f"Ry{nodo['id']}"]]
-                    self.reacciones_arm[nodo['id']] = (0.0, ry)
+            self.reacciones_arm = reacciones
 
             self.log(f"\n{'='*50}\n", "title")
             self.log("📐 ANÁLISIS DE ARMADURA:\n", "title")
@@ -2260,104 +2272,24 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                 messagebox.showwarning("Advertencia", "Agrega nodos y miembros a la bastidor primero.")
                 return
 
-            n_miembros = len(self.miembros_bast)
-            var_map = {}
-            idx = 0
-            for i in range(n_miembros):
-                var_map[f"m{i}"] = idx
-                idx += 1
-
-            for nodo in self.nodos_bast:
-                if nodo['apoyo'] == 'Fijo':
-                    var_map[f"Rx{nodo['id']}"] = idx; idx += 1
-                    var_map[f"Ry{nodo['id']}"] = idx; idx += 1
-                elif nodo['apoyo'] == 'Móvil':
-                    var_map[f"Ry{nodo['id']}"] = idx; idx += 1
-
-            num_vars = idx
-            num_eqs = len(self.nodos_bast) * 2
+            fuerzas, reacciones, num_vars, num_eqs = self.resolver_articulado(
+                self.nodos_bast, self.miembros_bast, self.cargas_bast)
 
             if num_vars > num_eqs:
-                messagebox.showwarning("Advertencia", "La bastidor es estáticamente indeterminada. Puede que no tenga una solución única o sea inestable.")
-            elif num_vars < num_eqs:
-                messagebox.showwarning("Advertencia", "La bastidor es estáticamente sobredeterminada. Puede que no sea soluble con las condiciones dadas.")
-
-            A = np.zeros((num_eqs, num_vars))
-            b = np.zeros(num_eqs)
-
-            node_lookup = {n['id']: n for n in self.nodos_bast}
-            loads = {n['id']: {'Fx': 0.0, 'Fy': 0.0} for n in self.nodos_bast}
-            for c in self.cargas_bast:
-                loads[c['nodo']]['Fx'] += c['Fx']
-                loads[c['nodo']]['Fy'] += c['Fy']
-
-            eq = 0
-            for nodo in self.nodos_bast:
-                for j, m in enumerate(self.miembros_bast):
-                    if m['inicio'] == nodo['id'] or m['fin'] == nodo['id']:
-                        n2_id = m['fin'] if m['inicio'] == nodo['id'] else m['inicio']
-                        nd1 = node_lookup[nodo['id']]
-                        nd2 = node_lookup[n2_id]
-                        dx = nd2['x'] - nd1['x']
-                        dy = nd2['y'] - nd1['y']
-                        L = (dx**2 + dy**2) ** 0.5
-                        if L == 0:
-                            continue
-                        cos_theta = dx / L
-                        if m['inicio'] == nodo['id']:
-                            A[eq, var_map[f"m{j}"]] += cos_theta
-                        else:
-                            A[eq, var_map[f"m{j}"]] -= cos_theta
-
-                if nodo['apoyo'] == 'Fijo':
-                    A[eq, var_map[f"Rx{nodo['id']}"]] = 1
-
-                b[eq] = -loads[nodo['id']]['Fx']
-                eq += 1
-
-                for j, m in enumerate(self.miembros_bast):
-                    if m['inicio'] == nodo['id'] or m['fin'] == nodo['id']:
-                        n2_id = m['fin'] if m['inicio'] == nodo['id'] else m['inicio']
-                        nd1 = node_lookup[nodo['id']]
-                        nd2 = node_lookup[n2_id]
-                        dx = nd2['x'] - nd1['x']
-                        dy = nd2['y'] - nd1['y']
-                        L = (dx**2 + dy**2) ** 0.5
-                        if L == 0:
-                            continue
-                        sin_theta = dy / L
-                        if m['inicio'] == nodo['id']:
-                            A[eq, var_map[f"m{j}"]] += sin_theta
-                        else:
-                            A[eq, var_map[f"m{j}"]] -= sin_theta
-
-                if nodo['apoyo'] in ('Fijo', 'Móvil'):
-                    A[eq, var_map[f"Ry{nodo['id']}"]] = 1
-
-                b[eq] = -loads[nodo['id']]['Fy']
-                eq += 1
-
-            if A.shape[0] != A.shape[1]:
-                self.log(
-                    "Advertencia: El sistema de ecuaciones no es cuadrado. Se resolverá por mínimos cuadrados.\n",
-                    "warning",
+                messagebox.showwarning(
+                    "Advertencia",
+                    "La bastidor es estáticamente indeterminada. Puede que no tenga una solución única o sea inestable.",
                 )
-                soluciones, *_ = np.linalg.lstsq(A, b, rcond=None)
-            else:
-                soluciones = np.linalg.solve(A, b)
+            elif num_vars < num_eqs:
+                messagebox.showwarning(
+                    "Advertencia",
+                    "La bastidor es estáticamente sobredeterminada. Puede que no sea soluble con las condiciones dadas.",
+                )
 
             for j, m in enumerate(self.miembros_bast):
-                m['fuerza'] = soluciones[var_map[f"m{j}"]]
+                m['fuerza'] = fuerzas[j]
 
-            self.reacciones_bast = {}
-            for nodo in self.nodos_bast:
-                if nodo['apoyo'] == 'Fijo':
-                    rx = soluciones[var_map[f"Rx{nodo['id']}"]]
-                    ry = soluciones[var_map[f"Ry{nodo['id']}"]]
-                    self.reacciones_bast[nodo['id']] = (rx, ry)
-                elif nodo['apoyo'] == 'Móvil':
-                    ry = soluciones[var_map[f"Ry{nodo['id']}"]]
-                    self.reacciones_bast[nodo['id']] = (0.0, ry)
+            self.reacciones_bast = reacciones
 
             self.log(f"\n{'='*50}\n", "title")
             self.log("📐 ANÁLISIS DE BASTIDOR:\n", "title")
