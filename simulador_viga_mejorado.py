@@ -1549,7 +1549,10 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         ttk.Label(frame_fuerza, text="Nodo:").grid(row=0, column=0, padx=5, pady=2)
         self.nodo_fuerza_bast = tk.IntVar(value=1)
         ttk.Entry(frame_fuerza, textvariable=self.nodo_fuerza_bast, width=5).grid(row=0, column=1, padx=5, pady=2)
-        ttk.Button(frame_fuerza, text="Calcular", command=self.calcular_fuerza_nodo_bastidor).grid(row=0, column=2, padx=5, pady=2)
+        ttk.Label(frame_fuerza, text="Pasadores:").grid(row=0, column=2, padx=5, pady=2)
+        self.num_pasadores_bast = tk.IntVar(value=1)
+        ttk.Entry(frame_fuerza, textvariable=self.num_pasadores_bast, width=5).grid(row=0, column=3, padx=5, pady=2)
+        ttk.Button(frame_fuerza, text="Calcular", command=self.calcular_fuerza_nodo_bastidor).grid(row=0, column=4, padx=5, pady=2)
 
         ttk.Button(frame_arm, text="Calcular Bastidor", command=self.calcular_bastidor).pack(pady=10)
 
@@ -2346,6 +2349,13 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                 fy_total += sign * m['fuerza'] * uy
 
         self.log(f"\nFuerzas en nodo {nodo_id}: Fx={fx_total:.2f} N, Fy={fy_total:.2f} N\n", "data")
+
+        total = (fx_total ** 2 + fy_total ** 2) ** 0.5
+        n_pas = self.num_pasadores_bast.get()
+        if n_pas <= 0:
+            n_pas = 1
+        fuerza_pasador = total / n_pas
+        self.log(f"Fuerza por pasador ({n_pas}): {fuerza_pasador:.2f} N\n", "data")
 
     def ajustar_vista_bastidor(self):
         if not hasattr(self, 'canvas_bastidor') or not self.nodos_bast:
