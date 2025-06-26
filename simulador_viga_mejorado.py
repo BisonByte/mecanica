@@ -1551,10 +1551,16 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         ttk.Entry(frame_fuerza, textvariable=self.nodo_fuerza_bast, width=5).grid(row=0, column=1, padx=5, pady=2)
         ttk.Label(frame_fuerza, text="Pasadores:").grid(row=0, column=2, padx=5, pady=2)
         self.num_pasadores_bast = tk.IntVar(value=1)
-        ttk.Entry(frame_fuerza, textvariable=self.num_pasadores_bast, width=5).grid(row=0, column=3, padx=5, pady=2)
+        ttk.Spinbox(frame_fuerza, textvariable=self.num_pasadores_bast, from_=1, to=10, width=5).grid(row=0, column=3, padx=5, pady=2)
         ttk.Button(frame_fuerza, text="Calcular", command=self.calcular_fuerza_nodo_bastidor).grid(row=0, column=4, padx=5, pady=2)
 
         ttk.Button(frame_arm, text="Calcular Bastidor", command=self.calcular_bastidor).pack(pady=10)
+
+        # Pequeños botones de ayuda y ejemplo
+        frame_ayuda = ttk.Frame(frame_arm)
+        frame_ayuda.pack(pady=2)
+        ttk.Button(frame_ayuda, text="Ayuda", width=8, command=self.mostrar_instrucciones_bastidor).pack(side="left", padx=2)
+        ttk.Button(frame_ayuda, text="Ejemplo", width=8, command=self.cargar_ejemplo_bastidor).pack(side="left", padx=2)
 
         # Canvas para representar el bastidor
         self.canvas_bastidor = tk.Canvas(frame_arm, width=600, height=400, bg="white")
