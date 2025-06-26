@@ -50,6 +50,7 @@ El programa usa **variables `tk.DoubleVar` y `tk.StringVar`** para guardar valor
 * **Nuevo**: análisis de **bastidores articulados** (marcos 2D) con cálculo automático de reacciones.
 * **Extra**: cálculo de fuerzas en un nodo seleccionado aplicando equilibrio en los pasadores.
 * **Nuevo**: posibilidad de indicar cuántos pasadores hay en un nodo para estimar la carga por cada uno.
+* **Nuevo**: botones de *Ayuda* y *Ejemplo* en la sección de bastidores para guiar el uso de los pasadores.
 
 ---
 
