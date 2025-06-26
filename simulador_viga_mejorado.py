@@ -1547,8 +1547,10 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         # Botón para cargar el proyecto 3 (Mesa)
         ttk.Button(frame_formas, text="Cargar Proyecto 3 (Mesa)",
                    command=self.cargar_proyecto_3_cg_mesa).grid(row=5, column=0, columnspan=4, pady=5)
-        ttk.Button(frame_formas, text="Cargar Proyecto (Mancuerna)",
-                   command=self.cargar_proyecto_mancuerna_cg).grid(row=6, column=0, columnspan=4, pady=5)
+
+        # Botón para cargar el Centro de Gravedad de la figura "Solar"
+        ttk.Button(frame_formas, text="Cargar CG (Solar)",
+                   command=self.cargar_cg_solar).grid(row=6, column=0, columnspan=4, pady=5)
 
         ttk.Label(frame_formas, text="⚡ También puede hacer clic en el lienzo para agregar").grid(row=7, column=0, columnspan=4, pady=2)
         self.canvas_formas = tk.Canvas(frame_formas, width=400, height=300, bg="white")
@@ -3120,22 +3122,44 @@ I_total = Σ(I_barra_i + A_i * d_i²)
 
         self.dibujar_formas_irregulares(cg_x_proyecto, cg_y_proyecto)
 
-    def cargar_proyecto_mancuerna_cg(self):
-        """Carga los datos del Centro de Gravedad de la figura de mancuerna."""
+    def cargar_cg_solar(self):
+        """Carga los datos predefinidos para el Centro de Gravedad de la figura 'Solar' y los visualiza."""
         self.limpiar_lienzo_formas()
 
-        # Coordenadas del Centro de Gravedad calculadas para la mancuerna (seg\u00fan la imagen)
-        cg_x_mancuerna = 4.22
-        cg_y_mancuerna = 14.02
+        # Datos del Centro de Gravedad para la figura "Solar"
+        cg_x_solar = 5.0
+        cg_y_solar = 6.55
 
-        self.cg_label.config(text=f"CG Mancuerna: ({cg_x_mancuerna:.2f}, {cg_y_mancuerna:.2f})")
+        # Actualiza la etiqueta de la interfaz con los nuevos valores
+        self.cg_label.config(text=f"CG Solar: ({cg_x_solar:.2f}, {cg_y_solar:.2f})")
 
-        self.log("\n\U0001F4CA Datos del Centro de Gravedad (Mancuerna) cargados:\n", "title")
-        self.log(f"Centro de Gravedad calculado: X={cg_x_mancuerna:.2f}, Y={cg_y_mancuerna:.2f}\n", "data")
-        self.log("Se muestra el CG calculado. La visualizaci\u00f3n de la forma completa de la 'Mancuerna' no se dibuja autom\u00e1ticamente en este caso, ya que no se especificaron las formas individuales que la componen en el documento original. Si deseas que se dibuje, necesitar\u00eda los detalles de las formas (rect\u00e1ngulos, c\u00edrculos, etc.) que la componen y sus posiciones.\n", "info")
+        # Registra la información en el área de resultados
+        self.log("\n\U0001F4CA Datos del Centro de Gravedad (Solar) cargados:\n", "title")
+        self.log(f"Centro de Gravedad calculado: X={cg_x_solar:.2f} cm, Y={cg_y_solar:.2f} cm\n", "data")
+        self.log("Se ha cargado y visualizado el Centro de Gravedad de la figura 'Solar'.\n", "info")
+        self.log("Nota: La visualización dibuja solo el punto del CG, no las formas individuales, ya que el cálculo se basa en datos pre-procesados.\n", "info")
 
-        # Dibuja el punto del centro de gravedad en la gr\u00e1fica existente
-        self.dibujar_formas_irregulares(cg_x_mancuerna, cg_y_mancuerna)
+        # Dibuja el punto del Centro de Gravedad
+        fig, ax = plt.subplots(figsize=(8, 8))
+        ax.plot(cg_x_solar, cg_y_solar, 'ro', markersize=10, label='Centro de Gravedad')
+        ax.text(cg_x_solar + 0.5, cg_y_solar + 0.5, f'CG ({cg_x_solar:.2f}, {cg_y_solar:.2f})', ha='left', va='bottom', color='red')
+
+        ax.set_aspect('equal', 'box')
+        ax.set_xlim(0, 10)
+        ax.set_ylim(0, 10)
+        ax.set_title('Centro de Gravedad de la Figura Solar')
+        ax.set_xlabel('Coordenada X (cm)')
+        ax.set_ylabel('Coordenada Y (cm)')
+        ax.grid(True, linestyle='--', alpha=0.7)
+        ax.legend()
+
+        plt.tight_layout()
+        for widget in self.frame_grafico.winfo_children():
+            widget.destroy()
+        canvas = FigureCanvasTkAgg(fig, master=self.frame_grafico)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill="both", expand=True)
+        self.ultima_figura = fig
 
     def crear_seccion_resultados(self, parent):
         frame_resultados = ttk.LabelFrame(parent, text="Resultados")
