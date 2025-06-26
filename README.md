@@ -117,3 +117,5 @@ El valor se mostrará en el registro y en los diagramas.
 4. Configura la viga y agrega las cargas necesarias.
 5. Usa **Par en Punto** para consultar el momento torsor si lo necesitas.
 6. Revisa los resultados en la pestaña de **Resultados**.
+7. Para ver un ejemplo de bastidor con pasador ejecuta:
+   `python3 simulador_viga_mejorado.py --ejemplo-pasador`.
