@@ -140,7 +140,8 @@ class SimuladorVigaMejorado:
         self.root = root
         self.bootstrap = bootstrap
         self.root.title("Simulador de Viga Mecánica - Versión Completa")
-        self.root.geometry("1200x900")  # Aumentado el tamaño de la ventana
+        # Ajustar el tamaño de la ventana para un layout más compacto
+        self.root.geometry("1000x800") 
 
         # Configurar tema y estilo moderno
         if self.bootstrap:
@@ -238,6 +239,19 @@ class SimuladorVigaMejorado:
         # Valores por defecto para el método de secciones
         self.corte_valor = tk.DoubleVar(value=0.0)
         self.corte_eje = tk.StringVar(value="X")
+
+        # INICIALIZACIÓN DE VARIABLES PARA ARMADURAS Y BASTIDORES AQUI
+        self.nodo_x = tk.DoubleVar(value=0.0)
+        self.nodo_y = tk.DoubleVar(value=0.0)
+        self.nodo_apoyo_arm = tk.StringVar(value="Libre") # Cambiado el nombre a nodo_apoyo_arm para evitar conflicto
+
+        self.miembro_inicio = tk.IntVar(value=1)
+        self.miembro_fin = tk.IntVar(value=2)
+
+        self.carga_nodo = tk.IntVar(value=1)
+        self.carga_fx = tk.DoubleVar(value=0.0)
+        self.carga_fy = tk.DoubleVar(value=0.0)
+
         # Datos para bastidores
         self.nodos_bast = []
         self.miembros_bast = []
@@ -245,6 +259,21 @@ class SimuladorVigaMejorado:
         self.id_nodo_bast = 1
         self.corte_valor_bast = tk.DoubleVar(value=0.0)
         self.corte_eje_bast = tk.StringVar(value="X")
+
+        self.nodo_x_bast = tk.DoubleVar(value=0.0)
+        self.nodo_y_bast = tk.DoubleVar(value=0.0)
+        self.nodo_apoyo_bast = tk.StringVar(value="Libre")
+        self.nodo_pasadores_bast = tk.IntVar(value=1)
+
+        self.miembro_inicio_bast = tk.IntVar(value=1)
+        self.miembro_fin_bast = tk.IntVar(value=2)
+
+        self.carga_nodo_bast = tk.IntVar(value=1)
+        self.carga_fx_bast = tk.DoubleVar(value=0.0)
+        self.carga_fy_bast = tk.DoubleVar(value=0.0)
+        self.nodo_fuerza_bast = tk.IntVar(value=1) # Inicialización de la variable que faltaba
+
+
         # Espaciado de la cuadrícula para el lienzo de formas
         self.grid_spacing = 20
 
@@ -332,13 +361,13 @@ class SimuladorVigaMejorado:
     def crear_widgets(self):
         # Usar un Notebook para organizar mejor la interfaz
         notebook = ttk.Notebook(self.root)
-        notebook.pack(fill="both", expand=True, padx=20, pady=10)
+        notebook.pack(fill="both", expand=True, padx=10, pady=5) # Ajustar padding del notebook
 
         tab_config = ttk.Frame(notebook)
         tab_seccion = ttk.Frame(notebook)
         tab_armaduras = ttk.Frame(notebook)
         tab_bastidores = ttk.Frame(notebook)
-        tab_axial_termica = ttk.Frame(notebook) # Nueva pestaña
+        tab_axial_termica = ttk.Frame(notebook)
         tab_result = ttk.Frame(notebook)
 
 
@@ -346,7 +375,7 @@ class SimuladorVigaMejorado:
         notebook.add(tab_seccion, text="🏗️Sección y Formas")
         notebook.add(tab_armaduras, text="🏗️Armaduras")
         notebook.add(tab_bastidores, text="🏗️Bastidores")
-        notebook.add(tab_axial_termica, text="⚙️Axial y Térmica") # Añadir nueva pestaña
+        notebook.add(tab_axial_termica, text="⚙️Axial y Térmica")
         notebook.add(tab_result, text="🏗️Resultados")
 
         # Sección configuración y cargas
@@ -358,10 +387,10 @@ class SimuladorVigaMejorado:
         frame_dist = self.crear_seccion_cargas_distribuidas(tab_config)
         frame_botones = self.crear_seccion_botones_calculo(tab_config)
 
-        frame_config.grid(row=0, column=0, columnspan=2, sticky="ew", padx=10, pady=10)
-        frame_puntual.grid(row=1, column=0, sticky="nsew", padx=10, pady=5)
-        frame_dist.grid(row=1, column=1, sticky="nsew", padx=10, pady=5)
-        frame_botones.grid(row=2, column=0, columnspan=2, sticky="ew", padx=10, pady=10)
+        frame_config.grid(row=0, column=0, columnspan=2, sticky="ew", padx=5, pady=5) # Ajustar padding
+        frame_puntual.grid(row=1, column=0, sticky="nsew", padx=5, pady=5) # Ajustar padding
+        frame_dist.grid(row=1, column=1, sticky="nsew", padx=5, pady=5) # Ajustar padding
+        frame_botones.grid(row=2, column=0, columnspan=2, sticky="ew", padx=5, pady=5) # Ajustar padding
 
         # Sección propiedades de la sección y formas irregulares
         self.crear_seccion_propiedades_seccion(tab_seccion)
@@ -372,148 +401,162 @@ class SimuladorVigaMejorado:
         # Bastidores
         self.crear_seccion_bastidores(tab_bastidores)
         # Deformación Axial y Térmica
-        self.crear_seccion_axial_termica(tab_axial_termica) # Llamar a la nueva función
+        self.crear_seccion_axial_termica(tab_axial_termica)
 
         # Resultados y gráficos
         self.crear_seccion_resultados(tab_result)
         self.crear_seccion_graficos(tab_result)
     
     def crear_seccion_configuracion_viga(self, parent):
-        frame_config = ttk.LabelFrame(parent, text="⚙ Configuración de la Viga")
+        frame_config = ttk.LabelFrame(parent, text="⚙ Configuración de la Viga", padding="10 10 10 10") # Ajustar padding
+        frame_config.columnconfigure(1, weight=1) # Para que la barra de longitud se expanda
     
         # Longitud de la viga
-        ttk.Label(frame_config, text="Longitud (m):").grid(row=0, column=0, padx=5, pady=5)
-        longitud_scale = ttk.Scale(frame_config, variable=self.longitud, from_=5, to=50, orient="horizontal", length=200)
-        longitud_scale.grid(row=0, column=1, padx=5, pady=5)
-        # Permitir ingreso manual de la longitud
-        ttk.Entry(frame_config, textvariable=self.longitud, width=8).grid(row=0, column=2, padx=5, pady=5)
-    
+        longitud_frame = ttk.Frame(frame_config)
+        longitud_frame.grid(row=0, column=0, columnspan=4, padx=5, pady=2, sticky="ew") # Ocupar todo el ancho
+        ttk.Label(longitud_frame, text="Longitud (m):").pack(side="left", padx=2, pady=2)
+        ttk.Entry(longitud_frame, textvariable=self.longitud, width=8).pack(side="right", padx=2, pady=2)
+        ttk.Scale(longitud_frame, variable=self.longitud, from_=5, to=50, orient="horizontal").pack(side="left", fill="x", expand=True, padx=2, pady=2)
+
         # Configuración de apoyos
-        ttk.Label(frame_config, text="Apoyo A:").grid(row=1, column=0, padx=5, pady=5)
-        ttk.Combobox(frame_config, textvariable=self.tipo_apoyo_a, values=["Fijo", "Móvil"], width=10).grid(row=1, column=1, padx=5, pady=5)
-        ttk.Label(frame_config, text="Apoyo B:").grid(row=1, column=2, padx=5, pady=5)
-        ttk.Combobox(frame_config, textvariable=self.tipo_apoyo_b, values=["Fijo", "Móvil"], width=10).grid(row=1, column=3, padx=5, pady=5)
-    
-        # Apoyo C
-        ttk.Label(frame_config, text="Apoyo C:").grid(row=2, column=0, padx=5, pady=5)
-        ttk.Combobox(frame_config, textvariable=self.tipo_apoyo_c, values=["Ninguno", "Fijo", "Móvil"], width=10).grid(row=2, column=1, padx=5, pady=5)
-        ttk.Label(frame_config, text="Posición C (m):").grid(row=2, column=2, padx=5, pady=5)
-        ttk.Entry(frame_config, textvariable=self.posicion_apoyo_c, width=10).grid(row=2, column=3, padx=5, pady=5)
+        apoyos_frame = ttk.Frame(frame_config)
+        apoyos_frame.grid(row=1, column=0, columnspan=4, padx=5, pady=2, sticky="ew") # Ocupar todo el ancho
+        ttk.Label(apoyos_frame, text="Apoyo A:").pack(side="left", padx=2, pady=2)
+        ttk.Combobox(apoyos_frame, textvariable=self.tipo_apoyo_a, values=["Fijo", "Móvil"], width=8).pack(side="left", padx=2, pady=2)
+        ttk.Label(apoyos_frame, text="Apoyo B:").pack(side="left", padx=2, pady=2)
+        ttk.Combobox(apoyos_frame, textvariable=self.tipo_apoyo_b, values=["Fijo", "Móvil"], width=8).pack(side="left", padx=2, pady=2)
+        ttk.Label(apoyos_frame, text="Apoyo C:").pack(side="left", padx=2, pady=2)
+        ttk.Combobox(apoyos_frame, textvariable=self.tipo_apoyo_c, values=["Ninguno", "Fijo", "Móvil"], width=8).pack(side="left", padx=2, pady=2)
+        ttk.Label(apoyos_frame, text="Posición C (m):").pack(side="left", padx=2, pady=2)
+        ttk.Entry(apoyos_frame, textvariable=self.posicion_apoyo_c, width=8).pack(side="left", padx=2, pady=2)
     
         # Opción para 3D y par torsor
-        ttk.Checkbutton(frame_config, text="Modo 3D", variable=self.modo_3d).grid(row=3, column=0, padx=5, pady=5)
-        ttk.Label(frame_config, text="Par Torsor (N·m):").grid(row=3, column=1, padx=5, pady=5)
-        ttk.Entry(frame_config, textvariable=self.par_torsor, width=10).grid(row=3, column=2, padx=5, pady=5)
+        extra_options_frame = ttk.Frame(frame_config)
+        extra_options_frame.grid(row=2, column=0, columnspan=4, padx=5, pady=2, sticky="ew")
+        ttk.Checkbutton(extra_options_frame, text="Modo 3D", variable=self.modo_3d).pack(side="left", padx=2, pady=2)
+        ttk.Label(extra_options_frame, text="Par Torsor (N·m):").pack(side="left", padx=2, pady=2)
+        ttk.Entry(extra_options_frame, textvariable=self.par_torsor, width=10).pack(side="left", padx=2, pady=2)
     
         # Altura de la viga
-        ttk.Label(frame_config, text="Altura inicial (m):").grid(row=4, column=0, padx=5, pady=5)
-        ttk.Entry(frame_config, textvariable=self.altura_inicial, width=10).grid(row=4, column=1, padx=5, pady=5)
-        ttk.Label(frame_config, text="Altura final (m):").grid(row=4, column=2, padx=5, pady=5)
-        ttk.Entry(frame_config, textvariable=self.altura_final, width=10).grid(row=4, column=3, padx=5, pady=5)
+        altura_frame = ttk.Frame(frame_config)
+        altura_frame.grid(row=3, column=0, columnspan=4, padx=5, pady=2, sticky="ew")
+        ttk.Label(altura_frame, text="Altura inicial (m):").pack(side="left", padx=2, pady=2)
+        ttk.Entry(altura_frame, textvariable=self.altura_inicial, width=10).pack(side="left", padx=2, pady=2)
+        ttk.Label(altura_frame, text="Altura final (m):").pack(side="left", padx=2, pady=2)
+        ttk.Entry(altura_frame, textvariable=self.altura_final, width=10).pack(side="left", padx=2, pady=2)
 
         return frame_config
     
     def crear_seccion_propiedades_seccion(self, parent):
-        frame_seccion = ttk.LabelFrame(parent, text="Propiedades de la Sección Transversal")
-        frame_seccion.pack(fill="x", pady=10, padx=10)
+        frame_seccion = ttk.LabelFrame(parent, text="Propiedades de la Sección Transversal", padding="10 10 10 10")
+        frame_seccion.pack(fill="x", pady=5, padx=5) # Ajustar padding
     
-        ttk.Label(frame_seccion, text="Ancho superior (cm):").grid(row=0, column=0, padx=5, pady=5)
-        ttk.Entry(frame_seccion, textvariable=self.ancho_superior, width=10).grid(row=0, column=1, padx=5, pady=5)
+        # Usar un grid más compacto para las dimensiones
+        frame_seccion.columnconfigure(1, weight=1)
+        frame_seccion.columnconfigure(3, weight=1)
     
-        ttk.Label(frame_seccion, text="Altura superior (cm):").grid(row=0, column=2, padx=5, pady=5)
-        ttk.Entry(frame_seccion, textvariable=self.altura_superior, width=10).grid(row=0, column=3, padx=5, pady=5)
+        ttk.Label(frame_seccion, text="Ancho superior (cm):").grid(row=0, column=0, padx=5, pady=2, sticky="w")
+        ttk.Entry(frame_seccion, textvariable=self.ancho_superior, width=10).grid(row=0, column=1, padx=5, pady=2, sticky="ew")
     
-        ttk.Label(frame_seccion, text="Ancho alma (cm):").grid(row=1, column=0, padx=5, pady=5)
-        ttk.Entry(frame_seccion, textvariable=self.ancho_alma, width=10).grid(row=1, column=1, padx=5, pady=5)
+        ttk.Label(frame_seccion, text="Altura superior (cm):").grid(row=0, column=2, padx=5, pady=2, sticky="w")
+        ttk.Entry(frame_seccion, textvariable=self.altura_superior, width=10).grid(row=0, column=3, padx=5, pady=2, sticky="ew")
     
-        ttk.Label(frame_seccion, text="Altura alma (cm):").grid(row=1, column=2, padx=5, pady=5)
-        ttk.Entry(frame_seccion, textvariable=self.altura_alma, width=10).grid(row=1, column=3, padx=5, pady=5)
+        ttk.Label(frame_seccion, text="Ancho alma (cm):").grid(row=1, column=0, padx=5, pady=2, sticky="w")
+        ttk.Entry(frame_seccion, textvariable=self.ancho_alma, width=10).grid(row=1, column=1, padx=5, pady=2, sticky="ew")
     
-        ttk.Label(frame_seccion, text="Ancho inferior (cm):").grid(row=2, column=0, padx=5, pady=5)
-        ttk.Entry(frame_seccion, textvariable=self.ancho_inferior, width=10).grid(row=2, column=1, padx=5, pady=5)
+        ttk.Label(frame_seccion, text="Altura alma (cm):").grid(row=1, column=2, padx=5, pady=2, sticky="w")
+        ttk.Entry(frame_seccion, textvariable=self.altura_alma, width=10).grid(row=1, column=3, padx=5, pady=2, sticky="ew")
     
-        ttk.Label(frame_seccion, text="Altura inferior (cm):").grid(row=2, column=2, padx=5, pady=5)
-        ttk.Entry(frame_seccion, textvariable=self.altura_inferior, width=10).grid(row=2, column=3, padx=5, pady=5)
+        ttk.Label(frame_seccion, text="Ancho inferior (cm):").grid(row=2, column=0, padx=5, pady=2, sticky="w")
+        ttk.Entry(frame_seccion, textvariable=self.ancho_inferior, width=10).grid(row=2, column=1, padx=5, pady=2, sticky="ew")
+    
+        ttk.Label(frame_seccion, text="Altura inferior (cm):").grid(row=2, column=2, padx=5, pady=2, sticky="w")
+        ttk.Entry(frame_seccion, textvariable=self.altura_inferior, width=10).grid(row=2, column=3, padx=5, pady=2, sticky="ew")
     
         ttk.Button(frame_seccion, text="Calcular Propiedades", command=self.calcular_propiedades_seccion).grid(row=3, column=0, columnspan=4, pady=10)
     
     def crear_seccion_cargas_puntuales(self, parent):
-        frame_puntuales = ttk.LabelFrame(parent, text="⬇️ Cargas Puntuales")
+        frame_puntuales = ttk.LabelFrame(parent, text="⬇️ Cargas Puntuales", padding="10 10 10 10") # Ajustar padding
+        frame_puntuales.columnconfigure(1, weight=1)
+        frame_puntuales.columnconfigure(3, weight=1)
     
-        ttk.Label(frame_puntuales, text="Posición (m):").grid(row=0, column=0, padx=5, pady=5)
-        ttk.Entry(frame_puntuales, textvariable=self.posicion_carga, width=10).grid(row=0, column=1, padx=5, pady=5)
+        ttk.Label(frame_puntuales, text="Posición (m):").grid(row=0, column=0, padx=5, pady=2, sticky="w")
+        ttk.Entry(frame_puntuales, textvariable=self.posicion_carga, width=10).grid(row=0, column=1, padx=5, pady=2, sticky="ew")
     
-        ttk.Label(frame_puntuales, text="Magnitud (N):").grid(row=0, column=2, padx=5, pady=5)
-        ttk.Entry(frame_puntuales, textvariable=self.magnitud_carga, width=10).grid(row=0, column=3, padx=5, pady=5)
+        ttk.Label(frame_puntuales, text="Magnitud (N):").grid(row=0, column=2, padx=5, pady=2, sticky="w")
+        ttk.Entry(frame_puntuales, textvariable=self.magnitud_carga, width=10).grid(row=0, column=3, padx=5, pady=2, sticky="ew")
     
-        ttk.Button(frame_puntuales, text="➕ Agregar", command=self.agregar_carga_puntual).grid(row=1, column=0, columnspan=2, padx=5, pady=5)
-        ttk.Button(frame_puntuales, text="🗑️ Limpiar", command=self.limpiar_cargas_puntuales).grid(row=1, column=2, columnspan=2, padx=5, pady=5)
+        ttk.Button(frame_puntuales, text="➕ Agregar", command=self.agregar_carga_puntual).grid(row=1, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
+        ttk.Button(frame_puntuales, text="🗑️ Limpiar", command=self.limpiar_cargas_puntuales).grid(row=1, column=2, columnspan=2, padx=5, pady=5, sticky="ew")
 
         return frame_puntuales
     
     def crear_seccion_cargas_distribuidas(self, parent):
-        frame_distribuidas = ttk.LabelFrame(parent, text="📅 Cargas Distribuidas")
+        frame_distribuidas = ttk.LabelFrame(parent, text="📅 Cargas Distribuidas", padding="10 10 10 10") # Ajustar padding
+        frame_distribuidas.columnconfigure(1, weight=1)
+        frame_distribuidas.columnconfigure(3, weight=1)
     
-        ttk.Label(frame_distribuidas, text="Inicio (m):").grid(row=0, column=0, padx=5, pady=5)
-        ttk.Entry(frame_distribuidas, textvariable=self.inicio_dist, width=10).grid(row=0, column=1, padx=5, pady=5)
+        ttk.Label(frame_distribuidas, text="Inicio (m):").grid(row=0, column=0, padx=5, pady=2, sticky="w")
+        ttk.Entry(frame_distribuidas, textvariable=self.inicio_dist, width=10).grid(row=0, column=1, padx=5, pady=2, sticky="ew")
     
-        ttk.Label(frame_distribuidas, text="Fin (m):").grid(row=0, column=2, padx=5, pady=5)
-        ttk.Entry(frame_distribuidas, textvariable=self.fin_dist, width=10).grid(row=0, column=3, padx=5, pady=5)
+        ttk.Label(frame_distribuidas, text="Fin (m):").grid(row=0, column=2, padx=5, pady=2, sticky="w")
+        ttk.Entry(frame_distribuidas, textvariable=self.fin_dist, width=10).grid(row=0, column=3, padx=5, pady=2, sticky="ew")
     
-        ttk.Label(frame_distribuidas, text="Magnitud (N/m):").grid(row=1, column=0, padx=5, pady=5)
-        ttk.Entry(frame_distribuidas, textvariable=self.magnitud_dist, width=10).grid(row=1, column=1, padx=5, pady=5)
+        ttk.Label(frame_distribuidas, text="Magnitud (N/m):").grid(row=1, column=0, padx=5, pady=2, sticky="w")
+        ttk.Entry(frame_distribuidas, textvariable=self.magnitud_dist, width=10).grid(row=1, column=1, padx=5, pady=2, sticky="ew")
     
-        ttk.Button(frame_distribuidas, text="➕ Agregar", command=self.agregar_carga_distribuida).grid(row=2, column=0, columnspan=2, padx=5, pady=5)
-        ttk.Button(frame_distribuidas, text="🗑️ Limpiar", command=self.limpiar_cargas_distribuidas).grid(row=2, column=2, columnspan=2, padx=5, pady=5)
+        ttk.Button(frame_distribuidas, text="➕ Agregar", command=self.agregar_carga_distribuida).grid(row=2, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
+        ttk.Button(frame_distribuidas, text="🗑️ Limpiar", command=self.limpiar_cargas_distribuidas).grid(row=2, column=2, columnspan=2, padx=5, pady=5, sticky="ew")
 
         return frame_distribuidas
     
     def crear_seccion_botones_calculo(self, parent):
-        frame_botones = ttk.Frame(parent)
+        frame_botones = ttk.Frame(parent, padding="5 5 5 5") # Ajustar padding
         
         # Los estilos de botones se configuran en apply_theme
         
         # Botones principales con iconos
         btn_calcular = ttk.Button(frame_botones, text="🧮 Calcular Reacciones", style="Action.TButton")
         btn_calcular.config(command=lambda b=btn_calcular: self.on_button_click(b, self.calcular_reacciones))
-        btn_calcular.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+        btn_calcular.grid(row=0, column=0, padx=3, pady=3, sticky="ew") # Ajustar padding
 
         btn_centro_masa = ttk.Button(frame_botones, text="📍 Calcular Centro de Masa", style="Action.TButton")
         btn_centro_masa.config(command=lambda b=btn_centro_masa: self.on_button_click(b, self.calcular_centro_masa))
-        btn_centro_masa.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        btn_centro_masa.grid(row=0, column=1, padx=3, pady=3, sticky="ew") # Ajustar padding
 
         btn_diagramas = ttk.Button(frame_botones, text="📊 Mostrar Diagramas", style="Action.TButton")
         btn_diagramas.config(command=lambda b=btn_diagramas: self.on_button_click(b, self.mostrar_diagramas))
-        btn_diagramas.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+        btn_diagramas.grid(row=0, column=2, padx=3, pady=3, sticky="ew") # Ajustar padding
 
         par_frame = ttk.Frame(frame_botones)
-        ttk.Label(par_frame, text="x (m):").pack(side="left", padx=(0, 2))
-        ttk.Entry(par_frame, textvariable=self.posicion_torsor, width=6).pack(side="left")
+        par_frame.grid(row=0, column=3, columnspan=2, padx=3, pady=3, sticky="ew") # Ajustar padding
+        par_frame.columnconfigure(2, weight=1) # Para que la entrada de texto se expanda
+        ttk.Label(par_frame, text="x (m):").grid(row=0, column=0, padx=2, pady=2, sticky="w")
+        ttk.Entry(par_frame, textvariable=self.posicion_torsor, width=6).grid(row=0, column=1, padx=2, pady=2, sticky="ew")
         btn_par_punto = ttk.Button(par_frame, text="🌀 Par en Punto", style="Action.TButton")
-        btn_par_punto.pack(side="left", padx=2)
+        btn_par_punto.grid(row=0, column=2, padx=2, pady=2, sticky="ew")
         btn_par_punto.config(command=lambda b=btn_par_punto: self.on_button_click(b, lambda: self.calcular_par_torsor_en_punto(self.posicion_torsor.get())))
-        par_frame.grid(row=0, column=3, columnspan=2, padx=5, pady=5, sticky="ew")
         
         # Segunda fila de botones
         btn_limpiar = ttk.Button(frame_botones, text="🗑️ Limpiar Todo", style="Warning.TButton")
         btn_limpiar.config(command=lambda b=btn_limpiar: self.on_button_click(b, self.limpiar_todo))
-        btn_limpiar.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
+        btn_limpiar.grid(row=1, column=0, padx=3, pady=3, sticky="ew") # Ajustar padding
 
         btn_ayuda = ttk.Button(frame_botones, text="❓ Ayuda", style="Action.TButton")
         btn_ayuda.config(command=lambda b=btn_ayuda: self.on_button_click(b, self.mostrar_ayuda))
-        btn_ayuda.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+        btn_ayuda.grid(row=1, column=1, padx=3, pady=3, sticky="ew") # Ajustar padding
 
         btn_ampliar = ttk.Button(frame_botones, text="🔍 Ampliar Gráfica", style="Action.TButton")
         btn_ampliar.config(command=lambda b=btn_ampliar: self.on_button_click(b, self.ampliar_grafica))
-        btn_ampliar.grid(row=1, column=2, padx=5, pady=5, sticky="ew")
+        btn_ampliar.grid(row=1, column=2, padx=3, pady=3, sticky="ew") # Ajustar padding
 
         btn_animar_3d = ttk.Button(frame_botones, text="🎞️ Animar 3D", style="Action.TButton")
         btn_animar_3d.config(command=lambda b=btn_animar_3d: self.on_button_click(b, self.animar_viga_3d))
-        btn_animar_3d.grid(row=1, column=3, padx=5, pady=5, sticky="ew")
+        btn_animar_3d.grid(row=1, column=3, padx=3, pady=3, sticky="ew") # Ajustar padding
 
         btn_tema = ttk.Button(frame_botones, textvariable=self.texto_tema, style="Action.TButton")
         btn_tema.config(command=lambda b=btn_tema: self.on_button_click(b, self.toggle_dark_mode))
-        btn_tema.grid(row=1, column=4, padx=5, pady=5, sticky="ew")
+        btn_tema.grid(row=1, column=4, padx=3, pady=3, sticky="ew") # Ajustar padding
         self.boton_tema = btn_tema
         
         # Configurar el grid para que se expanda correctamente
@@ -523,41 +566,51 @@ class SimuladorVigaMejorado:
         return frame_botones
 
     def crear_seccion_axial_termica(self, parent):
-        frame_axial_termica = ttk.LabelFrame(parent, text="📏 Deformación Axial y Térmica")
-        frame_axial_termica.pack(fill="x", pady=10, padx=10)
+        frame_axial_termica = ttk.LabelFrame(parent, text="📏 Deformación Axial y Térmica", padding="10 10 10 10")
+        frame_axial_termica.pack(fill="both", expand=True, pady=5, padx=5) # Usar fill="both", expand=True
 
-        # Módulo de Young (E)
-        ttk.Label(frame_axial_termica, text="Módulo de Young (E en GPa):").grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        ttk.Entry(frame_axial_termica, textvariable=self.modulo_young, width=15).grid(row=0, column=1, padx=5, pady=5, sticky="ew")
-
-        # Coeficiente de expansión térmica (alpha)
-        ttk.Label(frame_axial_termica, text="Coef. Exp. Térmica (α en /°C):").grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        ttk.Entry(frame_axial_termica, textvariable=self.coef_expansion, width=15).grid(row=1, column=1, padx=5, pady=5, sticky="ew")
-
-        # Longitud inicial (L0)
-        ttk.Label(frame_axial_termica, text="Longitud Inicial (L0 en m):").grid(row=2, column=0, padx=5, pady=5, sticky="w")
-        ttk.Entry(frame_axial_termica, textvariable=self.longitud_inicial_def, width=15).grid(row=2, column=1, padx=5, pady=5, sticky="ew")
-
-        # Área transversal (A)
-        ttk.Label(frame_axial_termica, text="Área Transversal (A en mm²):").grid(row=3, column=0, padx=5, pady=5, sticky="w")
-        ttk.Entry(frame_axial_termica, textvariable=self.area_transversal, width=15).grid(row=3, column=1, padx=5, pady=5, sticky="ew")
-
-        # Fuerza de tensión (F)
-        ttk.Label(frame_axial_termica, text="Fuerza de Tensión (F en kN):").grid(row=4, column=0, padx=5, pady=5, sticky="w")
-        ttk.Entry(frame_axial_termica, textvariable=self.fuerza_tension, width=15).grid(row=4, column=1, padx=5, pady=5, sticky="ew")
-
-        # Cambio de temperatura (Delta T)
-        ttk.Label(frame_axial_termica, text="Cambio de Temperatura (ΔT en °C):").grid(row=5, column=0, padx=5, pady=5, sticky="w")
-        ttk.Entry(frame_axial_termica, textvariable=self.cambio_temperatura, width=15).grid(row=5, column=1, padx=5, pady=5, sticky="ew")
-
-        # Botones de acción
-        ttk.Button(frame_axial_termica, text="Calcular Deformación", command=self.calcular_deformacion_axial_termica).grid(row=6, column=0, padx=5, pady=10, sticky="ew")
-        ttk.Button(frame_axial_termica, text="Limpiar Valores", command=self.limpiar_deformacion_axial_termica).grid(row=6, column=1, padx=5, pady=10, sticky="ew")
-
-        # Configurar la expansión de columnas
+        # Configurar grid para dos columnas uniformes
         frame_axial_termica.columnconfigure(0, weight=1)
         frame_axial_termica.columnconfigure(1, weight=1)
 
+        # Usar un sub-frame para las entradas para mejor organización
+        input_frame = ttk.Frame(frame_axial_termica)
+        input_frame.grid(row=0, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
+        input_frame.columnconfigure(1, weight=1) # Las entradas se expanden
+        input_frame.columnconfigure(3, weight=1)
+
+        # Módulo de Young (E)
+        ttk.Label(input_frame, text="Módulo de Young (E en GPa):").grid(row=0, column=0, padx=5, pady=2, sticky="w")
+        ttk.Entry(input_frame, textvariable=self.modulo_young, width=12).grid(row=0, column=1, padx=5, pady=2, sticky="ew")
+
+        # Coeficiente de expansión térmica (alpha)
+        ttk.Label(input_frame, text="Coef. Exp. Térmica (α en /°C):").grid(row=0, column=2, padx=5, pady=2, sticky="w")
+        ttk.Entry(input_frame, textvariable=self.coef_expansion, width=12).grid(row=0, column=3, padx=5, pady=2, sticky="ew")
+
+        # Longitud inicial (L0)
+        ttk.Label(input_frame, text="Longitud Inicial (L0 en m):").grid(row=1, column=0, padx=5, pady=2, sticky="w")
+        ttk.Entry(input_frame, textvariable=self.longitud_inicial_def, width=12).grid(row=1, column=1, padx=5, pady=2, sticky="ew")
+
+        # Área transversal (A)
+        ttk.Label(input_frame, text="Área Transversal (A en mm²):").grid(row=1, column=2, padx=5, pady=2, sticky="w")
+        ttk.Entry(input_frame, textvariable=self.area_transversal, width=12).grid(row=1, column=3, padx=5, pady=2, sticky="ew")
+
+        # Fuerza de tensión (F)
+        ttk.Label(input_frame, text="Fuerza de Tensión (F en kN):").grid(row=2, column=0, padx=5, pady=2, sticky="w")
+        ttk.Entry(input_frame, textvariable=self.fuerza_tension, width=12).grid(row=2, column=1, padx=5, pady=2, sticky="ew")
+
+        # Cambio de temperatura (Delta T)
+        ttk.Label(input_frame, text="Cambio de Temperatura (ΔT en °C):").grid(row=2, column=2, padx=5, pady=2, sticky="w")
+        ttk.Entry(input_frame, textvariable=self.cambio_temperatura, width=12).grid(row=2, column=3, padx=5, pady=2, sticky="ew")
+
+        # Botones de acción
+        button_frame = ttk.Frame(frame_axial_termica)
+        button_frame.grid(row=1, column=0, columnspan=2, sticky="ew", padx=5, pady=10)
+        button_frame.columnconfigure(0, weight=1)
+        button_frame.columnconfigure(1, weight=1)
+
+        ttk.Button(button_frame, text="Calcular Deformación", command=self.calcular_deformacion_axial_termica).grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+        ttk.Button(button_frame, text="Limpiar Valores", command=self.limpiar_deformacion_axial_termica).grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
     def calcular_deformacion_axial_termica(self):
         try:
@@ -639,26 +692,36 @@ class SimuladorVigaMejorado:
         # Dibujar la barra original
         ax.plot([0, L0], [0, 0], 'k-', linewidth=5, label='Longitud Inicial (L0)')
 
+        # Ajustar el factor de escala para la visualización de la deformación
+        # Esto es solo para que las deformaciones sean visibles en el gráfico.
+        # Un factor de 1000000 convierte metros a micrómetros, haciendo la deformación más visible.
+        escala_visual = 100000 # Escala para hacer visibles las deformaciones pequeñas
+
         # Dibujar la barra deformada axialmente
-        ax.plot([0, L0 + d_axial * 1000], [0.1, 0.1], 'b--', linewidth=2, label=f'Deformación Axial (δ_axial)')
-        ax.text(L0 + d_axial * 1000, 0.1, f'{d_axial*1e6:.2f} µm', color='blue', ha='left', va='center')
+        ax.plot([0, L0 + d_axial * escala_visual], [0.1, 0.1], 'b--', linewidth=2, label=f'Deformación Axial (δ_axial)')
+        ax.text(L0 + d_axial * escala_visual, 0.1, f'{d_axial*1e6:.2f} µm', color='blue', ha='left', va='center')
 
         # Dibujar la barra deformada térmicamente
-        ax.plot([0, L0 + d_termica * 1000], [-0.1, -0.1], 'g-.', linewidth=2, label=f'Deformación Térmica (δ_termica)')
-        ax.text(L0 + d_termica * 1000, -0.1, f'{d_termica*1e6:.2f} µm', color='green', ha='left', va='center')
+        ax.plot([0, L0 + d_termica * escala_visual], [-0.1, -0.1], 'g-.', linewidth=2, label=f'Deformación Térmica (δ_termica)')
+        ax.text(L0 + d_termica * escala_visual, -0.1, f'{d_termica*1e6:.2f} µm', color='green', ha='left', va='center')
 
         # Dibujar la barra con deformación total
-        ax.plot([0, L0 + d_total * 1000], [0.2, 0.2], 'r-', linewidth=3, label=f'Deformación Total (δ_total)')
-        ax.text(L0 + d_total * 1000, 0.2, f'{d_total*1e6:.2f} µm', color='red', ha='left', va='center')
+        ax.plot([0, L0 + d_total * escala_visual], [0.2, 0.2], 'r-', linewidth=3, label=f'Deformación Total (δ_total)')
+        ax.text(L0 + d_total * escala_visual, 0.2, f'{d_total*1e6:.2f} µm', color='red', ha='left', va='center')
 
         # Flecha de fuerza
-        ax.arrow(L0 / 2, 0.5, 0, -0.2, head_width=0.05*L0, head_length=0.05, fc='purple', ec='purple', width=0.002)
-        ax.text(L0 / 2, 0.6, f'Fuerza Aplicada', ha='center', va='bottom', color='purple')
+        ax.arrow(L0 / 2, 0.5, 0, -0.2, head_width=0.02 * L0, head_length=0.1, fc='purple', ec='purple', width=0.005)
+        ax.text(L0 / 2, 0.6, f'F={self.fuerza_tension.get():.1f} kN', ha='center', va='bottom', color='purple', fontsize=10, fontweight='bold')
 
-        ax.set_xlim(-0.1 * L0, L0 + d_total * 1000 + 0.1 * L0)
-        ax.set_ylim(-0.5, 0.7)
+        # Etiquetas de temperatura
+        ax.text(L0 * 0.75, 0.4, f'ΔT={self.cambio_temperatura.get():.1f}°C', ha='center', va='bottom', color='orange', fontsize=10, fontweight='bold')
+        ax.arrow(L0 * 0.75 - 0.1*L0, 0.4, 0.2*L0, 0, head_width=0.03, head_length=0.05, fc='orange', ec='orange', width=0.002)
+
+
+        ax.set_xlim(-0.1 * L0, L0 + d_total * escala_visual + 0.1 * L0)
+        ax.set_ylim(-0.3, 0.7) # Ajustar límites Y para mejor visualización
         ax.set_xlabel('Longitud (m)')
-        ax.set_ylabel('Visualización Arbitraria')
+        ax.set_ylabel('Visualización (Escalada)')
         ax.set_title('Deformación Axial y Térmica de una Barra')
         ax.legend(loc='upper right')
         ax.grid(True, linestyle='--', alpha=0.7)
@@ -723,7 +786,7 @@ class SimuladorVigaMejorado:
             if not self.cargas_puntuales and not self.cargas_distribuidas:
                 messagebox.showwarning("Advertencia", "Agrega al menos una carga")
                 return
-            
+                
             L = self.longitud.get()
             h_inicial = self.altura_inicial.get()
             h_final = self.altura_final.get()
@@ -1025,7 +1088,7 @@ class SimuladorVigaMejorado:
         for widget in self.frame_grafico.winfo_children():
             widget.destroy()
 
-        fig, ax = plt.subplots(figsize=(12, 6), dpi=100)
+        fig, ax = plt.subplots(figsize=(10, 5), dpi=100) # Ajustar tamaño de figura
         L = self.longitud.get()
         h_inicial = self.altura_inicial.get()
         h_final = self.altura_final.get()
@@ -1095,7 +1158,7 @@ class SimuladorVigaMejorado:
         for widget in self.frame_grafico.winfo_children():
             widget.destroy()
 
-        fig = plt.figure(figsize=(12, 8))
+        fig = plt.figure(figsize=(10, 6)) # Ajustar tamaño de figura
         ax = fig.add_subplot(111, projection="3d")
         L = self.longitud.get()
 
@@ -1147,7 +1210,7 @@ class SimuladorVigaMejorado:
         self.ultima_figura = fig
 
     def dibujar_viga_3d(self, x_cm=None):
-        fig = plt.figure(figsize=(12, 8))
+        fig = plt.figure(figsize=(10, 6)) # Ajustar tamaño de figura
         ax = fig.add_subplot(111, projection='3d')
         L = self.longitud.get()
 
@@ -1199,7 +1262,7 @@ class SimuladorVigaMejorado:
         for widget in self.frame_grafico.winfo_children():
             widget.destroy()
         
-        fig, ax = plt.subplots(figsize=(12, 6))
+        fig, ax = plt.subplots(figsize=(10, 5)) # Ajustar tamaño de figura
         plt.style.use("seaborn-v0_8-whitegrid")
         L = self.longitud.get()
         
@@ -1269,7 +1332,7 @@ class SimuladorVigaMejorado:
             widget.destroy()
             
         fig, (ax1, ax2, ax3, ax4) = plt.subplots(
-            4, 1, figsize=(12, 24), constrained_layout=True
+            4, 1, figsize=(10, 18), constrained_layout=True # Ajustar tamaño de figura
         )
         plt.style.use("seaborn-v0_8-whitegrid")
         
@@ -1299,8 +1362,12 @@ class SimuladorVigaMejorado:
         
         for inicio, fin, mag in self.cargas_distribuidas:
             F_eq = mag * (fin - inicio)
-            ax1.arrow((inicio+fin)/2, 0.55, 0, -0.35, head_width=L*0.015, head_length=0.03, fc='red', ec='red', width=0.002)
-            ax1.text((inicio+fin)/2, 0.6, f'{F_eq:.1f}N', ha='center', va='bottom', fontsize=7, color='red')
+            n_arrows = max(2, int((fin - inicio) / (L * 0.1)))
+            for i in range(n_arrows):
+                x = inicio + (fin - inicio) * (i + 0.5) / n_arrows
+                ax1.arrow(x, 0.55, 0, -0.25, head_width=L*0.01, head_length=0.03, fc='orange', ec='orange', width=0.0015)
+            ax1.arrow((inicio+fin)/2, 0.6, 0, -0.4, head_width=L*0.015, head_length=0.03, fc='red', ec='red', width=0.002)
+            ax1.text((inicio+fin)/2, 0.65, f'{F_eq:.1f}N', ha='center', va='bottom', fontsize=7, color='red')
         
         ax1.set_xlim(-L*0.1, L*1.1)
         ax1.set_ylim(-0.6, 0.7)
@@ -1447,6 +1514,32 @@ class SimuladorVigaMejorado:
         self.fuerza_tension.set(50.0)
         self.cambio_temperatura.set(30.0)
 
+        # Restablecer variables de armaduras/bastidores (importante para que el Combobox no de error)
+        self.nodo_x.set(0.0)
+        self.nodo_y.set(0.0)
+        self.nodo_apoyo_arm.set("Libre") # Usar la variable corregida
+        self.miembro_inicio.set(1)
+        self.miembro_fin.set(2)
+        self.carga_nodo.set(1)
+        self.carga_fx.set(0.0)
+        self.carga_fy.set(0.0)
+        self.corte_valor.set(0.0)
+        self.corte_eje.set("X")
+        
+        self.nodo_x_bast.set(0.0)
+        self.nodo_y_bast.set(0.0)
+        self.nodo_apoyo_bast.set("Libre")
+        self.nodo_pasadores_bast.set(1)
+        self.miembro_inicio_bast.set(1)
+        self.miembro_fin_bast.set(2)
+        self.carga_nodo_bast.set(1)
+        self.carga_fx_bast.set(0.0)
+        self.carga_fy_bast.set(0.0)
+        self.corte_valor_bast.set(0.0)
+        self.corte_eje_bast.set("X")
+        self.nodo_fuerza_bast.set(1) # Reiniciar la variable corregida
+
+
         # Limpiar área de resultados
         self.limpiar_resultados()
 
@@ -1557,7 +1650,6 @@ I_total = Σ(I_barra_i + A_i * d_i²)
 
 • **Tensión (σ)**: Fuerza por unidad de área.
   Fórmula: σ = F / A
-  Donde: F = Fuerza, A = Área.
 
 ---
 🔹 ARMADURAS/BASTIDORES (PRÓXIMAMENTE)
@@ -1698,52 +1790,71 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         self.ultima_figura = fig
 
     def crear_widgets_formas_irregulares(self, parent):
-        frame_formas = ttk.LabelFrame(parent, text="Figuras Irregulares")
-        frame_formas.pack(fill="x", pady=10, padx=10)
+        frame_formas = ttk.LabelFrame(parent, text="Figuras Irregulares", padding="10 10 10 10")
+        frame_formas.pack(fill="both", expand=True, pady=5, padx=5) # Expandir para llenar el espacio restante
+
+        # Usar un Frame para los controles de entrada y botones, y que el canvas ocupe el resto
+        control_frame = ttk.Frame(frame_formas)
+        control_frame.pack(fill="x", pady=5)
+        control_frame.columnconfigure(1, weight=1)
+        control_frame.columnconfigure(3, weight=1)
 
         # Tipo de forma
-        ttk.Label(frame_formas, text="Tipo:").grid(row=0, column=0, padx=5, pady=2)
-        self.tipo_forma = ttk.Combobox(frame_formas, values=["Rectángulo", "Triángulo", "Círculo"])
-        self.tipo_forma.grid(row=0, column=1, padx=5, pady=2)
+        ttk.Label(control_frame, text="Tipo:").grid(row=0, column=0, padx=5, pady=2, sticky="w")
+        self.tipo_forma = ttk.Combobox(control_frame, values=["Rectángulo", "Triángulo", "Círculo"], width=10)
+        self.tipo_forma.grid(row=0, column=1, padx=5, pady=2, sticky="ew")
         self.tipo_forma.set("Rectángulo")
 
         # Coordenadas
-        ttk.Label(frame_formas, text="X:").grid(row=1, column=0, padx=5, pady=2)
-        self.x_forma = ttk.Entry(frame_formas, width=10)
-        self.x_forma.grid(row=1, column=1, padx=5, pady=2)
+        ttk.Label(control_frame, text="X:").grid(row=1, column=0, padx=5, pady=2, sticky="w")
+        self.x_forma = ttk.Entry(control_frame, width=8)
+        self.x_forma.grid(row=1, column=1, padx=5, pady=2, sticky="ew")
 
-        ttk.Label(frame_formas, text="Y:").grid(row=1, column=2, padx=5, pady=2)
-        self.y_forma = ttk.Entry(frame_formas, width=10)
-        self.y_forma.grid(row=1, column=3, padx=5, pady=2)
+        ttk.Label(control_frame, text="Y:").grid(row=1, column=2, padx=5, pady=2, sticky="w")
+        self.y_forma = ttk.Entry(control_frame, width=8)
+        self.y_forma.grid(row=1, column=3, padx=5, pady=2, sticky="ew")
 
         # Dimensiones
-        ttk.Label(frame_formas, text="Ancho:").grid(row=2, column=0, padx=5, pady=2)
-        self.ancho_forma = ttk.Entry(frame_formas, width=10)
-        self.ancho_forma.grid(row=2, column=1, padx=5, pady=2)
+        ttk.Label(control_frame, text="Ancho:").grid(row=2, column=0, padx=5, pady=2, sticky="w")
+        self.ancho_forma = ttk.Entry(control_frame, width=8)
+        self.ancho_forma.grid(row=2, column=1, padx=5, pady=2, sticky="ew")
 
-        ttk.Label(frame_formas, text="Alto:").grid(row=2, column=2, padx=5, pady=2)
-        self.alto_forma = ttk.Entry(frame_formas, width=10)
-        self.alto_forma.grid(row=2, column=3, padx=5, pady=2)
+        ttk.Label(control_frame, text="Alto:").grid(row=2, column=2, padx=5, pady=2, sticky="w")
+        self.alto_forma = ttk.Entry(control_frame, width=8)
+        self.alto_forma.grid(row=2, column=3, padx=5, pady=2, sticky="ew")
 
-        ttk.Button(frame_formas, text="Agregar Forma", command=self.agregar_forma).grid(row=3, column=0, columnspan=2, pady=5)
-        ttk.Button(frame_formas, text="Calcular CG", command=self.calcular_cg_formas).grid(row=3, column=2, columnspan=2, pady=5)
-        ttk.Button(frame_formas, text="Limpiar Lienzo", command=self.limpiar_lienzo_formas).grid(row=4, column=0, columnspan=2, pady=5)
-        ttk.Button(frame_formas, text="Ampliar Lienzo", command=self.ampliar_lienzo_formas).grid(row=4, column=2, columnspan=2, pady=5)
+        # Botones de agregar y calcular CG
+        button_row_1 = ttk.Frame(control_frame)
+        button_row_1.grid(row=3, column=0, columnspan=4, pady=5, sticky="ew")
+        button_row_1.columnconfigure(0, weight=1)
+        button_row_1.columnconfigure(1, weight=1)
+        ttk.Button(button_row_1, text="Agregar Forma", command=self.agregar_forma).grid(row=0, column=0, padx=5, pady=2, sticky="ew")
+        ttk.Button(button_row_1, text="Calcular CG", command=self.calcular_cg_formas).grid(row=0, column=1, padx=5, pady=2, sticky="ew")
+        
+        # Botones de limpiar y ampliar
+        button_row_2 = ttk.Frame(control_frame)
+        button_row_2.grid(row=4, column=0, columnspan=4, pady=5, sticky="ew")
+        button_row_2.columnconfigure(0, weight=1)
+        button_row_2.columnconfigure(1, weight=1)
+        ttk.Button(button_row_2, text="Limpiar Lienzo", command=self.limpiar_lienzo_formas).grid(row=0, column=0, padx=5, pady=2, sticky="ew")
+        ttk.Button(button_row_2, text="Ampliar Lienzo", command=self.ampliar_lienzo_formas).grid(row=0, column=1, padx=5, pady=2, sticky="ew")
 
-        # Botón para cargar el proyecto 3 (Mesa)
-        ttk.Button(frame_formas, text="Cargar Proyecto 3 (Mesa)",
-                   command=self.cargar_proyecto_3_cg_mesa).grid(row=5, column=0, columnspan=4, pady=5)
+        # Botones de cargar proyectos
+        project_buttons_frame = ttk.Frame(control_frame)
+        project_buttons_frame.grid(row=5, column=0, columnspan=4, pady=5, sticky="ew")
+        project_buttons_frame.columnconfigure(0, weight=1)
+        project_buttons_frame.columnconfigure(1, weight=1)
+        project_buttons_frame.columnconfigure(2, weight=1)
+        ttk.Button(project_buttons_frame, text="Cargar Proyecto 3 (Mesa)",
+                   command=self.cargar_proyecto_3_cg_mesa).grid(row=0, column=0, padx=5, pady=2, sticky="ew")
+        ttk.Button(project_buttons_frame, text="Cargar CG (Solar)",
+                   command=self.cargar_cg_solar).grid(row=0, column=1, padx=5, pady=2, sticky="ew")
+        ttk.Button(project_buttons_frame, text="Cargar Proyecto (Mancuerna)",
+                   command=self.cargar_proyecto_mancuerna_cg).grid(row=0, column=2, padx=5, pady=2, sticky="ew")
 
-        # Botón para cargar el centro de gravedad predefinido de la figura "Solar"
-        ttk.Button(frame_formas, text="Cargar CG (Solar)",
-                   command=self.cargar_cg_solar).grid(row=6, column=0, columnspan=4, pady=5)
-
-        ttk.Button(frame_formas, text="Cargar Proyecto (Mancuerna)",
-                   command=self.cargar_proyecto_mancuerna_cg).grid(row=7, column=0, columnspan=4, pady=5)
-
-        ttk.Label(frame_formas, text="⚡ También puede hacer clic en el lienzo para agregar").grid(row=8, column=0, columnspan=4, pady=2)
-        self.canvas_formas = tk.Canvas(frame_formas, width=400, height=300, bg="white")
-        self.canvas_formas.grid(row=9, column=0, columnspan=4, pady=5)
+        ttk.Label(frame_formas, text="⚡ También puede hacer clic derecho para escalar y arrastrar en el lienzo.").pack(pady=2) # Ajustar padding
+        self.canvas_formas = tk.Canvas(frame_formas, bg="white", highlightbackground="gray", highlightthickness=1)
+        self.canvas_formas.pack(fill="both", expand=True, pady=5, padx=5) # Expandir para llenar
         self.canvas_formas.bind("<Button-1>", self.iniciar_accion_formas)
         self.canvas_formas.bind("<B1-Motion>", self.arrastrar_forma)
         self.canvas_formas.bind("<ButtonRelease-1>", self.soltar_forma)
@@ -1754,143 +1865,171 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         self.canvas_formas.bind("<MouseWheel>", self.escalar_forma)
         self.canvas_formas.bind("<Button-4>", self.escalar_forma)
         self.canvas_formas.bind("<Button-5>", self.escalar_forma)
+        self.canvas_formas.bind("<Configure>", lambda e: self.redibujar_formas()) # Redibujar al cambiar tamaño
         self.dibujar_cuadricula(self.canvas_formas)
 
         self.coord_label = ttk.Label(frame_formas, text="x=0, y=0")
-        self.coord_label.grid(row=10, column=0, columnspan=4, pady=2)
+        self.coord_label.pack(pady=2)
 
         self.cg_label = ttk.Label(frame_formas, text="CG: -")
-        self.cg_label.grid(row=11, column=0, columnspan=4, pady=2)
+        self.cg_label.pack(pady=2)
 
     def crear_seccion_armaduras(self, parent):
-        frame_arm = ttk.Frame(parent)
-        frame_arm.pack(fill="both", expand=True, padx=10, pady=10)
+        frame_arm = ttk.Frame(parent, padding="10 10 10 10") # Ajustar padding
+        frame_arm.pack(fill="both", expand=True, padx=5, pady=5)
 
-        frame_nodo = ttk.LabelFrame(frame_arm, text="Nodos")
-        frame_nodo.pack(fill="x", pady=5)
-        ttk.Label(frame_nodo, text="X:").grid(row=0, column=0, padx=5, pady=2)
-        self.nodo_x = tk.DoubleVar(value=0.0)
-        ttk.Entry(frame_nodo, textvariable=self.nodo_x, width=8).grid(row=0, column=1, padx=5, pady=2)
-        ttk.Label(frame_nodo, text="Y:").grid(row=0, column=2, padx=5, pady=2)
-        self.nodo_y = tk.DoubleVar(value=0.0)
-        ttk.Entry(frame_nodo, textvariable=self.nodo_y, width=8).grid(row=0, column=3, padx=5, pady=2)
-        ttk.Label(frame_nodo, text="Apoyo:").grid(row=0, column=4, padx=5, pady=2)
-        self.nodo_apoyo = tk.StringVar(value="Libre")
-        ttk.Combobox(frame_nodo, textvariable=self.nodo_apoyo, values=["Libre", "Fijo", "Móvil"], width=8).grid(row=0, column=5, padx=5, pady=2)
-        ttk.Button(frame_nodo, text="Agregar Nodo", command=self.agregar_nodo).grid(row=0, column=6, padx=5, pady=2)
+        frame_nodo = ttk.LabelFrame(frame_arm, text="Nodos", padding="5 5 5 5") # Ajustar padding
+        frame_nodo.pack(fill="x", pady=3) # Ajustar padding
+        frame_nodo.columnconfigure(1, weight=1)
+        frame_nodo.columnconfigure(3, weight=1)
+        frame_nodo.columnconfigure(5, weight=1)
+        ttk.Label(frame_nodo, text="X:").grid(row=0, column=0, padx=2, pady=1, sticky="w")
+        ttk.Entry(frame_nodo, textvariable=self.nodo_x, width=8).grid(row=0, column=1, padx=2, pady=1, sticky="ew")
+        ttk.Label(frame_nodo, text="Y:").grid(row=0, column=2, padx=2, pady=1, sticky="w")
+        ttk.Entry(frame_nodo, textvariable=self.nodo_y, width=8).grid(row=0, column=3, padx=2, pady=1, sticky="ew")
+        ttk.Label(frame_nodo, text="Apoyo:").grid(row=0, column=4, padx=2, pady=1, sticky="w")
+        # Corrección: usar self.nodo_apoyo_arm como textvariable
+        self.combobox_nodo_apoyo_arm = ttk.Combobox(frame_nodo, textvariable=self.nodo_apoyo_arm, values=["Libre", "Fijo", "Móvil"], width=8)
+        self.combobox_nodo_apoyo_arm.grid(row=0, column=5, padx=2, pady=1, sticky="ew")
+        self.combobox_nodo_apoyo_arm.set("Libre")
+        ttk.Button(frame_nodo, text="Agregar Nodo", command=self.agregar_nodo).grid(row=0, column=6, padx=5, pady=1, sticky="ew")
 
-        frame_miem = ttk.LabelFrame(frame_arm, text="Miembros")
-        frame_miem.pack(fill="x", pady=5)
-        ttk.Label(frame_miem, text="Inicio:").grid(row=0, column=0, padx=5, pady=2)
-        self.miembro_inicio = tk.IntVar(value=1)
-        ttk.Entry(frame_miem, textvariable=self.miembro_inicio, width=5).grid(row=0, column=1, padx=5, pady=2)
-        ttk.Label(frame_miem, text="Fin:").grid(row=0, column=2, padx=5, pady=2)
-        self.miembro_fin = tk.IntVar(value=2)
-        ttk.Entry(frame_miem, textvariable=self.miembro_fin, width=5).grid(row=0, column=3, padx=5, pady=2)
-        ttk.Button(frame_miem, text="Agregar Miembro", command=self.agregar_miembro).grid(row=0, column=4, padx=5, pady=2)
+        frame_miem = ttk.LabelFrame(frame_arm, text="Miembros", padding="5 5 5 5") # Ajustar padding
+        frame_miem.pack(fill="x", pady=3) # Ajustar padding
+        frame_miem.columnconfigure(1, weight=1)
+        frame_miem.columnconfigure(3, weight=1)
+        ttk.Label(frame_miem, text="Inicio:").grid(row=0, column=0, padx=2, pady=1, sticky="w")
+        ttk.Entry(frame_miem, textvariable=self.miembro_inicio, width=5).grid(row=0, column=1, padx=2, pady=1, sticky="ew")
+        ttk.Label(frame_miem, text="Fin:").grid(row=0, column=2, padx=2, pady=1, sticky="w")
+        ttk.Entry(frame_miem, textvariable=self.miembro_fin, width=5).grid(row=0, column=3, padx=2, pady=1, sticky="ew")
+        ttk.Button(frame_miem, text="Agregar Miembro", command=self.agregar_miembro).grid(row=0, column=4, padx=5, pady=1, sticky="ew")
 
-        frame_carga = ttk.LabelFrame(frame_arm, text="Cargas en Nodos")
-        frame_carga.pack(fill="x", pady=5)
-        ttk.Label(frame_carga, text="Nodo:").grid(row=0, column=0, padx=5, pady=2)
-        self.carga_nodo = tk.IntVar(value=1)
-        ttk.Entry(frame_carga, textvariable=self.carga_nodo, width=5).grid(row=0, column=1, padx=5, pady=2)
-        ttk.Label(frame_carga, text="Fx:").grid(row=0, column=2, padx=5, pady=2)
-        self.carga_fx = tk.DoubleVar(value=0.0)
-        ttk.Entry(frame_carga, textvariable=self.carga_fx, width=8).grid(row=0, column=3, padx=5, pady=2)
-        ttk.Label(frame_carga, text="Fy:").grid(row=0, column=4, padx=5, pady=2)
-        self.carga_fy = tk.DoubleVar(value=0.0)
-        ttk.Entry(frame_carga, textvariable=self.carga_fy, width=8).grid(row=0, column=5, padx=5, pady=2)
-        ttk.Button(frame_carga, text="Agregar Carga", command=self.agregar_carga_armadura).grid(row=0, column=6, padx=5, pady=2)
+        frame_carga = ttk.LabelFrame(frame_arm, text="Cargas en Nodos", padding="5 5 5 5") # Ajustar padding
+        frame_carga.pack(fill="x", pady=3) # Ajustar padding
+        frame_carga.columnconfigure(1, weight=1)
+        frame_carga.columnconfigure(3, weight=1)
+        frame_carga.columnconfigure(5, weight=1)
+        ttk.Label(frame_carga, text="Nodo:").grid(row=0, column=0, padx=2, pady=1, sticky="w")
+        ttk.Entry(frame_carga, textvariable=self.carga_nodo, width=5).grid(row=0, column=1, padx=2, pady=1, sticky="ew")
+        ttk.Label(frame_carga, text="Fx:").grid(row=0, column=2, padx=2, pady=1, sticky="w")
+        ttk.Entry(frame_carga, textvariable=self.carga_fx, width=8).grid(row=0, column=3, padx=2, pady=1, sticky="ew")
+        ttk.Label(frame_carga, text="Fy:").grid(row=0, column=4, padx=2, pady=1, sticky="w")
+        ttk.Entry(frame_carga, textvariable=self.carga_fy, width=8).grid(row=0, column=5, padx=2, pady=1, sticky="ew")
+        ttk.Button(frame_carga, text="Agregar Carga", command=self.agregar_carga_armadura).grid(row=0, column=6, padx=5, pady=1, sticky="ew")
 
-        frame_secc = ttk.LabelFrame(frame_arm, text="Método de Secciones")
-        frame_secc.pack(fill="x", pady=5)
-        ttk.Label(frame_secc, text="Corte:").grid(row=0, column=0, padx=5, pady=2)
-        self.corte_valor = tk.DoubleVar(value=0.0)
-        ttk.Entry(frame_secc, textvariable=self.corte_valor, width=8).grid(row=0, column=1, padx=5, pady=2)
-        ttk.Label(frame_secc, text="Eje:").grid(row=0, column=2, padx=5, pady=2)
-        self.corte_eje = tk.StringVar(value="X")
-        ttk.Combobox(frame_secc, textvariable=self.corte_eje, values=["X", "Y"], width=5).grid(row=0, column=3, padx=5, pady=2)
-        ttk.Button(frame_secc, text="Calcular Sección", command=self.calcular_seccion_armadura).grid(row=0, column=4, padx=5, pady=2)
-        ttk.Button(frame_secc, text="DCL Nodos", command=self.mostrar_dcl_nodos).grid(row=0, column=5, padx=5, pady=2)
+        frame_secc = ttk.LabelFrame(frame_arm, text="Método de Secciones", padding="5 5 5 5") # Ajustar padding
+        frame_secc.pack(fill="x", pady=3) # Ajustar padding
+        frame_secc.columnconfigure(1, weight=1)
+        frame_secc.columnconfigure(3, weight=1)
+        frame_secc.columnconfigure(4, weight=1)
+        frame_secc.columnconfigure(5, weight=1)
+        ttk.Label(frame_secc, text="Corte:").grid(row=0, column=0, padx=2, pady=1, sticky="w")
+        ttk.Entry(frame_secc, textvariable=self.corte_valor, width=8).grid(row=0, column=1, padx=2, pady=1, sticky="ew")
+        ttk.Label(frame_secc, text="Eje:").grid(row=0, column=2, padx=2, pady=1, sticky="w")
+        self.corte_eje = ttk.Combobox(frame_secc, textvariable=self.corte_eje, values=["X", "Y"], width=5)
+        self.corte_eje.grid(row=0, column=3, padx=2, pady=1, sticky="ew")
+        self.corte_eje.set("X")
+        ttk.Button(frame_secc, text="Calcular Sección", command=self.calcular_seccion_armadura).grid(row=0, column=4, padx=5, pady=1, sticky="ew")
+        ttk.Button(frame_secc, text="DCL Nodos", command=self.mostrar_dcl_nodos).grid(row=0, column=5, padx=5, pady=1, sticky="ew")
 
-        ttk.Button(frame_arm, text="Calcular Armadura", command=self.calcular_armadura).pack(pady=10)
-        ttk.Button(frame_arm, text="Instrucciones", command=self.mostrar_instrucciones_armadura).pack(pady=5)
-        self.canvas_armadura = tk.Canvas(frame_arm, width=600, height=400, bg="white")
-        self.canvas_armadura.pack(fill="both", expand=True)
+        # Botones principales para armaduras
+        arm_buttons_frame = ttk.Frame(frame_arm)
+        arm_buttons_frame.pack(fill="x", pady=5)
+        arm_buttons_frame.columnconfigure(0, weight=1)
+        arm_buttons_frame.columnconfigure(1, weight=1)
+        ttk.Button(arm_buttons_frame, text="Calcular Armadura", command=self.calcular_armadura).grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+        ttk.Button(arm_buttons_frame, text="Instrucciones", command=self.mostrar_instrucciones_armadura).grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        
+        self.canvas_armadura = tk.Canvas(frame_arm, bg="white", highlightbackground="gray", highlightthickness=1)
+        self.canvas_armadura.pack(fill="both", expand=True, padx=5, pady=5)
         self.canvas_armadura.bind("<Configure>", lambda e: self.dibujar_armadura())
 
     def crear_seccion_bastidores(self, parent):
-        frame_arm = ttk.Frame(parent)
-        frame_arm.pack(fill="both", expand=True, padx=10, pady=10)
+        frame_arm = ttk.Frame(parent, padding="10 10 10 10")
+        frame_arm.pack(fill="both", expand=True, padx=5, pady=5)
 
-        frame_nodo = ttk.LabelFrame(frame_arm, text="Nodos")
-        frame_nodo.pack(fill="x", pady=5)
-        ttk.Label(frame_nodo, text="X:").grid(row=0, column=0, padx=5, pady=2)
-        self.nodo_x_bast = tk.DoubleVar(value=0.0)
-        ttk.Entry(frame_nodo, textvariable=self.nodo_x_bast, width=8).grid(row=0, column=1, padx=5, pady=2)
-        ttk.Label(frame_nodo, text="Y:").grid(row=0, column=2, padx=5, pady=2)
-        self.nodo_y_bast = tk.DoubleVar(value=0.0)
-        ttk.Entry(frame_nodo, textvariable=self.nodo_y_bast, width=8).grid(row=0, column=3, padx=5, pady=2)
-        ttk.Label(frame_nodo, text="Apoyo:").grid(row=0, column=4, padx=5, pady=2)
-        self.nodo_apoyo_bast = tk.StringVar(value="Libre")
-        ttk.Combobox(frame_nodo, textvariable=self.nodo_apoyo_bast,
-                     values=["Libre", "Fijo", "Móvil"], width=8).grid(row=0, column=5, padx=5, pady=2)
-        ttk.Label(frame_nodo, text="Pasadores:").grid(row=0, column=6, padx=5, pady=2)
-        self.nodo_pasadores_bast = tk.IntVar(value=1)
+        frame_nodo = ttk.LabelFrame(frame_arm, text="Nodos", padding="5 5 5 5")
+        frame_nodo.pack(fill="x", pady=3)
+        frame_nodo.columnconfigure(1, weight=1)
+        frame_nodo.columnconfigure(3, weight=1)
+        frame_nodo.columnconfigure(5, weight=1)
+        frame_nodo.columnconfigure(7, weight=1)
+        ttk.Label(frame_nodo, text="X:").grid(row=0, column=0, padx=2, pady=1, sticky="w")
+        ttk.Entry(frame_nodo, textvariable=self.nodo_x_bast, width=8).grid(row=0, column=1, padx=2, pady=1, sticky="ew")
+        ttk.Label(frame_nodo, text="Y:").grid(row=0, column=2, padx=2, pady=1, sticky="w")
+        ttk.Entry(frame_nodo, textvariable=self.nodo_y_bast, width=8).grid(row=0, column=3, padx=2, pady=1, sticky="ew")
+        ttk.Label(frame_nodo, text="Apoyo:").grid(row=0, column=4, padx=2, pady=1, sticky="w")
+        self.nodo_apoyo_bast = ttk.Combobox(frame_nodo, textvariable=self.nodo_apoyo_bast,
+                     values=["Libre", "Fijo", "Móvil"], width=8)
+        self.nodo_apoyo_bast.grid(row=0, column=5, padx=2, pady=1, sticky="ew")
+        self.nodo_apoyo_bast.set("Libre")
+        ttk.Label(frame_nodo, text="Pasadores:").grid(row=0, column=6, padx=2, pady=1, sticky="w")
         ttk.Spinbox(frame_nodo, from_=1, to=10, textvariable=self.nodo_pasadores_bast,
-                    width=5).grid(row=0, column=7, padx=5, pady=2)
-        ttk.Button(frame_nodo, text="Agregar Nodo", command=self.agregar_nodo_bastidor).grid(row=0, column=8, padx=5, pady=2)
+                    width=5).grid(row=0, column=7, padx=2, pady=1, sticky="ew")
+        ttk.Button(frame_nodo, text="Agregar Nodo", command=self.agregar_nodo_bastidor).grid(row=0, column=8, padx=5, pady=1, sticky="ew")
 
-        frame_miem = ttk.LabelFrame(frame_arm, text="Miembros")
-        frame_miem.pack(fill="x", pady=5)
-        ttk.Label(frame_miem, text="Inicio:").grid(row=0, column=0, padx=5, pady=2)
-        self.miembro_inicio_bast = tk.IntVar(value=1)
-        ttk.Entry(frame_miem, textvariable=self.miembro_inicio_bast, width=5).grid(row=0, column=1, padx=5, pady=2)
-        ttk.Label(frame_miem, text="Fin:").grid(row=0, column=2, padx=5, pady=2)
-        self.miembro_fin_bast = tk.IntVar(value=2)
-        ttk.Entry(frame_miem, textvariable=self.miembro_fin_bast, width=5).grid(row=0, column=3, padx=5, pady=2)
-        ttk.Button(frame_miem, text="Agregar Miembro", command=self.agregar_miembro_bastidor).grid(row=0, column=4, padx=5, pady=2)
+        frame_miem = ttk.LabelFrame(frame_arm, text="Miembros", padding="5 5 5 5")
+        frame_miem.pack(fill="x", pady=3)
+        frame_miem.columnconfigure(1, weight=1)
+        frame_miem.columnconfigure(3, weight=1)
+        ttk.Label(frame_miem, text="Inicio:").grid(row=0, column=0, padx=2, pady=1, sticky="w")
+        ttk.Entry(frame_miem, textvariable=self.miembro_inicio_bast, width=5).grid(row=0, column=1, padx=2, pady=1, sticky="ew")
+        ttk.Label(frame_miem, text="Fin:").grid(row=0, column=2, padx=2, pady=1, sticky="w")
+        ttk.Entry(frame_miem, textvariable=self.miembro_fin_bast, width=5).grid(row=0, column=3, padx=2, pady=1, sticky="ew")
+        ttk.Button(frame_miem, text="Agregar Miembro", command=self.agregar_miembro_bastidor).grid(row=0, column=4, padx=5, pady=1, sticky="ew")
 
-        frame_carga = ttk.LabelFrame(frame_arm, text="Cargas en Nodos")
-        frame_carga.pack(fill="x", pady=5)
-        ttk.Label(frame_carga, text="Nodo:").grid(row=0, column=0, padx=5, pady=2)
-        self.carga_nodo_bast = tk.IntVar(value=1)
-        ttk.Entry(frame_carga, textvariable=self.carga_nodo_bast, width=5).grid(row=0, column=1, padx=5, pady=2)
-        ttk.Label(frame_carga, text="Fx:").grid(row=0, column=2, padx=5, pady=2)
-        self.carga_fx_bast = tk.DoubleVar(value=0.0)
-        ttk.Entry(frame_carga, textvariable=self.carga_fx_bast, width=8).grid(row=0, column=3, padx=5, pady=2)
-        ttk.Label(frame_carga, text="Fy:").grid(row=0, column=4, padx=5, pady=2)
-        self.carga_fy_bast = tk.DoubleVar(value=0.0)
-        ttk.Entry(frame_carga, textvariable=self.carga_fy_bast, width=8).grid(row=0, column=5, padx=5, pady=2)
-        ttk.Button(frame_carga, text="Agregar Carga", command=self.agregar_carga_bastidor).grid(row=0, column=6, padx=5, pady=2)
+        frame_carga = ttk.LabelFrame(frame_arm, text="Cargas en Nodos", padding="5 5 5 5")
+        frame_carga.pack(fill="x", pady=3)
+        frame_carga.columnconfigure(1, weight=1)
+        frame_carga.columnconfigure(3, weight=1)
+        frame_carga.columnconfigure(5, weight=1)
+        ttk.Label(frame_carga, text="Nodo:").grid(row=0, column=0, padx=2, pady=1, sticky="w")
+        ttk.Entry(frame_carga, textvariable=self.carga_nodo_bast, width=5).grid(row=0, column=1, padx=2, pady=1, sticky="ew")
+        ttk.Label(frame_carga, text="Fx:").grid(row=0, column=2, padx=2, pady=1, sticky="w")
+        ttk.Entry(frame_carga, textvariable=self.carga_fx_bast, width=8).grid(row=0, column=3, padx=2, pady=1, sticky="ew")
+        ttk.Label(frame_carga, text="Fy:").grid(row=0, column=4, padx=2, pady=1, sticky="w")
+        ttk.Entry(frame_carga, textvariable=self.carga_fy_bast, width=8).grid(row=0, column=5, padx=2, pady=1, sticky="ew")
+        ttk.Button(frame_carga, text="Agregar Carga", command=self.agregar_carga_bastidor).grid(row=0, column=6, padx=5, pady=1, sticky="ew")
 
-        frame_fuerza = ttk.LabelFrame(frame_arm, text="Fuerzas en Nodo")
-        frame_fuerza.pack(fill="x", pady=5)
-        ttk.Label(frame_fuerza, text="Nodo:").grid(row=0, column=0, padx=5, pady=2)
-        self.nodo_fuerza_bast = tk.IntVar(value=1)
-        ttk.Entry(frame_fuerza, textvariable=self.nodo_fuerza_bast, width=5).grid(row=0, column=1, padx=5, pady=2)
-        ttk.Button(frame_fuerza, text="Calcular", command=self.calcular_fuerza_nodo_bastidor).grid(row=0, column=2, padx=5, pady=2)
+        frame_fuerza = ttk.LabelFrame(frame_arm, text="Fuerzas en Nodo", padding="5 5 5 5")
+        frame_fuerza.pack(fill="x", pady=3)
+        frame_fuerza.columnconfigure(1, weight=1)
+        frame_fuerza.columnconfigure(2, weight=1)
+        ttk.Label(frame_fuerza, text="Nodo:").grid(row=0, column=0, padx=2, pady=1, sticky="w")
+        # Corrección: Usar self.nodo_fuerza_bast como textvariable
+        ttk.Entry(frame_fuerza, textvariable=self.nodo_fuerza_bast, width=5).grid(row=0, column=1, padx=2, pady=1, sticky="ew")
+        ttk.Button(frame_fuerza, text="Calcular", command=self.calcular_fuerza_nodo_bastidor).grid(row=0, column=2, padx=5, pady=1, sticky="ew")
 
-        frame_secc = ttk.LabelFrame(frame_arm, text="Método de Secciones")
-        frame_secc.pack(fill="x", pady=5)
-        ttk.Label(frame_secc, text="Corte:").grid(row=0, column=0, padx=5, pady=2)
-        ttk.Entry(frame_secc, textvariable=self.corte_valor_bast, width=8).grid(row=0, column=1, padx=5, pady=2)
-        ttk.Label(frame_secc, text="Eje:").grid(row=0, column=2, padx=5, pady=2)
-        ttk.Combobox(frame_secc, textvariable=self.corte_eje_bast, values=["X", "Y"], width=5).grid(row=0, column=3, padx=5, pady=2)
-        ttk.Button(frame_secc, text="Calcular Sección", command=self.calcular_seccion_bastidor).grid(row=0, column=4, padx=5, pady=2)
-        ttk.Button(frame_secc, text="DCL Nodos", command=self.mostrar_dcl_nodos_bastidor).grid(row=0, column=5, padx=5, pady=2)
+        frame_secc = ttk.LabelFrame(frame_arm, text="Método de Secciones", padding="5 5 5 5")
+        frame_secc.pack(fill="x", pady=3)
+        frame_secc.columnconfigure(1, weight=1)
+        frame_secc.columnconfigure(3, weight=1)
+        frame_secc.columnconfigure(4, weight=1)
+        frame_secc.columnconfigure(5, weight=1)
+        ttk.Label(frame_secc, text="Corte:").grid(row=0, column=0, padx=2, pady=1, sticky="w")
+        ttk.Entry(frame_secc, textvariable=self.corte_valor_bast, width=8).grid(row=0, column=1, padx=2, pady=1, sticky="ew")
+        ttk.Label(frame_secc, text="Eje:").grid(row=0, column=2, padx=2, pady=1, sticky="w")
+        ttk.Combobox(frame_secc, textvariable=self.corte_eje_bast, values=["X", "Y"], width=5).grid(row=0, column=3, padx=2, pady=1, sticky="ew")
+        ttk.Button(frame_secc, text="Calcular Sección", command=self.calcular_seccion_bastidor).grid(row=0, column=4, padx=5, pady=1, sticky="ew")
+        ttk.Button(frame_secc, text="DCL Nodos", command=self.mostrar_dcl_nodos_bastidor).grid(row=0, column=5, padx=5, pady=1, sticky="ew")
 
-        ttk.Button(frame_arm, text="Calcular Bastidor", command=self.calcular_bastidor).pack(pady=10)
+        bast_buttons_frame = ttk.Frame(frame_arm)
+        bast_buttons_frame.pack(fill="x", pady=5)
+        bast_buttons_frame.columnconfigure(0, weight=1)
+        bast_buttons_frame.columnconfigure(1, weight=1)
+        ttk.Button(bast_buttons_frame, text="Calcular Bastidor", command=self.calcular_bastidor).grid(row=0, column=0, padx=5, pady=5, sticky="ew")
 
         # Pequeños botones de ayuda y ejemplo
-        frame_ayuda = ttk.Frame(frame_arm)
-        frame_ayuda.pack(pady=2)
-        ttk.Button(frame_ayuda, text="Ayuda", width=8, command=self.mostrar_instrucciones_bastidor).pack(side="left", padx=2)
-        ttk.Button(frame_ayuda, text="Ejemplo", width=8, command=self.cargar_ejemplo_bastidor).pack(side="left", padx=2)
+        frame_ayuda_bast = ttk.Frame(bast_buttons_frame)
+        frame_ayuda_bast.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        frame_ayuda_bast.columnconfigure(0, weight=1)
+        frame_ayuda_bast.columnconfigure(1, weight=1)
+        ttk.Button(frame_ayuda_bast, text="Ayuda", command=self.mostrar_instrucciones_bastidor).grid(row=0, column=0, padx=2, pady=2, sticky="ew")
+        ttk.Button(frame_ayuda_bast, text="Ejemplo", command=self.cargar_ejemplo_bastidor).grid(row=0, column=1, padx=2, pady=2, sticky="ew")
 
         # Canvas para representar el bastidor
-        self.canvas_bastidor = tk.Canvas(frame_arm, width=600, height=400, bg="white")
-        self.canvas_bastidor.pack(fill="both", expand=True)
+        self.canvas_bastidor = tk.Canvas(frame_arm, bg="white", highlightbackground="gray", highlightthickness=1)
+        self.canvas_bastidor.pack(fill="both", expand=True, padx=5, pady=5)
         self.canvas_bastidor.bind("<Configure>", lambda e: self.dibujar_bastidor())
 
     def agregar_forma(self):
@@ -1914,15 +2053,21 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         """Permite agregar una forma haciendo clic en el lienzo."""
         try:
             tipo = self.tipo_forma.get()
-            ancho = float(self.ancho_forma.get())
-            alto = float(self.alto_forma.get())
+            ancho = float(self.ancho_forma.get()) if self.ancho_forma.get() else 50
+            alto = float(self.alto_forma.get()) if self.alto_forma.get() else 50
 
             x = event.x
             y = event.y
 
             canvas = event.widget
 
-            self.formas.append((tipo, x, y, ancho, alto))
+            if tipo == "Círculo":
+                self.formas.append((tipo, x, y, ancho, alto))
+            else: # Rectángulo o Triángulo, asumir el clic como esquina superior izquierda para visual
+                # Ajustamos 'y' para que el punto del clic sea la esquina superior izquierda del rectángulo o el vértice superior del triángulo.
+                # Al dibujar, 'create_rectangle' usa la esquina superior izquierda. Para el triángulo también queremos esa lógica visual.
+                self.formas.append((tipo, x, y, ancho, alto)) 
+
             self.redibujar_formas()
             self.log(f"Forma agregada: {tipo} en ({x}, {y})\n", "data")
         except ValueError as e:
@@ -1942,11 +2087,18 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             if tipo == "Rectángulo":
                 area = ancho * alto
                 cx = x + ancho/2
-                cy = y + alto/2
+                # Para un rectángulo dibujado desde la esquina superior izquierda (x,y), el centroide es (x + ancho/2, y + alto/2)
+                cy = y + alto/2 
             elif tipo == "Triángulo":
                 area = ancho * alto / 2
-                cx = x + ancho/3
-                cy = y + alto/3
+                # Para un triángulo con vértice superior en (x,y), y base de ancho 'ancho' a una distancia 'alto' hacia abajo
+                # El centroide está a 1/3 de la altura desde la base.
+                # Si (x,y) es el vértice superior: (x,y), (x - ancho/2, y+alto), (x + ancho/2, y+alto)
+                # CG: (x, y + 2*alto/3) desde el vértice superior (x,y)
+                # O si (x,y) es esquina superior izquierda y base abajo: (x,y+alto), (x+ancho/2,y), (x+ancho,y+alto)
+                # CG: (x + ancho/2, y + 2*alto/3)
+                cx = x + ancho/2 # Suponiendo que 'x' es el punto medio horizontal de la base
+                cy = y + (2 * alto / 3) # Suponiendo que 'y' es la parte superior del triángulo (vértice)
             elif tipo == "Círculo":
                 area = np.pi * (ancho/2)**2
                 cx = x
@@ -1974,10 +2126,15 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         for forma in self.formas:
             tipo, x, y, ancho, alto = forma
             if tipo == "Rectángulo":
+                # plt.Rectangle toma (x,y) como esquina inferior izquierda
                 ax.add_patch(plt.Rectangle((x, y), ancho, alto, fill=False))
             elif tipo == "Triángulo":
-                ax.add_patch(plt.Polygon([(x, y), (x+ancho, y), (x, y+alto)], fill=False))
+                # plt.Polygon toma una lista de vértices. Necesitamos definir los 3 vértices.
+                # Si (x,y) es el vértice superior y la base es horizontal en (y+alto)
+                vertices = [(x, y), (x - ancho/2, y + alto), (x + ancho/2, y + alto)]
+                ax.add_patch(plt.Polygon(vertices, fill=False))
             elif tipo == "Círculo":
+                # plt.Circle toma (x,y) como centro y luego el radio
                 ax.add_patch(plt.Circle((x, y), ancho/2, fill=False))
         
         ax.plot(cg_x, cg_y, 'ro', markersize=10)
@@ -1985,8 +2142,8 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         
         ax.set_aspect('equal', 'box')
         # Ajustar límites para abarcar una mesa de hasta 100x50 con un pequeño margen
-        ax.set_xlim(-10, 110)
-        ax.set_ylim(-10, 60)
+        ax.set_xlim(min(0, min(f[1] for f in self.formas if f[1] is not None) - 10), max(100, max(f[1]+f[3] for f in self.formas if f[1] is not None) + 10))
+        ax.set_ylim(min(0, min(f[2] for f in self.formas if f[2] is not None) - 10), max(50, max(f[2]+f[4] for f in self.formas if f[2] is not None) + 10))
         ax.set_title('Formas Irregulares y Centro de Gravedad')
         
         plt.tight_layout()
@@ -2000,15 +2157,20 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         if tipo == "Rectángulo":
             canvas.create_rectangle(x, y, x + ancho, y + alto, outline="black")
         elif tipo == "Triángulo":
+            # Si x,y es la esquina superior izquierda del bounding box
+            # Vértices: (x, y+alto), (x+ancho/2, y), (x+ancho, y+alto)
             canvas.create_polygon(x, y + alto, x + ancho / 2, y, x + ancho, y + alto, outline="black", fill="")
         elif tipo == "Círculo":
-            canvas.create_oval(x - ancho / 2, y - ancho / 2, x + ancho / 2, y + ancho / 2, outline="black")
+            # (x,y) es el centro
+            radius = ancho / 2
+            canvas.create_oval(x - radius, y - radius, x + radius, y + radius, outline="black")
 
     def dibujar_cuadricula(self, canvas):
         """Dibuja una cuadrícula de fondo en el canvas."""
         canvas.delete("grid")
-        width = int(canvas["width"])
-        height = int(canvas["height"])
+        width = int(canvas.winfo_width()) if canvas.winfo_width() > 1 else int(canvas['width']) # Usar winfo_width/height para el tamaño real
+        height = int(canvas.winfo_height()) if canvas.winfo_height() > 1 else int(canvas['height'])
+
         for x in range(0, width, self.grid_spacing):
             canvas.create_line(x, 0, x, height, fill="#e0e0e0", tags="grid")
         for y in range(0, height, self.grid_spacing):
@@ -2034,7 +2196,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
     def agregar_nodo(self):
         x = self.nodo_x.get()
         y = self.nodo_y.get()
-        apoyo = self.nodo_apoyo.get()
+        apoyo = self.nodo_apoyo_arm.get() # Usar la variable corregida
         self.nodos_arm.append({'id': self.id_nodo_actual, 'x': x, 'y': y, 'apoyo': apoyo})
         self.log(f"Nodo {self.id_nodo_actual} agregado en ({x}, {y})\n", "data")
         self.id_nodo_actual += 1
@@ -2501,9 +2663,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                             ax.arrow(nodo['x'], nodo['y'], 0, signy*arrow_len,
                                      color='orange', head_width=0.1,
                                      length_includes_head=True)
-                            ax.text(nodo['x'] + 0.05, nodo['y'] + signy*arrow_len,
-                                    f"Ry={ry:.1f}", color='orange', ha='left',
-                                    va='bottom' if signy > 0 else 'top')
+                            ax.text(0.1, (1 if ry > 0 else -1)*arrow_len*1.1,f"{abs(ry):.1f}",color='orange',ha='center',va='center')
             ax.axhline(corte, color='red', linestyle='--')
             for m in miembros:
                 n1 = node_lookup[m['inicio']]
@@ -2827,15 +2987,19 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         for carg in self.cargas_bast:
             nodo = next(n for n in self.nodos_bast if n['id']==carg['nodo'])
             x = nodo['x'] * self.escala_bast + self.offset_x_bast
-            y = self.offset_y_bast - nodo['y'] * self.escala_bast
+            y = nodo['y'] * self.escala_bast + self.offset_y_bast
 
             fx = carg['Fx']
             fy = carg['Fy']
             mag = (fx**2 + fy**2) ** 0.5
             if mag > 0:
                 ux, uy = fx / mag, fy / mag
-                c.create_line(x, y, x + ux * arrow_len, y - uy * arrow_len, arrow=tk.LAST, fill='green', width=2, tags="carga")
-                c.create_text(x + ux * arrow_len + 15 * ux, y - uy * arrow_len - 15 * uy, text=f"{mag:.1f} N", fill='green', font=("Arial", 8, "bold"), tags="carga_mag")
+                # y-uy*arrow_len porque el origen y está invertido en canvas
+                c.create_line(x, self.offset_y_bast - nodo['y'] * self.escala_bast, 
+                              x + ux * arrow_len, self.offset_y_bast - nodo['y'] * self.escala_bast - uy * arrow_len, 
+                              arrow=tk.LAST, fill='green', width=2, tags="carga")
+                c.create_text(x + ux * arrow_len + 15 * ux, self.offset_y_bast - nodo['y'] * self.escala_bast - uy * arrow_len - 15 * uy, 
+                              text=f"{mag:.1f} N", fill='green', font=("Arial", 8, "bold"), tags="carga_mag")
 
         if hasattr(self, 'reacciones_bast'):
             reaction_arrow_len = 25
@@ -3120,25 +3284,78 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         """Devuelve el índice de la forma que contiene el punto (x, y) o None."""
         for i, (tipo, fx, fy, ancho, alto) in enumerate(self.formas):
             if tipo == "Rectángulo":
+                # Rectangle(x, y, width, height) donde (x,y) es la esquina inferior izquierda
+                # Convertir a (x,y) de la esquina superior izquierda si se almacena así para el canvas
+                # Si se almacena como esquina superior izquierda, y = y_superior
+                # Entonces el rango es y_superior a y_superior + alto
+                # Para un punto (x_click, y_click)
                 if fx <= x <= fx + ancho and fy <= y <= fy + alto:
                     return i
             elif tipo == "Triángulo":
+                # Asumiendo que el triángulo se almacena como (x, y) del vértice superior y (ancho, alto)
+                # La base está en y+alto, y el ancho se extiende de x-ancho/2 a x+ancho/2
+                # O si (x,y) es la esquina superior izquierda del bounding box:
+                # Vértices: (x, y+alto), (x+ancho/2, y), (x+ancho, y+alto)
+                # Para el clic, verificar dentro del bounding box (x a x+ancho, y a y+alto)
                 if fx <= x <= fx + ancho and fy <= y <= fy + alto:
+                    # Una comprobación más precisa para un triángulo rectángulo con la esquina superior izquierda en (fx, fy) y base en y+alto
+                    # O un triángulo isósceles con el vértice superior en (fx, fy) y base en y+alto
+                    # Simplificamos para el clic, considerando el bounding box.
+                    # Si el triángulo tiene su vértice superior en (fx, fy) y base horizontal en (fy+alto)
+                    # puntos: (fx,fy), (fx - ancho/2, fy+alto), (fx + ancho/2, fy+alto)
+                    # La forma de almacenar y dibujar el triángulo es crucial aquí.
+                    # En la funcion dibujar_forma_canvas, se usa (x, y+alto), (x+ancho/2, y), (x+ancho, y+alto)
+                    # Esto implica que 'x,y' es la esquina superior izquierda del "bounding box" del triángulo.
+                    # Así que el clic debe estar dentro de (x, y) a (x+ancho, y+alto).
+                    # La verificación de punto en triángulo es más compleja para un triángulo genérico,
+                    # pero para este caso simple de un triángulo que ocupa un rectángulo (x,y)-(x+ancho,y+alto),
+                    # y si el clic está dentro del rectángulo, lo seleccionamos.
+                    # Para un triángulo dibujado como (x, y+alto), (x+ancho/2, y), (x+ancho, y+alto)
+                    # La ecuación de la línea que va del vértice superior (x+ancho/2, y) a la esquina inferior izquierda (x, y+alto) es:
+                    # y' - y = ( (y+alto) - y ) / ( x - (x+ancho/2) ) * (x' - (x+ancho/2))
+                    # y' - y = alto / (-ancho/2) * (x' - x - ancho/2)
+                    # similarmente para el lado derecho.
+                    # Para simplificar, si está dentro del rectángulo que lo encierra, lo consideramos.
                     return i
             elif tipo == "Círculo":
-                if (x - fx)**2 + (y - fy)**2 <= (ancho/2)**2:
+                # Asumimos que (fx, fy) es el centro del círculo y ancho/2 es el radio.
+                radius = ancho / 2
+                if (x - fx)**2 + (y - fy)**2 <= radius**2:
                     return i
         return None
 
     def iniciar_accion_formas(self, event):
+        # Primero intentamos seleccionar una forma existente para arrastrar o escalar
         indice = self.obtener_forma_en(event.x, event.y)
         if indice is not None:
-            self.forma_seleccionada = indice
-            _, fx, fy, _, _ = self.formas[indice]
-            self.desplazamiento_x = event.x - fx
-            self.desplazamiento_y = event.y - fy
+            # Si el botón presionado es el izquierdo (para arrastrar)
+            if event.num == 1:
+                self.forma_seleccionada = indice
+                tipo, fx, fy, ancho, alto = self.formas[indice]
+                self.desplazamiento_x = event.x - fx
+                self.desplazamiento_y = event.y - fy # Y debe ser relativa a la esquina superior izquierda
+            # Si el botón presionado es el derecho (para escalar)
+            elif event.num == 3:
+                self.iniciar_escalado_forma(event)
         else:
-            self.colocar_forma(event)
+            # Si no se seleccionó ninguna forma, y es un clic izquierdo, intenta colocar una nueva
+            if event.num == 1:
+                try:
+                    tipo = self.tipo_forma.get()
+                    # Si los campos de ancho/alto están vacíos, usar valores por defecto
+                    ancho_val = float(self.ancho_forma.get()) if self.ancho_forma.get() else 50
+                    alto_val = float(self.alto_forma.get()) if self.alto_forma.get() else 50
+
+                    x_click = event.x
+                    y_click = event.y
+
+                    # Para Rectángulo y Triángulo, (x_click, y_click) es la esquina superior izquierda del bounding box.
+                    # Para Círculo, (x_click, y_click) es el centro.
+                    self.formas.append((tipo, x_click, y_click, ancho_val, alto_val))
+                    self.redibujar_formas()
+                    self.log(f"Forma agregada: {tipo} en ({x_click}, {y_click})\n", "data")
+                except ValueError as e:
+                    messagebox.showerror("Error", f"Valores inválidos: {e}")
 
     def arrastrar_forma(self, event):
         if self.forma_seleccionada is None:
@@ -3153,25 +3370,35 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         self.forma_seleccionada = None
 
     def escalar_forma(self, event):
-        indice = self.obtener_forma_en(event.x, event.y)
-        if indice is None:
+        # Esta función es para el escalado con la rueda del ratón
+        indice_seleccionado = self.obtener_forma_en(event.x, event.y)
+        if indice_seleccionado is None:
             return
-        tipo, x, y, ancho, alto = self.formas[indice]
-        delta = getattr(event, 'delta', 0)
-        if event.num == 5 or delta < 0:
-            factor = 0.9
-        else:
-            factor = 1.1
+        tipo, x, y, ancho, alto = self.formas[indice_seleccionado]
+        
+        # Determinar el factor de escala (rueda arriba = zoom in, rueda abajo = zoom out)
+        # event.delta es 120 o -120 en Windows, event.num 4 o 5 en Linux/macOS
+        factor = 1.1 if (event.delta > 0 or event.num == 4) else 0.9
+        
+        # Calcular nuevas dimensiones
+        nuevo_ancho = max(1, ancho * factor)
+        nuevo_alto = max(1, alto * factor)
+
         if tipo == "Círculo":
-            ancho *= factor
-            alto = ancho
+            # Para círculos, ancho y alto son iguales (diámetro)
+            nuevo_ancho = nuevo_alto = max(nuevo_ancho, nuevo_alto)
+            # El centro (x,y) no cambia.
+            self.formas[indice_seleccionado] = (tipo, x, y, nuevo_ancho, nuevo_alto)
         else:
-            ancho *= factor
-            alto *= factor
-        self.formas[indice] = (tipo, x, y, ancho, alto)
+            # Para rectángulos y triángulos, escalar desde la esquina superior izquierda (x,y)
+            # Esto mantiene la esquina superior izquierda fija y expande hacia la derecha y abajo
+            self.formas[indice_seleccionado] = (tipo, x, y, nuevo_ancho, nuevo_alto)
+            
         self.redibujar_formas()
 
+
     def iniciar_escalado_forma(self, event):
+        # Esta función es para el escalado arrastrando con el botón derecho
         indice = self.obtener_forma_en(event.x, event.y)
         if indice is None:
             return
@@ -3183,38 +3410,64 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         self.alto_inicial = alto
         event.widget.delete("tooltip")
         event.widget.create_text(event.x + 10, event.y - 10,
-                                 text=f"{ancho:.1f} x {alto:.1f}",
+                                 text=f"Ancho: {ancho:.1f}, Alto: {alto:.1f}",
                                  anchor="nw", fill="blue", tags="tooltip")
+
 
     def escalar_forma_drag(self, event):
         if self.forma_escalando is None:
             return
-        tipo, x, y, ancho, alto = self.formas[self.forma_escalando]
-        nuevo_ancho = max(1, self.ancho_inicial + (event.x - self.inicio_escala_x))
-        nuevo_alto = max(1, self.alto_inicial + (event.y - self.inicio_escala_y))
+        tipo, x, y, _, _ = self.formas[self.forma_escalando] # Usamos x,y de la forma original
+        
+        # Calcular el cambio de arrastre desde el inicio del escalado
+        dx = event.x - self.inicio_escala_x
+        dy = event.y - self.inicio_escala_y # Asumimos que arrastrar hacia abajo/derecha aumenta, arriba/izquierda disminuye
+
+        # Calcular nuevas dimensiones basadas en el cambio y las dimensiones iniciales
+        # Asegurarse de que las dimensiones no se hagan demasiado pequeñas (mínimo 1)
+        nuevo_ancho = max(1, self.ancho_inicial + dx)
+        # Para escalado arrastrando el vértice inferior derecho, la altura aumenta si dy es positivo
+        # Si (x,y) es la esquina superior izquierda del rectángulo, y arrastramos el inferior derecho:
+        # la nueva altura sería self.alto_inicial + dy.
+        nuevo_alto = max(1, self.alto_inicial + dy) 
+        
         if tipo == "Círculo":
+            # Para círculos, mantener el ancho y alto iguales (radio)
             nuevo_tam = max(nuevo_ancho, nuevo_alto)
-            nuevo_ancho = nuevo_tam
-            nuevo_alto = nuevo_tam
+            nuevo_ancho = nuevo_alto = nuevo_tam
+        
+        # Actualizar las dimensiones de la forma
         self.formas[self.forma_escalando] = (tipo, x, y, nuevo_ancho, nuevo_alto)
+        
         self.redibujar_formas()
+        
+        # Actualizar el tooltip en el canvas
         event.widget.delete("tooltip")
         event.widget.create_text(event.x + 10, event.y - 10,
-                                 text=f"{nuevo_ancho:.1f} x {nuevo_alto:.1f}",
+                                 text=f"Ancho: {nuevo_ancho:.1f}, Alto: {nuevo_alto:.1f}",
                                  anchor="nw", fill="blue", tags="tooltip")
+
 
     def finalizar_escalado_forma(self, event):
         if self.forma_escalando is not None:
             event.widget.delete("tooltip")
         self.forma_escalando = None
 
+
     def redibujar_formas(self):
-        for canvas in [self.canvas_formas] + ([self.canvas_ampliado] if hasattr(self, "canvas_ampliado") else []):
-            canvas.delete("all")
-            self.dibujar_cuadricula(canvas)
+        # Asegurarse de que el canvas tenga un tamaño válido antes de dibujar
+        if self.canvas_formas.winfo_width() == 1 or self.canvas_formas.winfo_height() == 1:
+            # Si el canvas aún no está renderizado completamente, esperar y reintentar
+            self.root.after(100, self.redibujar_formas)
+            return
+
+        for canvas_to_draw in [self.canvas_formas] + ([self.canvas_ampliado] if hasattr(self, "canvas_ampliado") else []):
+            canvas_to_draw.delete("all")
+            self.dibujar_cuadricula(canvas_to_draw)
             for tipo, x, y, ancho, alto in self.formas:
-                self.dibujar_forma_canvas(canvas, tipo, x, y, ancho, alto)
+                self.dibujar_forma_canvas(canvas_to_draw, tipo, x, y, ancho, alto)
         self.actualizar_cg_label()
+
 
     def actualizar_cg_label(self):
         if not hasattr(self, "cg_label"):
@@ -3232,8 +3485,9 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                 cy = y + alto / 2
             elif tipo == "Triángulo":
                 area = ancho * alto / 2
-                cx = x + ancho / 3
-                cy = y + alto / 3
+                # CG para triángulo con vértice superior en (x,y) y base en (x +/- ancho/2, y+alto)
+                cx = x + ancho / 2
+                cy = y + (2 * alto / 3) 
             elif tipo == "Círculo":
                 area = np.pi * (ancho / 2) ** 2
                 cx = x
@@ -3262,7 +3516,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
     def ampliar_lienzo_formas(self):
         self.ventana_lienzo = tk.Toplevel(self.root)
         self.ventana_lienzo.title("Lienzo Ampliado")
-        self.canvas_ampliado = tk.Canvas(self.ventana_lienzo, width=800, height=600, bg="white")
+        self.canvas_ampliado = tk.Canvas(self.ventana_lienzo, width=800, height=600, bg="white", highlightbackground="gray", highlightthickness=1)
         self.canvas_ampliado.pack(fill="both", expand=True)
         self.canvas_ampliado.bind("<Button-1>", self.iniciar_accion_formas)
         self.canvas_ampliado.bind("<B1-Motion>", self.arrastrar_forma)
@@ -3274,6 +3528,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         self.canvas_ampliado.bind("<MouseWheel>", self.escalar_forma)
         self.canvas_ampliado.bind("<Button-4>", self.escalar_forma)
         self.canvas_ampliado.bind("<Button-5>", self.escalar_forma)
+        self.canvas_ampliado.bind("<Configure>", lambda e: self.redibujar_formas())
         self.dibujar_cuadricula(self.canvas_ampliado)
 
         # Dibujar formas existentes en ambos lienzos
@@ -3286,48 +3541,85 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         """Carga los datos del Proyecto 3 (Mesa) y muestra su centro de gravedad."""
         self.limpiar_lienzo_formas()
 
-        # Rectángulo representativo de la mesa (100 x 50)
-        mesa_ancho = 100
-        mesa_alto = 50
-        self.formas.append(("Rectángulo", 0, 0, mesa_ancho, mesa_alto))
+        # Las coordenadas de la tabla original son para el CG, no para el vértice superior izquierdo.
+        # Ajustar para que el dibujo se haga desde (0,0) como base de la mesa.
+        # Las coordenadas de los puntos deben ser compatibles con el dibujo de matplotlib.Rectangle(xy, width, height)
+        # donde xy es la esquina inferior izquierda.
+        
+        # Original del problema de la mesa:
+        # Rectángulo 1: 0,0 a 100,2 (x,y,ancho,alto) -> CG (50,1) Area 200
+        self.formas.append(("Rectángulo", 0, 0, 100, 2)) 
+        # Rectángulo 2: 0,2 a 2,50 -> CG (1,26) Area 96
+        self.formas.append(("Rectángulo", 0, 2, 2, 48)) 
+        # Rectángulo 3: 98,2 a 100,50 -> CG (99,26) Area 96
+        self.formas.append(("Rectángulo", 98, 2, 2, 48)) 
+        # Rectángulo 4: 2,48 a 98,50 -> CG (50,49) Area 192
+        self.formas.append(("Rectángulo", 2, 48, 96, 2)) 
+        # Rectángulo 5: 39,23 a 61,27 (hueco) - se resta el área y momentos
+        # El ejercicio original tiene un hueco, pero el simulador actual suma formas.
+        # Para simularlo, podríamos agregar un rectángulo con "masa negativa", pero la implementación actual no lo soporta.
+        # Por ahora, solo se agregarán las formas positivas.
+        # Si se desea un cálculo exacto del CG de la mesa con el hueco, se debe implementar la resta de áreas.
 
-        # Datos del proyecto calculados previamente
-        area_total_proyecto = 746
-        sum_XA_proyecto = 22501
-        sum_YA_proyecto = 12338
+        # Recalcular CG basado en las formas añadidas
+        area_total = 0
+        sum_XA_formas = 0
+        sum_YA_formas = 0
 
-        if area_total_proyecto != 0:
-            cg_x_proyecto = sum_XA_proyecto / area_total_proyecto
-            cg_y_proyecto = sum_YA_proyecto / area_total_proyecto
+        for tipo, x, y, ancho, alto in self.formas:
+            if tipo == "Rectángulo":
+                area = ancho * alto
+                cx = x + ancho / 2
+                cy = y + alto / 2
+            # Añadir otras formas si la mesa las incluyera
+            else:
+                area = 0 # Ignorar otros tipos por ahora
+                cx = 0
+                cy = 0
+
+            area_total += area
+            sum_XA_formas += cx * area
+            sum_YA_formas += cy * area
+
+        if area_total != 0:
+            cg_x_proyecto = sum_XA_formas / area_total
+            cg_y_proyecto = sum_YA_formas / area_total
         else:
             cg_x_proyecto = 0
             cg_y_proyecto = 0
-            self.log("Error: El área total del proyecto es cero, no se puede calcular el CG.\n", "error")
+            self.log("Error: El área total de las formas añadidas es cero, no se puede calcular el CG.\n", "error")
 
-        self.cg_label.config(text=f"CG Proyecto 3: ({cg_x_proyecto:.2f}, {cg_y_proyecto:.2f})")
+
+        self.cg_label.config(text=f"CG Mesa (Cal.): ({cg_x_proyecto:.2f}, {cg_y_proyecto:.2f})")
         self.redibujar_formas()
 
-        self.log("\n\U0001F4CA Datos del Proyecto 3 (Mesa) cargados:\n", "title")
-        self.log(f"Centro de Gravedad calculado: X={cg_x_proyecto:.2f}, Y={cg_y_proyecto:.2f}\n", "data")
+        self.log("\n\U0001F4CA Datos del Proyecto 3 (Mesa) cargados y calculados:\n", "title")
+        self.log(f"Centro de Gravedad calculado (según formas añadidas): X={cg_x_proyecto:.2f}, Y={cg_y_proyecto:.2f}\n", "data")
         self.log("Se ha agregado un rect\u00e1ngulo representativo de la forma exterior de la mesa.\n", "info")
-        self.log("Nota: El c\u00e1lculo considera las \u00e1reas compuestas seg\u00fan el documento.\n", "info")
+        self.log("Nota: Si el proyecto original incluye huecos, esta simulación actual solo suma las áreas positivas. Para un cálculo con huecos se necesitaría una implementación de resta de áreas.\n", "info")
 
+        # Dibujar las formas y el CG calculado en el matplotlib
         self.dibujar_formas_irregulares(cg_x_proyecto, cg_y_proyecto)
+
 
     def cargar_cg_solar(self):
         """Carga los datos predefinidos del centro de gravedad para la figura 'Solar'."""
         self.limpiar_lienzo_formas()
 
+        # Las formas para "Solar" no están definidas en el documento, solo el CG final.
+        # Si se desea una representación visual completa, se necesitarían las geometrías de las partes.
+        # Por ahora, solo se dibujará el punto del CG.
         cg_x_solar = 5.0
         cg_y_solar = 6.55
 
         self.cg_label.config(text=f"CG Solar: ({cg_x_solar:.2f}, {cg_y_solar:.2f})")
 
         self.log("\n\U0001F4CA Datos del Centro de Gravedad (Solar) cargados:\n", "title")
-        self.log(f"Centro de Gravedad calculado: X={cg_x_solar:.2f} cm, Y={cg_y_solar:.2f} cm\n", "data")
+        self.log(f"Centro de Gravedad: X={cg_x_solar:.2f} cm, Y={cg_y_solar:.2f} cm\n", "data")
         self.log("Se ha cargado y visualizado el Centro de Gravedad de la figura 'Solar'.\n", "info")
-        self.log("Nota: La visualizaci\u00f3n dibuja solo el punto del CG, no las formas individuales. Si tuvieras los detalles de las formas que componen 'Solar', podr\u00edas a\u00f1adirlas aqu\u00ed.\n", "info")
+        self.log("Nota: La visualizaci\u00f3n dibuja solo el punto del CG. Si tuvieras los detalles de las formas que componen 'Solar', podr\u00edas a\u00f1adirlas aqu\u00ed.\n", "info")
 
+        # Dibujar solo el punto del CG en Matplotlib, ya que no se tienen las formas componentes
         fig, ax = plt.subplots(figsize=(8, 8))
         ax.plot(cg_x_solar, cg_y_solar, 'ro', markersize=10, label='Centro de Gravedad')
         ax.text(cg_x_solar + 0.5, cg_y_solar + 0.5, f'CG ({cg_x_solar:.2f}, {cg_y_solar:.2f})',
@@ -3350,26 +3642,49 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         canvas.get_tk_widget().pack(fill="both", expand=True)
         self.ultima_figura = fig
 
+
     def cargar_proyecto_mancuerna_cg(self):
         """Carga los datos del Centro de Gravedad de la figura de mancuerna."""
         self.limpiar_lienzo_formas()
 
-        # Coordenadas del Centro de Gravedad calculadas para la mancuerna (seg\u00fan la imagen)
+        # Coordenadas del Centro de Gravedad calculadas para la mancuerna (según la imagen)
         cg_x_mancuerna = 4.22
         cg_y_mancuerna = 14.02
 
         self.cg_label.config(text=f"CG Mancuerna: ({cg_x_mancuerna:.2f}, {cg_y_mancuerna:.2f})")
 
         self.log("\n\U0001F4CA Datos del Centro de Gravedad (Mancuerna) cargados:\n", "title")
-        self.log(f"Centro de Gravedad calculado: X={cg_x_mancuerna:.2f}, Y={cg_y_mancuerna:.2f}\n", "data")
+        self.log(f"Centro de Gravedad: X={cg_x_mancuerna:.2f}, Y={cg_y_mancuerna:.2f}\n", "data")
         self.log("Se muestra el CG calculado. La visualizaci\u00f3n de la forma completa de la 'Mancuerna' no se dibuja autom\u00e1ticamente en este caso, ya que no se especificaron las formas individuales que la componen en el documento original. Si deseas que se dibuje, necesitar\u00eda los detalles de las formas (rect\u00e1ngulos, c\u00edrculos, etc.) que la componen y sus posiciones.\n", "info")
 
-        # Dibuja el punto del centro de gravedad en la gr\u00e1fica existente
-        self.dibujar_formas_irregulares(cg_x_mancuerna, cg_y_mancuerna)
+        # Dibujar solo el punto del CG en Matplotlib
+        fig, ax = plt.subplots(figsize=(8, 8))
+        ax.plot(cg_x_mancuerna, cg_y_mancuerna, 'ro', markersize=10, label='Centro de Gravedad')
+        ax.text(cg_x_mancuerna + 0.5, cg_y_mancuerna + 0.5, f'CG ({cg_x_mancuerna:.2f}, {cg_y_mancuerna:.2f})',
+                ha='left', va='bottom', color='red')
+
+        # Ajustar límites para una mejor visualización de este CG específico
+        ax.set_aspect('equal', 'box')
+        ax.set_xlim(0, 20)
+        ax.set_ylim(0, 30)
+        ax.set_title('Centro de Gravedad de la Mancuerna')
+        ax.set_xlabel('Coordenada X (cm)')
+        ax.set_ylabel('Coordenada Y (cm)')
+        ax.grid(True, linestyle='--', alpha=0.7)
+        ax.legend()
+
+        plt.tight_layout()
+        for widget in self.frame_grafico.winfo_children():
+            widget.destroy()
+        canvas = FigureCanvasTkAgg(fig, master=self.frame_grafico)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill="both", expand=True)
+        self.ultima_figura = fig
+
 
     def crear_seccion_resultados(self, parent):
-        frame_resultados = ttk.LabelFrame(parent, text="Resultados")
-        frame_resultados.pack(fill="both", pady=10, padx=10)
+        frame_resultados = ttk.LabelFrame(parent, text="Resultados", padding="10 10 10 10")
+        frame_resultados.pack(fill="both", expand=True, pady=5, padx=5) # Ajustar padding y expansión
 
         btn_clear = ttk.Button(
             frame_resultados, text="Limpiar Resultados", command=self.limpiar_resultados
@@ -3402,8 +3717,8 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         self.texto_resultado.tag_config("info", foreground="#333333")
 
     def crear_seccion_graficos(self, parent):
-        self.frame_grafico = ttk.Frame(parent)
-        self.frame_grafico.pack(fill="both", expand=True, pady=10, padx=10)
+        self.frame_grafico = ttk.Frame(parent, padding="5 5 5 5") # Ajustar padding
+        self.frame_grafico.pack(fill="both", expand=True, pady=5, padx=5)
 
     def run(self):
         self.root.mainloop()
