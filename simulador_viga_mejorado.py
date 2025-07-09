@@ -247,15 +247,16 @@ class SimuladorVigaMejorado:
         self.corte_eje_bast = tk.StringVar(value="X")
         # Espaciado de la cuadrícula para el lienzo de formas
         self.grid_spacing = 20
-        self.crear_widgets()
 
         # Variables para deformación axial y térmica
-        self.deform_longitud = tk.DoubleVar(value=2.0)
-        self.deform_area = tk.DoubleVar(value=0.01)  # m^2
-        self.deform_elasticidad = tk.DoubleVar(value=200e9)  # Pa (Acero)
-        self.deform_fuerza_axial = tk.DoubleVar(value=10000)  # N
-        self.deform_coef_termico = tk.DoubleVar(value=12e-6)  # 1/°C (Acero)
-        self.deform_delta_temp = tk.DoubleVar(value=20.0)  # °C
+        self.modulo_young = tk.DoubleVar(value=200.0)  # GPa
+        self.coef_expansion = tk.DoubleVar(value=12e-6)  # /°C
+        self.longitud_inicial_def = tk.DoubleVar(value=2.0)  # m
+        self.area_transversal = tk.DoubleVar(value=500.0)  # mm^2
+        self.fuerza_tension = tk.DoubleVar(value=50.0)  # kN
+        self.cambio_temperatura = tk.DoubleVar(value=30.0)  # °C
+        
+        self.crear_widgets()
         
         # Mostrar mensaje inicial
         self.mostrar_mensaje_inicial()
@@ -337,7 +338,7 @@ class SimuladorVigaMejorado:
         tab_seccion = ttk.Frame(notebook)
         tab_armaduras = ttk.Frame(notebook)
         tab_bastidores = ttk.Frame(notebook)
-        tab_deformacion = ttk.Frame(notebook) # New tab
+        tab_axial_termica = ttk.Frame(notebook) # Nueva pestaña
         tab_result = ttk.Frame(notebook)
 
 
@@ -345,7 +346,7 @@ class SimuladorVigaMejorado:
         notebook.add(tab_seccion, text="🏗️Sección y Formas")
         notebook.add(tab_armaduras, text="🏗️Armaduras")
         notebook.add(tab_bastidores, text="🏗️Bastidores")
-        notebook.add(tab_deformacion, text="🌡️ Deformación Axial/Térmica") # Add to notebook
+        notebook.add(tab_axial_termica, text="⚙️Axial y Térmica") # Añadir nueva pestaña
         notebook.add(tab_result, text="🏗️Resultados")
 
         # Sección configuración y cargas
@@ -370,9 +371,8 @@ class SimuladorVigaMejorado:
         self.crear_seccion_armaduras(tab_armaduras)
         # Bastidores
         self.crear_seccion_bastidores(tab_bastidores)
-
-        # Deformación
-        self.crear_seccion_deformacion(tab_deformacion)
+        # Deformación Axial y Térmica
+        self.crear_seccion_axial_termica(tab_axial_termica) # Llamar a la nueva función
 
         # Resultados y gráficos
         self.crear_seccion_resultados(tab_result)
@@ -521,7 +521,155 @@ class SimuladorVigaMejorado:
             frame_botones.columnconfigure(i, weight=1)
 
         return frame_botones
-    
+
+    def crear_seccion_axial_termica(self, parent):
+        frame_axial_termica = ttk.LabelFrame(parent, text="📏 Deformación Axial y Térmica")
+        frame_axial_termica.pack(fill="x", pady=10, padx=10)
+
+        # Módulo de Young (E)
+        ttk.Label(frame_axial_termica, text="Módulo de Young (E en GPa):").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        ttk.Entry(frame_axial_termica, textvariable=self.modulo_young, width=15).grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+
+        # Coeficiente de expansión térmica (alpha)
+        ttk.Label(frame_axial_termica, text="Coef. Exp. Térmica (α en /°C):").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        ttk.Entry(frame_axial_termica, textvariable=self.coef_expansion, width=15).grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+
+        # Longitud inicial (L0)
+        ttk.Label(frame_axial_termica, text="Longitud Inicial (L0 en m):").grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        ttk.Entry(frame_axial_termica, textvariable=self.longitud_inicial_def, width=15).grid(row=2, column=1, padx=5, pady=5, sticky="ew")
+
+        # Área transversal (A)
+        ttk.Label(frame_axial_termica, text="Área Transversal (A en mm²):").grid(row=3, column=0, padx=5, pady=5, sticky="w")
+        ttk.Entry(frame_axial_termica, textvariable=self.area_transversal, width=15).grid(row=3, column=1, padx=5, pady=5, sticky="ew")
+
+        # Fuerza de tensión (F)
+        ttk.Label(frame_axial_termica, text="Fuerza de Tensión (F en kN):").grid(row=4, column=0, padx=5, pady=5, sticky="w")
+        ttk.Entry(frame_axial_termica, textvariable=self.fuerza_tension, width=15).grid(row=4, column=1, padx=5, pady=5, sticky="ew")
+
+        # Cambio de temperatura (Delta T)
+        ttk.Label(frame_axial_termica, text="Cambio de Temperatura (ΔT en °C):").grid(row=5, column=0, padx=5, pady=5, sticky="w")
+        ttk.Entry(frame_axial_termica, textvariable=self.cambio_temperatura, width=15).grid(row=5, column=1, padx=5, pady=5, sticky="ew")
+
+        # Botones de acción
+        ttk.Button(frame_axial_termica, text="Calcular Deformación", command=self.calcular_deformacion_axial_termica).grid(row=6, column=0, padx=5, pady=10, sticky="ew")
+        ttk.Button(frame_axial_termica, text="Limpiar Valores", command=self.limpiar_deformacion_axial_termica).grid(row=6, column=1, padx=5, pady=10, sticky="ew")
+
+        # Configurar la expansión de columnas
+        frame_axial_termica.columnconfigure(0, weight=1)
+        frame_axial_termica.columnconfigure(1, weight=1)
+
+
+    def calcular_deformacion_axial_termica(self):
+        try:
+            # Obtener valores de las variables y convertir a unidades base SI
+            E_gpa = self.modulo_young.get()
+            alpha = self.coef_expansion.get()
+            L0_m = self.longitud_inicial_def.get()
+            A_mm2 = self.area_transversal.get()
+            F_kn = self.fuerza_tension.get()
+            delta_T_c = self.cambio_temperatura.get()
+
+            # Conversiones
+            E = E_gpa * 1e9  # GPa a Pa (N/m²)
+            A = A_mm2 * 1e-6  # mm² a m²
+            F = F_kn * 1e3  # kN a N
+
+            # Calcular deformación axial
+            if A == 0 or E == 0:
+                messagebox.showerror("Error de Cálculo", "El área transversal o el Módulo de Young no pueden ser cero.")
+                return
+            delta_axial = (F * L0_m) / (A * E)
+
+            # Calcular deformación térmica
+            delta_termica = alpha * L0_m * delta_T_c
+
+            # Calcular deformación total
+            delta_total = delta_axial + delta_termica
+
+            # Calcular tensión
+            sigma = F / A
+
+            # Mostrar resultados
+            self.log(f"\n{'='*50}\n", "title")
+            self.log("📐 CÁLCULO DE DEFORMACIÓN AXIAL Y TÉRMICA:\n", "title")
+            self.log(f"{'='*50}\n", "title")
+            self.log(f"Parámetros:\n", "info")
+            self.log(f"  E = {E_gpa:.2f} GPa\n", "data")
+            self.log(f"  α = {alpha:.2e} /°C\n", "data")
+            self.log(f"  L0 = {L0_m:.2f} m\n", "data")
+            self.log(f"  A = {A_mm2:.2f} mm²\n", "data")
+            self.log(f"  F = {F_kn:.2f} kN\n", "data")
+            self.log(f"  ΔT = {delta_T_c:.2f} °C\n", "data")
+            self.log("\nResultados:\n", "info")
+            self.log(f"  Deformación Axial (δ_axial): {delta_axial:.6e} m\n", "data")
+            self.log(f"  Deformación Térmica (δ_termica): {delta_termica:.6e} m\n", "data")
+            self.log(f"  Deformación Total (δ_total): {delta_total:.6e} m\n", "success")
+            self.log(f"  Tensión (σ): {sigma:.2f} Pa\n", "success")
+            self.log(f"  δ_total + σ: {delta_total + sigma:.6e} (unidad combinada, no física)\n", "success")
+
+            # Opcional: Graficar la deformación
+            self.graficar_deformacion(L0_m, delta_axial, delta_termica, delta_total, sigma)
+
+        except ValueError:
+            messagebox.showerror("Error de Entrada", "Por favor, introduce valores numéricos válidos en todos los campos.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Ocurrió un error inesperado: {e}")
+
+    def limpiar_deformacion_axial_termica(self):
+        self.modulo_young.set(200.0)
+        self.coef_expansion.set(12e-6)
+        self.longitud_inicial_def.set(2.0)
+        self.area_transversal.set(500.0)
+        self.fuerza_tension.set(50.0)
+        self.cambio_temperatura.set(30.0)
+        self.log("Valores de deformación axial y térmica limpiados.\n", "warning")
+        # Limpiar el gráfico también
+        for widget in self.frame_grafico.winfo_children():
+            widget.destroy()
+
+
+    def graficar_deformacion(self, L0, d_axial, d_termica, d_total, sigma):
+        """Grafica la barra y su deformación."""
+        for widget in self.frame_grafico.winfo_children():
+            widget.destroy()
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+        plt.style.use("seaborn-v0_8-whitegrid")
+
+        # Dibujar la barra original
+        ax.plot([0, L0], [0, 0], 'k-', linewidth=5, label='Longitud Inicial (L0)')
+
+        # Dibujar la barra deformada axialmente
+        ax.plot([0, L0 + d_axial * 1000], [0.1, 0.1], 'b--', linewidth=2, label=f'Deformación Axial (δ_axial)')
+        ax.text(L0 + d_axial * 1000, 0.1, f'{d_axial*1e6:.2f} µm', color='blue', ha='left', va='center')
+
+        # Dibujar la barra deformada térmicamente
+        ax.plot([0, L0 + d_termica * 1000], [-0.1, -0.1], 'g-.', linewidth=2, label=f'Deformación Térmica (δ_termica)')
+        ax.text(L0 + d_termica * 1000, -0.1, f'{d_termica*1e6:.2f} µm', color='green', ha='left', va='center')
+
+        # Dibujar la barra con deformación total
+        ax.plot([0, L0 + d_total * 1000], [0.2, 0.2], 'r-', linewidth=3, label=f'Deformación Total (δ_total)')
+        ax.text(L0 + d_total * 1000, 0.2, f'{d_total*1e6:.2f} µm', color='red', ha='left', va='center')
+
+        # Flecha de fuerza
+        ax.arrow(L0 / 2, 0.5, 0, -0.2, head_width=0.05*L0, head_length=0.05, fc='purple', ec='purple', width=0.002)
+        ax.text(L0 / 2, 0.6, f'Fuerza Aplicada', ha='center', va='bottom', color='purple')
+
+        ax.set_xlim(-0.1 * L0, L0 + d_total * 1000 + 0.1 * L0)
+        ax.set_ylim(-0.5, 0.7)
+        ax.set_xlabel('Longitud (m)')
+        ax.set_ylabel('Visualización Arbitraria')
+        ax.set_title('Deformación Axial y Térmica de una Barra')
+        ax.legend(loc='upper right')
+        ax.grid(True, linestyle='--', alpha=0.7)
+        ax.axvline(L0, color='gray', linestyle=':', label='Longitud Original')
+
+        plt.tight_layout()
+        canvas = FigureCanvasTkAgg(fig, master=self.frame_grafico)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill="both", expand=True)
+        self.ultima_figura = fig
+            
     def mostrar_mensaje_inicial(self):
         mensaje = "Bienvenido al Simulador de Viga Mecánica. Use los controles para configurar la viga y las cargas."
         self.log(mensaje, "info")
@@ -1291,13 +1439,13 @@ class SimuladorVigaMejorado:
         self.cargas_bast.clear()
         self.id_nodo_bast = 1
 
-        # Restablecer variables de deformación
-        self.deform_longitud.set(2.0)
-        self.deform_area.set(0.01)
-        self.deform_elasticidad.set(200e9)
-        self.deform_fuerza_axial.set(10000)
-        self.deform_coef_termico.set(12e-6)
-        self.deform_delta_temp.set(20.0)
+        # Limpiar variables de deformación axial y térmica
+        self.modulo_young.set(200.0)
+        self.coef_expansion.set(12e-6)
+        self.longitud_inicial_def.set(2.0)
+        self.area_transversal.set(500.0)
+        self.fuerza_tension.set(50.0)
+        self.cambio_temperatura.set(30.0)
 
         # Limpiar área de resultados
         self.limpiar_resultados()
@@ -1393,6 +1541,23 @@ I_total = Σ(I_barra_i + A_i * d_i²)
    y: Posición del centroide de cada rectángulo desde la base
    I_barra: Momento de inercia de cada rectángulo alrededor de su propio centroide (bh³/12)
    d: Distancia del centroide de cada rectángulo al centro de gravedad total (y_cg)
+
+---
+➡️ DEFORMACIÓN AXIAL Y TÉRMICA:
+• **Deformación Axial (δ_axial)**: Cambio de longitud debido a una fuerza axial.
+  Fórmula: δ_axial = (F * L0) / (A * E)
+  Donde: F = Fuerza, L0 = Longitud inicial, A = Área, E = Módulo de Young.
+
+• **Deformación Térmica (δ_termica)**: Cambio de longitud debido a un cambio de temperatura.
+  Fórmula: δ_termica = α * L0 * ΔT
+  Donde: α = Coeficiente de expansión térmica, L0 = Longitud inicial, ΔT = Cambio de temperatura.
+
+• **Deformación Total (δ_total)**: Suma de la deformación axial y térmica.
+  Fórmula: δ_total = δ_axial + δ_termica
+
+• **Tensión (σ)**: Fuerza por unidad de área.
+  Fórmula: σ = F / A
+  Donde: F = Fuerza, A = Área.
 
 ---
 🔹 ARMADURAS/BASTIDORES (PRÓXIMAMENTE)
@@ -2950,70 +3115,6 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             "Si el bastidor es indeterminado o inestable, el programa mostrará una advertencia y los resultados pueden no ser únicos."
         )
         messagebox.showinfo("Instrucciones Bastidores", texto)
-
-    def crear_seccion_deformacion(self, parent):
-        """Crea la sección para cálculos de deformación axial y térmica."""
-        parent.columnconfigure(0, weight=1)
-        parent.columnconfigure(1, weight=1)
-
-        frame_props = ttk.LabelFrame(parent, text="⚙️ Propiedades y Geometría")
-        frame_props.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-
-        ttk.Label(frame_props, text="Longitud (L) [m]:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        ttk.Entry(frame_props, textvariable=self.deform_longitud, width=12).grid(row=0, column=1, padx=5, pady=5)
-
-        ttk.Label(frame_props, text="Área (A) [m²]:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        ttk.Entry(frame_props, textvariable=self.deform_area, width=12).grid(row=1, column=1, padx=5, pady=5)
-
-        ttk.Label(frame_props, text="Módulo de Elasticidad (E) [Pa]:").grid(row=2, column=0, padx=5, pady=5, sticky="w")
-        ttk.Entry(frame_props, textvariable=self.deform_elasticidad, width=12).grid(row=2, column=1, padx=5, pady=5)
-
-        ttk.Label(frame_props, text="Coef. Expansión Térmica (α) [1/°C]:").grid(row=3, column=0, padx=5, pady=5, sticky="w")
-        ttk.Entry(frame_props, textvariable=self.deform_coef_termico, width=12).grid(row=3, column=1, padx=5, pady=5)
-
-        frame_cargas = ttk.LabelFrame(parent, text="🌡️ Cargas Axiales y Térmicas")
-        frame_cargas.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
-
-        ttk.Label(frame_cargas, text="Fuerza Axial (P) [N]:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        ttk.Entry(frame_cargas, textvariable=self.deform_fuerza_axial, width=12).grid(row=0, column=1, padx=5, pady=5)
-
-        ttk.Label(frame_cargas, text="Cambio de Temperatura (ΔT) [°C]:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        ttk.Entry(frame_cargas, textvariable=self.deform_delta_temp, width=12).grid(row=1, column=1, padx=5, pady=5)
-
-        frame_botones = ttk.Frame(parent)
-        frame_botones.grid(row=1, column=0, columnspan=2, pady=10)
-
-        btn_calcular_deform = ttk.Button(frame_botones, text="🧮 Calcular Deformación", style="Action.TButton")
-        btn_calcular_deform.config(command=lambda b=btn_calcular_deform: self.on_button_click(b, self.calcular_deformacion_axial_termica))
-        btn_calcular_deform.pack()
-
-    def calcular_deformacion_axial_termica(self):
-        """Calcula la deformación axial y térmica y muestra los resultados."""
-        try:
-            L = self.deform_longitud.get()
-            A = self.deform_area.get()
-            E = self.deform_elasticidad.get()
-            P = self.deform_fuerza_axial.get()
-            alpha = self.deform_coef_termico.get()
-            delta_T = self.deform_delta_temp.get()
-            if A == 0 or E == 0:
-                messagebox.showerror("Error", "El área (A) y el Módulo de Elasticidad (E) no pueden ser cero.")
-                return
-            delta_P = (P * L) / (A * E)
-            delta_T_val = alpha * delta_T * L
-            delta_total = delta_P + delta_T_val
-            self.log(f"\n{'='*50}\n", "title")
-            self.log("🌡️ CÁLCULO DE DEFORMACIÓN AXIAL Y TÉRMICA:\n", "title")
-            self.log(f"{'='*50}\n", "title")
-            self.log("--- Datos de Entrada ---\n", "info")
-            self.log(f"Longitud (L): {L:.4f} m\n", "data"); self.log(f"Área (A): {A:.6f} m²\n", "data"); self.log(f"Módulo de Elasticidad (E): {E:.2e} Pa\n", "data"); self.log(f"Fuerza Axial (P): {P:.2f} N\n", "data"); self.log(f"Coef. Expansión Térmica (α): {alpha:.2e} 1/°C\n", "data"); self.log(f"Cambio de Temperatura (ΔT): {delta_T:.2f} °C\n", "data")
-            self.log("\n--- Fórmulas ---\n", "info"); self.log("Deformación por Carga (δ_P) = (P * L) / (A * E)\n", "data"); self.log("Deformación por Temperatura (δ_T) = α * ΔT * L\n", "data"); self.log("Deformación Total (δ_total) = δ_P + δ_T\n", "data")
-            self.log("\n--- Resultados ---\n", "title"); self.log(f"Deformación por Carga (δ_P): {delta_P * 1000:.4f} mm\n", "success"); self.log(f"Deformación por Temperatura (δ_T): {delta_T_val * 1000:.4f} mm\n", "success"); self.log(f"Deformación Total (δ_total): {delta_total * 1000:.4f} mm\n", "success")
-            if delta_total > 0: self.log("Resultado: La barra se alarga.\n", "info")
-            elif delta_total < 0: self.log("Resultado: La barra se acorta.\n", "info")
-            else: self.log("Resultado: La barra no cambia su longitud.\n", "info")
-        except Exception as e:
-            messagebox.showerror("Error", f"Error en cálculos de deformación: {e}")
 
     def obtener_forma_en(self, x, y):
         """Devuelve el índice de la forma que contiene el punto (x, y) o None."""
