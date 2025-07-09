@@ -1,121 +1,124 @@
+# 🚀 Simulador de Estructuras Mecánicas (Vigas, Armaduras y Bastidores)
 
-# Cómo está hecho el simulador de viga mecánica
+¡Hola! Este repositorio contiene una potente herramienta interactiva desarrollada en **Python** para analizar el comportamiento de elementos estructurales como vigas, armaduras y bastidores. Es ideal para estudiantes, ingenieros o cualquiera con curiosidad por la mecánica y la resistencia de materiales.
 
-Este repositorio contiene un programa escrito en **Python** para analizar y visualizar el comportamiento de una viga mecánica. Utiliza **Tkinter** para la interfaz gráfica y, si está disponible, el paquete **`ttkbootstrap`** para darle un aspecto mucho más moderno. Las gráficas se generan con `matplotlib`, los cálculos con `numpy` y la vista en 3D con `mpl_toolkits`.
-
-### 1. Estructura del código
-
-El programa está estructurado en una **clase principal llamada `SimuladorVigaMejorado`**, donde se encuentra todo lo relacionado con el simulador. Dentro de esta clase se inicializa la ventana y se organizan todas las pestañas y botones.
+Con una interfaz gráfica intuitiva construida con **Tkinter** (y mejorada visualmente con **`ttkbootstrap`** si lo tienes instalado), el simulador te permite visualizar en tiempo real cómo las cargas y apoyos afectan a una estructura, calcular reacciones, diagramas de fuerzas y hasta propiedades de secciones transversales. Las gráficas se generan con `matplotlib`, y los cálculos avanzados se realizan eficientemente con `numpy`. ¡Incluso incluye una vista 3D!
 
 ---
 
-### 2. Interfaz gráfica (ventana del simulador)
+## 🏗️ ¿Cómo está hecho el simulador?
 
-La ventana está dividida en **tres pestañas principales**:
+El corazón de este programa es una **clase principal `SimuladorVigaMejorado`** que orquesta toda la aplicación. Desde aquí se gestiona la ventana principal, se organizan las distintas pestañas y se conectan todos los botones y campos de entrada con la lógica de cálculo.
 
-* **Configuración y cargas**: aquí se puede cambiar la longitud de la viga, los tipos de apoyos (fijo, móvil o ninguno), y agregar cargas (puntuales o distribuidas).
-* **Sección y formas**: permite calcular propiedades geométricas como el centro de gravedad y momento de inercia. También se pueden dibujar formas irregulares (triángulos, círculos y rectángulos) para analizar cómo afectan.
-* **Resultados**: en esta pestaña se muestran los gráficos, los resultados de las reacciones, los diagramas de momento y cortante, y también la animación 3D si se activa.
+### 1. Interfaz Gráfica (Ventana del Simulador)
+
+La ventana principal está organizada en **seis pestañas bien definidas**, facilitando la navegación y el uso de las diversas funcionalidades:
+
+* **⚙️ Configuración y Cargas**: Aquí puedes definir las propiedades de tu viga (longitud, altura inicial/final) y el tipo de apoyos (fijo, móvil, o ninguno). Además, es el lugar para añadir todas las cargas que actúan sobre ella: puntuales o distribuidas.
+* **🏗️ Sección y Formas**: Permite explorar las propiedades geométricas de secciones transversales (como el centro de gravedad y el momento de inercia). También puedes dibujar y manipular formas irregulares (rectángulos, triángulos, círculos) para analizar su centro de gravedad combinado.
+* **🏗️ Armaduras**: Dedicada al análisis de estructuras tipo celosía. Puedes definir nodos, miembros y cargas para calcular las fuerzas internas en cada barra y las reacciones en los apoyos. Incluye la visualización de los Diagramas de Cuerpo Libre (DCL) de los nodos y la aplicación del método de secciones.
+* **🏗️ Bastidores**: Similar a las armaduras, pero para marcos articulados 2D. Calcula fuerzas en los miembros, reacciones en apoyos y te permite ver el DCL de cada nodo, incluso mostrando la carga estimada por pasador.
+* **⚙️ Axial y Térmica**: Una sección clave para estudiar cómo los materiales se deforman bajo cargas axiales y cambios de temperatura. Calcula la deformación axial, térmica y total, así como la tensión resultante en una barra.
+* **📊 Resultados**: La pestaña donde verás todo lo que el simulador ha calculado: reacciones de la viga, diagramas de fuerza cortante, momento flector y torsión, y la animación 3D de tu viga. También es donde se registra el historial de tus cálculos y advertencias.
+
+### 2. Variables y Entradas del Usuario
+
+El programa utiliza **variables `tk.DoubleVar` y `tk.StringVar`** de Tkinter. Estas variables actúan como puentes, conectando directamente los valores que ingresas en los campos de texto, sliders y menús desplegables de la interfaz con los cálculos internos del programa. Esto garantiza una interacción fluida y en tiempo real.
+
+### 3. Funcionalidades Principales al Detalle
+
+#### ✅ Cargas (Vigas)
+
+* **Cargas Puntuales**: Define su posición exacta y su magnitud (fuerza).
+* **Cargas Distribuidas**: Aplica cargas a lo largo de un segmento de la viga con una intensidad constante. El simulador calcula automáticamente su fuerza equivalente y centroide.
+* Soporta la aplicación de múltiples cargas simultáneamente.
+
+#### ✅ Apoyos (Vigas)
+
+* **Dos apoyos principales (A y B)**: Ubicados en los extremos de la viga.
+* **Un apoyo opcional (C)**: Que puedes colocar en cualquier punto de la viga.
+* Cada apoyo puede ser **Fijo** (restringe movimiento horizontal y vertical) o **Móvil** (restringe solo movimiento vertical), afectando directamente las ecuaciones de equilibrio. También puedes seleccionar "Ninguno" para simular voladizos.
+
+#### ✅ Cálculos que realiza (Vigas)
+
+* **Reacciones en los apoyos**: Calcula las fuerzas verticales y horizontales necesarias para mantener la viga en equilibrio, considerando todas las cargas y el par torsor externo.
+* **Centro de masa**: Determina el punto donde actúa la resultante de todas las cargas aplicadas.
+* **Diagramas**: Genera los diagramas de **fuerza cortante**, **momento flector** y **torsión** a lo largo de la viga, fundamentales para entender las tensiones internas.
+* **Par Torsor (Torque) en cualquier punto**: Puedes introducir una posición específica para obtener el momento torsor interno en ese lugar.
+* **Centro de masa en 3D**: Capacidad para calcular el centroide de una colección de puntos con masa en un espacio tridimensional.
+* **Fuerza equivalente de cargas distribuidas**: Calcula automáticamente la resultante de una carga distribuida para simplificar el análisis.
+* **Propiedades de la sección transversal**: Calcula el **área total**, **centro de gravedad** y **momento de inercia** de secciones compuestas, crucial para el diseño estructural.
+* **Nuevo: Análisis de Armaduras**: Resuelve fuerzas internas en miembros y reacciones en nodos mediante el método de nodos.
+* **Nuevo: Análisis de Bastidores Articulados (Marcos 2D)**: Calcula fuerzas en miembros, reacciones y la carga estimada sobre cada rótula (pasador).
+* **Nuevo: Deformación Axial y Térmica**: Calcula el cambio de longitud y la tensión en una barra debido a la aplicación de una fuerza axial y/o cambios de temperatura.
+
+#### ✅ Representaciones Gráficas
+
+El simulador utiliza `matplotlib` para crear visualizaciones claras y dinámicas:
+
+* **Configuración de la viga**: Muestra la viga con sus cargas aplicadas, los apoyos y las reacciones calculadas. Las cargas distribuidas se representan con su vector equivalente.
+* **Diagramas de esfuerzo**: Gráficos detallados de fuerza cortante, momento flector y torsión.
+* **Vista 3D Rotativa**: Una visualización tridimensional de la viga que puedes animar para girar automáticamente y ver la estructura desde diferentes ángulos.
+* **Vista de la sección transversal**: Dibuja la geometría de la sección y su centro de gravedad.
+* **Armaduras y Bastidores**: Representaciones claras de la estructura con las fuerzas internas coloreadas (azul para tensión, rojo para compresión) y las reacciones en los apoyos. También puedes visualizar el Diagrama de Cuerpo Libre de cada nodo y de secciones transversales.
+* **Gráfica de Deformación Axial/Térmica**: Visualiza la barra y cómo se alarga o acorta debido a las cargas y la temperatura.
+
+### 4. Extras Interesantes
+
+* **Modo 3D**: Permite una inmersión visual con la rotación automática de la viga.
+* **Modo Oscuro/Claro**: Alterna entre un tema visual moderno (flatly) y uno oscuro (darkly) para mayor comodidad visual, especialmente útil en entornos de poca luz.
+* **Ayuda Integrada**: Una guía escrita dentro del propio programa que resume las funcionalidades y las fórmulas clave utilizadas.
+* **Mensajes de Error y Advertencias**: Te notifica si introduces datos incorrectos o si la estructura es inestable/indeterminada.
+* **Ampliación de Gráficas**: Puedes abrir cualquier gráfica en una ventana separada para un análisis más detallado.
+
+### 5. Herramientas de la Interfaz (Botones Clave)
+
+* **🧮 Calcular Reacciones**: Inicia el proceso de cálculo de las fuerzas en los apoyos de la viga.
+* **📍 Calcular Centro de Masa**: Determina el centro de gravedad de las cargas de la viga o de las formas irregulares de la sección.
+* **📊 Mostrar Diagramas**: Genera y visualiza los diagramas de cortante, momento flector y torsión para la viga.
+* **🌀 Par en Punto**: Calcula el par torsor interno en una posición específica de la viga.
+* **🔍 Ampliar Gráfica**: Abre la gráfica activa en una nueva ventana para una visualización más grande.
+* **🎞️ Animar 3D**: Activa la rotación automática de la vista 3D de la viga.
+* **❓ Ayuda**: Despliega la guía de usuario integrada.
+* **🗑️ Limpiar Todo**: Borra todas las cargas, apoyos, y reinicia la configuración de la viga, armadura y bastidor.
+* **🌓/🌞 Modo Oscuro/Claro**: Cambia el tema visual de la aplicación.
+* **🏗️ Calcular Armadura**: Resuelve las fuerzas internas en los miembros de la armadura y las reacciones en sus nodos.
+* **🏗️ Ejemplo Bastidor**: Carga un bastidor predefinido para que puedas ver el programa en acción rápidamente.
 
 ---
 
-### 3. Variables y entradas del usuario
+## 🚀 ¡Empieza a Usar el Simulador!
 
-El programa usa **variables `tk.DoubleVar` y `tk.StringVar`** para guardar valores como la longitud de la viga, magnitud de las cargas, tipo de apoyo, altura inicial/final, etc. Estas variables están conectadas directamente a las entradas del usuario (los campos de texto o sliders que se ven en pantalla).
-
----
-
-### 4. Funcionalidades principales
-
-#### ✅ Cargas
-
-* Se pueden agregar **cargas puntuales** (con posición y magnitud).
-* También se pueden agregar **cargas distribuidas** (entre dos puntos, con una intensidad constante).
-* Soporta múltiples cargas a la vez.
-
-#### ✅ Apoyos
-
-* Tiene **dos apoyos principales (A y B)** y un apoyo opcional (C), que puede colocarse en cualquier parte.
-* Cada apoyo puede ser **fijo, móvil o ninguno**, y esto afecta los cálculos de equilibrio.
-
-#### ✅ Cálculos que realiza
-
-* **Reacciones en los apoyos**, considerando todas las cargas y el par torsor.
-* **Centro de masa** de todas las cargas.
-* **Diagramas de cortante, momento flector y torsión**.
-* **Par torsor (torque) en cualquier punto** y fuerza equivalente de cargas distribuidas.
-* **Centro de masa en 3D** y cálculo de fuerza a partir de un par torsor.
-* También calcula propiedades como el **área total**, **centro de gravedad de la sección transversal**, y **momento de inercia**.
-* **Nuevo**: análisis de **armaduras** mediante el método de nodos.
-* **Nuevo**: análisis de **bastidores articulados** (marcos 2D) con cálculo automático de reacciones.
-* **Extra**: cálculo de fuerzas en un nodo seleccionado aplicando equilibrio en los pasadores.
-* **Nuevo**: cada nodo permite indicar su número de pasadores para estimar la carga sobre cada rótula.
-* **Nuevo**: al calcular un bastidor se muestran automáticamente las fuerzas en todos los nodos y la carga por pasador.
-* **Nuevo**: botones de *Ayuda* y *Ejemplo* en la sección de bastidores para guiar el uso de los pasadores.
+1.  **Clona este repositorio** o descarga el código fuente directamente.
+2.  **Asegúrate de tener Python 3 instalado**. Las dependencias clave son `tkinter` (incluido en la mayoría de las instalaciones de Python), `matplotlib` y `numpy`.
+    * Puedes instalar `matplotlib` y `numpy` con pip:
+        ```bash
+        pip install matplotlib numpy
+        ```
+    * Para una interfaz moderna y pulida, instala opcionalmente `ttkbootstrap`:
+        ```bash
+        pip install ttkbootstrap
+        ```
+3.  **Ejecuta el programa** desde tu terminal:
+    ```bash
+    python3 simulador_viga_mejorado.py
+    ```
+4.  **Configura tu estructura**: Usa las diferentes pestañas para definir la geometría, los apoyos y las cargas.
+5.  **Calcula y visualiza**: Presiona los botones de cálculo en cada sección y revisa los resultados, tanto numéricos en la pestaña de `Resultados` como gráficos en la sección de visualización.
+6.  **Ejemplo de Bastidor con Pasador**: Si quieres ver un ejemplo rápido de cómo funciona el análisis de bastidores con pasadores, puedes ejecutar:
+    ```bash
+    python3 simulador_viga_mejorado.py --ejemplo-pasador
+    ```
 
 ---
 
-### 5. Representaciones gráficas
+## 📱 ¿Y para dispositivos móviles?
 
-El simulador puede dibujar:
+Dado que este simulador está diseñado con `Tkinter`, que es una biblioteca de interfaz gráfica de escritorio, **no funciona directamente en navegadores móviles ni como una aplicación nativa para iOS o Android.**
 
-* La **viga con sus cargas** y sus **reacciones**.
-* Las **cargas distribuidas** también se muestran con su **vector equivalente** y magnitud en el diagrama de cuerpo libre.
-* **Diagramas de fuerza cortante y momento flector**.
-* **Vista 3D rotativa** de la viga con cargas y apoyos.
-* **Vista de la sección transversal** y el centro de gravedad de figuras combinadas.
-* **Armaduras y bastidores** con fuerzas internas coloreadas.
+Sin embargo, hay algunas maneras de usarlo desde tu teléfono:
 
-Usa `matplotlib` para todos estos gráficos y los incrusta dentro de la ventana con `FigureCanvasTkAgg`.
+* **Acceso Remoto (Recomendado)**: Puedes instalar y ejecutar el simulador en tu computadora de escritorio o portátil, y luego usar una aplicación de **escritorio remoto** (como TeamViewer, AnyDesk o la extensión Chrome Remote Desktop) en tu teléfono o tablet para conectarte a tu PC. ¡Así podrás interactuar con el simulador como si estuvieras frente a tu computadora!
+* **Entornos Python en la Nube**: Otra opción es utilizar servicios en la nube que te permitan ejecutar código Python (como Google Colab con ciertas configuraciones para GUI, aunque es más avanzado y experimental para `Tkinter`). De esta forma, el procesamiento ocurre en un servidor y la interfaz podría ser accesible a través del navegador móvil.
 
----
-
-### 6. Extras interesantes
-
-* Tiene un **modo 3D** que rota la viga automáticamente.
-* Cuenta con un **modo oscuro** opcional para la interfaz.
-* Tiene una **opción de ayuda** con una guía escrita dentro del programa.
-* También incluye **mensajes de error y advertencias** si el usuario pone mal los datos.
-* Se pueden **ampliar las gráficas** y ver todo más grande en otra ventana.
-* Incluye funciones para el **centro de masa en 3D**.
-
----
-
-### 7. Estilo visual
-
-El programa puede aprovechar **`ttkbootstrap`** para mostrar un aspecto totalmente renovado (botones planos, colores actuales y fuentes más limpias). Si no se cuenta con esa biblioteca, se usa el tema `clam` de `tkinter` como alternativa.
-El botón de tema permite alternar entre un estilo claro (*flatly*) y uno oscuro (*darkly*).
-
----
-
-### 8. Herramientas de la interfaz
-
-* **🧮 Calcular Reacciones**: resuelve las fuerzas de apoyo de la viga.
-* **📍 Calcular Centro de Masa**: muestra el punto donde actúa la resultante de las cargas.
-* **📊 Mostrar Diagramas**: genera los diagramas de cortante, momento y torsión.
-* **🌀 Par en Punto**: introduce una posición y obtén el torque interno en ese lugar.
-* **🔍 Ampliar Gráfica**: abre las gráficas en una ventana aparte.
-* **🎞️ Animar 3D**: activa una rotación automática de la vista 3D.
-* **❓ Ayuda**: despliega un resumen de uso.
-* **🗑️ Limpiar Todo**: borra todas las cargas y reinicia la configuración.
-* **🌓/🌞 Modo Oscuro/Claro**: alterna el tema visual de la aplicación.
-* **🏗️ Calcular Armadura**: resuelve fuerzas internas en nodos y miembros.
-* **🏗️ Ejemplo Bastidor**: carga un marco de ejemplo y muestra sus resultados.
-
-### 9. Par torsor en un punto
-
-Esta función permite obtener el momento torsor (torque interno) en una posición específica de la viga.
-Solo escribe la coordenada en metros en el cuadro **Par en Punto** y presiona el botón del mismo nombre.
-El valor se mostrará en el registro y en los diagramas.
-
-### 10. Uso
-
-1. Clona este repositorio o descarga el código.
-2. Asegúrate de tener **Python 3**, `tkinter`, `matplotlib` y `numpy` instalados.
-   Para un aspecto moderno instala opcionalmente `ttkbootstrap` con `pip install ttkbootstrap`.
-3. Ejecuta `python3 simulador_viga_mejorado.py`.
-4. Configura la viga y agrega las cargas necesarias.
-5. Usa **Par en Punto** para consultar el momento torsor si lo necesitas.
-6. Revisa los resultados en la pestaña de **Resultados**.
-7. Para ver un ejemplo de bastidor con pasador ejecuta:
-   `python3 simulador_viga_mejorado.py --ejemplo-pasador`.
+¡Espero que disfrutes aprendiendo y experimentando con este simulador! Es una herramienta diseñada con pasión para hacer la mecánica estructural más accesible y visual.
