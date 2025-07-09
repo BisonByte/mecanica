@@ -141,7 +141,7 @@ class SimuladorVigaMejorado:
         self.bootstrap = bootstrap
         self.root.title("Simulador de Viga Mecánica - Versión Completa")
         # Ajustar el tamaño de la ventana para un layout más compacto
-        self.root.geometry("1000x800") 
+        self.root.geometry("1000x800")
 
         # Configurar tema y estilo moderno
         if self.bootstrap:
@@ -168,7 +168,7 @@ class SimuladorVigaMejorado:
         self.texto_tema = tk.StringVar(value="🌓 Modo Oscuro")
 
         self.apply_theme()
-        
+
         # Variables principales
         self.longitud = tk.DoubleVar(value=10.0)
         self.cargas_puntuales = []
@@ -197,21 +197,21 @@ class SimuladorVigaMejorado:
 
         # Lista de puntos para centro de masa 3D (x, y, z, m)
         self.puntos_masa_3d = []
-        
+
         # Variables para nuevas cargas
         self.posicion_carga = tk.DoubleVar(value=0.0)
         self.magnitud_carga = tk.DoubleVar(value=10.0)
         self.inicio_dist = tk.DoubleVar(value=0.0)
         self.fin_dist = tk.DoubleVar(value=5.0)
         self.magnitud_dist = tk.DoubleVar(value=5.0)
-        
+
         # Variable para modo 3D
         self.modo_3d = tk.BooleanVar(value=False)
-        
+
         # Nuevas variables para la altura de la viga
         self.altura_inicial = tk.DoubleVar(value=0.0)
         self.altura_final = tk.DoubleVar(value=0.0)
-        
+
         # Variables para la sección transversal
         self.ancho_superior = tk.DoubleVar(value=20)
         self.altura_superior = tk.DoubleVar(value=5)
@@ -219,7 +219,7 @@ class SimuladorVigaMejorado:
         self.altura_alma = tk.DoubleVar(value=30)
         self.ancho_inferior = tk.DoubleVar(value=15)
         self.altura_inferior = tk.DoubleVar(value=5)
-        
+
         self.formas = []
         # Variables para arrastrar formas
         self.forma_seleccionada = None
@@ -284,12 +284,12 @@ class SimuladorVigaMejorado:
         self.area_transversal = tk.DoubleVar(value=500.0)  # mm^2
         self.fuerza_tension = tk.DoubleVar(value=50.0)  # kN
         self.cambio_temperatura = tk.DoubleVar(value=30.0)  # °C
-        
+
         self.crear_widgets()
-        
+
         # Mostrar mensaje inicial
         self.mostrar_mensaje_inicial()
-        
+
         # Dibujar la viga inicial
         self.dibujar_viga_actual()
 
@@ -356,8 +356,8 @@ class SimuladorVigaMejorado:
         """Inserta texto en la casilla de resultados con estilo."""
         self.texto_resultado.insert("end", texto, tag)
         self.texto_resultado.see("end")
-        
-    
+
+
     def crear_widgets(self):
         # Usar un Notebook para organizar mejor la interfaz
         notebook = ttk.Notebook(self.root)
@@ -406,11 +406,11 @@ class SimuladorVigaMejorado:
         # Resultados y gráficos
         self.crear_seccion_resultados(tab_result)
         self.crear_seccion_graficos(tab_result)
-    
+
     def crear_seccion_configuracion_viga(self, parent):
         frame_config = ttk.LabelFrame(parent, text="⚙ Configuración de la Viga", padding="10 10 10 10") # Ajustar padding
         frame_config.columnconfigure(1, weight=1) # Para que la barra de longitud se expanda
-    
+
         # Longitud de la viga
         longitud_frame = ttk.Frame(frame_config)
         longitud_frame.grid(row=0, column=0, columnspan=4, padx=5, pady=2, sticky="ew") # Ocupar todo el ancho
@@ -429,14 +429,14 @@ class SimuladorVigaMejorado:
         ttk.Combobox(apoyos_frame, textvariable=self.tipo_apoyo_c, values=["Ninguno", "Fijo", "Móvil"], width=8).pack(side="left", padx=2, pady=2)
         ttk.Label(apoyos_frame, text="Posición C (m):").pack(side="left", padx=2, pady=2)
         ttk.Entry(apoyos_frame, textvariable=self.posicion_apoyo_c, width=8).pack(side="left", padx=2, pady=2)
-    
+
         # Opción para 3D y par torsor
         extra_options_frame = ttk.Frame(frame_config)
         extra_options_frame.grid(row=2, column=0, columnspan=4, padx=5, pady=2, sticky="ew")
         ttk.Checkbutton(extra_options_frame, text="Modo 3D", variable=self.modo_3d).pack(side="left", padx=2, pady=2)
         ttk.Label(extra_options_frame, text="Par Torsor (N·m):").pack(side="left", padx=2, pady=2)
         ttk.Entry(extra_options_frame, textvariable=self.par_torsor, width=10).pack(side="left", padx=2, pady=2)
-    
+
         # Altura de la viga
         altura_frame = ttk.Frame(frame_config)
         altura_frame.grid(row=3, column=0, columnspan=4, padx=5, pady=2, sticky="ew")
@@ -446,75 +446,75 @@ class SimuladorVigaMejorado:
         ttk.Entry(altura_frame, textvariable=self.altura_final, width=10).pack(side="left", padx=2, pady=2)
 
         return frame_config
-    
+
     def crear_seccion_propiedades_seccion(self, parent):
         frame_seccion = ttk.LabelFrame(parent, text="Propiedades de la Sección Transversal", padding="10 10 10 10")
         frame_seccion.pack(fill="x", pady=5, padx=5) # Ajustar padding
-    
+
         # Usar un grid más compacto para las dimensiones
         frame_seccion.columnconfigure(1, weight=1)
         frame_seccion.columnconfigure(3, weight=1)
-    
+
         ttk.Label(frame_seccion, text="Ancho superior (cm):").grid(row=0, column=0, padx=5, pady=2, sticky="w")
         ttk.Entry(frame_seccion, textvariable=self.ancho_superior, width=10).grid(row=0, column=1, padx=5, pady=2, sticky="ew")
-    
+
         ttk.Label(frame_seccion, text="Altura superior (cm):").grid(row=0, column=2, padx=5, pady=2, sticky="w")
         ttk.Entry(frame_seccion, textvariable=self.altura_superior, width=10).grid(row=0, column=3, padx=5, pady=2, sticky="ew")
-    
+
         ttk.Label(frame_seccion, text="Ancho alma (cm):").grid(row=1, column=0, padx=5, pady=2, sticky="w")
         ttk.Entry(frame_seccion, textvariable=self.ancho_alma, width=10).grid(row=1, column=1, padx=5, pady=2, sticky="ew")
-    
+
         ttk.Label(frame_seccion, text="Altura alma (cm):").grid(row=1, column=2, padx=5, pady=2, sticky="w")
         ttk.Entry(frame_seccion, textvariable=self.altura_alma, width=10).grid(row=1, column=3, padx=5, pady=2, sticky="ew")
-    
+
         ttk.Label(frame_seccion, text="Ancho inferior (cm):").grid(row=2, column=0, padx=5, pady=2, sticky="w")
         ttk.Entry(frame_seccion, textvariable=self.ancho_inferior, width=10).grid(row=2, column=1, padx=5, pady=2, sticky="ew")
-    
+
         ttk.Label(frame_seccion, text="Altura inferior (cm):").grid(row=2, column=2, padx=5, pady=2, sticky="w")
         ttk.Entry(frame_seccion, textvariable=self.altura_inferior, width=10).grid(row=2, column=3, padx=5, pady=2, sticky="ew")
-    
+
         ttk.Button(frame_seccion, text="Calcular Propiedades", command=self.calcular_propiedades_seccion).grid(row=3, column=0, columnspan=4, pady=10)
-    
+
     def crear_seccion_cargas_puntuales(self, parent):
         frame_puntuales = ttk.LabelFrame(parent, text="⬇️ Cargas Puntuales", padding="10 10 10 10") # Ajustar padding
         frame_puntuales.columnconfigure(1, weight=1)
         frame_puntuales.columnconfigure(3, weight=1)
-    
+
         ttk.Label(frame_puntuales, text="Posición (m):").grid(row=0, column=0, padx=5, pady=2, sticky="w")
         ttk.Entry(frame_puntuales, textvariable=self.posicion_carga, width=10).grid(row=0, column=1, padx=5, pady=2, sticky="ew")
-    
+
         ttk.Label(frame_puntuales, text="Magnitud (N):").grid(row=0, column=2, padx=5, pady=2, sticky="w")
         ttk.Entry(frame_puntuales, textvariable=self.magnitud_carga, width=10).grid(row=0, column=3, padx=5, pady=2, sticky="ew")
-    
+
         ttk.Button(frame_puntuales, text="➕ Agregar", command=self.agregar_carga_puntual).grid(row=1, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
         ttk.Button(frame_puntuales, text="🗑️ Limpiar", command=self.limpiar_cargas_puntuales).grid(row=1, column=2, columnspan=2, padx=5, pady=5, sticky="ew")
 
         return frame_puntuales
-    
+
     def crear_seccion_cargas_distribuidas(self, parent):
         frame_distribuidas = ttk.LabelFrame(parent, text="📅 Cargas Distribuidas", padding="10 10 10 10") # Ajustar padding
         frame_distribuidas.columnconfigure(1, weight=1)
         frame_distribuidas.columnconfigure(3, weight=1)
-    
+
         ttk.Label(frame_distribuidas, text="Inicio (m):").grid(row=0, column=0, padx=5, pady=2, sticky="w")
         ttk.Entry(frame_distribuidas, textvariable=self.inicio_dist, width=10).grid(row=0, column=1, padx=5, pady=2, sticky="ew")
-    
+
         ttk.Label(frame_distribuidas, text="Fin (m):").grid(row=0, column=2, padx=5, pady=2, sticky="w")
         ttk.Entry(frame_distribuidas, textvariable=self.fin_dist, width=10).grid(row=0, column=3, padx=5, pady=2, sticky="ew")
-    
+
         ttk.Label(frame_distribuidas, text="Magnitud (N/m):").grid(row=1, column=0, padx=5, pady=2, sticky="w")
         ttk.Entry(frame_distribuidas, textvariable=self.magnitud_dist, width=10).grid(row=1, column=1, padx=5, pady=2, sticky="ew")
-    
+
         ttk.Button(frame_distribuidas, text="➕ Agregar", command=self.agregar_carga_distribuida).grid(row=2, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
         ttk.Button(frame_distribuidas, text="🗑️ Limpiar", command=self.limpiar_cargas_distribuidas).grid(row=2, column=2, columnspan=2, padx=5, pady=5, sticky="ew")
 
         return frame_distribuidas
-    
+
     def crear_seccion_botones_calculo(self, parent):
         frame_botones = ttk.Frame(parent, padding="5 5 5 5") # Ajustar padding
-        
+
         # Los estilos de botones se configuran en apply_theme
-        
+
         # Botones principales con iconos
         btn_calcular = ttk.Button(frame_botones, text="🧮 Calcular Reacciones", style="Action.TButton")
         btn_calcular.config(command=lambda b=btn_calcular: self.on_button_click(b, self.calcular_reacciones))
@@ -536,7 +536,7 @@ class SimuladorVigaMejorado:
         btn_par_punto = ttk.Button(par_frame, text="🌀 Par en Punto", style="Action.TButton")
         btn_par_punto.grid(row=0, column=2, padx=2, pady=2, sticky="ew")
         btn_par_punto.config(command=lambda b=btn_par_punto: self.on_button_click(b, lambda: self.calcular_par_torsor_en_punto(self.posicion_torsor.get())))
-        
+
         # Segunda fila de botones
         btn_limpiar = ttk.Button(frame_botones, text="🗑️ Limpiar Todo", style="Warning.TButton")
         btn_limpiar.config(command=lambda b=btn_limpiar: self.on_button_click(b, self.limpiar_todo))
@@ -558,7 +558,7 @@ class SimuladorVigaMejorado:
         btn_tema.config(command=lambda b=btn_tema: self.on_button_click(b, self.toggle_dark_mode))
         btn_tema.grid(row=1, column=4, padx=3, pady=3, sticky="ew") # Ajustar padding
         self.boton_tema = btn_tema
-        
+
         # Configurar el grid para que se expanda correctamente
         for i in range(5):
             frame_botones.columnconfigure(i, weight=1)
@@ -732,61 +732,61 @@ class SimuladorVigaMejorado:
         canvas.draw()
         canvas.get_tk_widget().pack(fill="both", expand=True)
         self.ultima_figura = fig
-            
+
     def mostrar_mensaje_inicial(self):
         mensaje = "Bienvenido al Simulador de Viga Mecánica. Use los controles para configurar la viga y las cargas."
         self.log(mensaje, "info")
-        
+
     def agregar_carga_puntual(self):
         try:
             pos = self.posicion_carga.get()
             mag = self.magnitud_carga.get()
-            
+
             if not (0 <= pos <= self.longitud.get()):
                 messagebox.showerror("Error", f"La posición debe estar entre 0 y {self.longitud.get()} m")
                 return
-                
+
             if mag == 0:
                 messagebox.showwarning("Advertencia", "La magnitud no puede ser cero")
                 return
-                
+
             self.cargas_puntuales.append((pos, mag))
             self.log(f"✅ Carga puntual: {mag}N en {pos}m\n", "success")
             self.dibujar_viga_actual()
-            
+
         except Exception as e:
             messagebox.showerror("Error", f"Valores inválidos: {e}")
-            
+
     def agregar_carga_distribuida(self):
         try:
             inicio = self.inicio_dist.get()
             fin = self.fin_dist.get()
             mag = self.magnitud_dist.get()
-            
+
             if not (0 <= inicio < fin <= self.longitud.get()):
                 messagebox.showerror("Error", "Verifica que 0 ≤ inicio < fin ≤ longitud")
                 return
-                
+
             if mag == 0:
                 messagebox.showwarning("Advertencia", "La magnitud no puede ser cero")
                 return
-                
+
             self.cargas_distribuidas.append((inicio, fin, mag))
             self.log(
                 f"✅ Carga distribuida: {mag}N/m desde {inicio}m hasta {fin}m\n",
                 "success",
             )
             self.dibujar_viga_actual()
-            
+
         except Exception as e:
             messagebox.showerror("Error", f"Valores inválidos: {e}")
-            
+
     def calcular_reacciones(self):
         try:
             if not self.cargas_puntuales and not self.cargas_distribuidas:
                 messagebox.showwarning("Advertencia", "Agrega al menos una carga")
                 return
-                
+
             L = self.longitud.get()
             h_inicial = self.altura_inicial.get()
             h_final = self.altura_final.get()
@@ -794,18 +794,18 @@ class SimuladorVigaMejorado:
             # la viga. Se conserva para posibles extensiones, pero las
             # sumatorias solo consideran el componente vertical.
             angulo = np.arctan((h_final - h_inicial) / L)
-            
+
             # Calcular fuerzas totales y momentos
             suma_fuerzas_x = 0
             suma_fuerzas_y = 0
             suma_momentos_a = 0
-            
+
             # Cargas puntuales
             for pos, mag in self.cargas_puntuales:
                 # Las cargas puntuales se consideran verticales
                 suma_fuerzas_y += mag
                 suma_momentos_a += mag * pos
-                
+
             # Cargas distribuidas
             for inicio, fin, mag in self.cargas_distribuidas:
                 longitud_carga = fin - inicio
@@ -818,10 +818,10 @@ class SimuladorVigaMejorado:
                     f"🔹 Carga distribuida {inicio}-{fin} m -> F={fuerza_total:.2f} N\n",
                     "data",
                 )
-            
+
             # Incluir el par torsor en los cálculos
             par_torsor = self.par_torsor.get()
-            
+
             # Modificar las ecuaciones de equilibrio para incluir el par torsor
             if self.tipo_apoyo_c.get() == "Ninguno":
                 RB = (suma_momentos_a + par_torsor) / L
@@ -847,7 +847,7 @@ class SimuladorVigaMejorado:
                     f"RB = {RB:.2f} N",
                     f"RA = RC = (ΣFy - RB)/2 = ({suma_fuerzas_y:.2f} - {RB:.2f})/2 = {RA:.2f} N"
                 ]
-            
+
             # Mostrar procedimiento y resultados
             self.log(f"\n{'='*50}\n", "title")
             self.log("⚖️ CÁLCULO DE REACCIONES:\n", "title")
@@ -888,46 +888,46 @@ class SimuladorVigaMejorado:
                 self.log(f"RxC={self.reaccion_c_x:.2f} N, RyC={self.reaccion_c_y:.2f} N\n", "data")
 
             self.dibujar_viga_con_reacciones(RA, RB, RC)
-            
+
         except Exception as e:
             messagebox.showerror("Error", f"Error en cálculos: {e}")
-            
+
     def calcular_centro_masa(self):
         try:
             if not self.cargas_puntuales and not self.cargas_distribuidas:
                 messagebox.showwarning("Advertencia", "No hay cargas para calcular")
                 return
-            
+
             suma_momentos = 0
             suma_cargas = 0
-            
+
             # Cargas puntuales
             for pos, mag in self.cargas_puntuales:
                 suma_momentos += pos * mag
                 suma_cargas += mag
-            
+
             # Cargas distribuidas
             for inicio, fin, mag in self.cargas_distribuidas:
                 longitud_carga = fin - inicio
                 fuerza_total = mag * longitud_carga
                 centroide = inicio + longitud_carga/2
-                
+
                 suma_momentos += centroide * fuerza_total
                 suma_cargas += fuerza_total
-            
+
             x_cm = suma_momentos / suma_cargas
 
             self.log("\n📍 CÁLCULO DEL CENTRO DE MASA:\n", "title")
             self.log(f"Σ(x·F) = {suma_momentos:.2f} N·m\n", "data")
             self.log(f"ΣF = {suma_cargas:.2f} N\n", "data")
             self.log(f"x_cm = Σ(x·F) / ΣF = {x_cm:.2f} m\n", "data")
-            
+
             # Actualizar la visualización
             if self.modo_3d.get():
                 self.dibujar_viga_3d(x_cm)
             else:
                 self.dibujar_viga_actual(x_cm)
-            
+
         except Exception as e:
             messagebox.showerror("Error", f"Error en cálculo: {e}")
 
@@ -951,13 +951,13 @@ class SimuladorVigaMejorado:
         F = torsor / distancia
         self.log(f"💪 Fuerza calculada: F = {F:.2f} N\n", "data")
         return F
-            
+
     def mostrar_diagramas(self):
         try:
             if not self.cargas_puntuales and not self.cargas_distribuidas:
                 messagebox.showwarning("Advertencia", "Agrega cargas primero")
                 return
-                
+
             # Primero calcular reacciones usando el mismo algoritmo que
             # la función calcular_reacciones para mantener consistencia
             L = self.longitud.get()
@@ -998,7 +998,7 @@ class SimuladorVigaMejorado:
             x = np.linspace(0, L, 1000)
             cortante = np.zeros_like(x)
             momento = np.zeros_like(x)
-            
+
             # Calcular cortante y momento
             for i, xi in enumerate(x):
                 V = 0
@@ -1015,13 +1015,13 @@ class SimuladorVigaMejorado:
                 if xi >= L:
                     V += RB
                     M += RB * (xi - L)
-                
+
                 # Contribución de cargas puntuales
                 for pos, mag in self.cargas_puntuales:
                     if xi > pos:
                         V -= mag
                         M -= mag * (xi - pos)
-                        
+
                 # Contribución de cargas distribuidas
                 for inicio, fin, mag in self.cargas_distribuidas:
                     if xi > inicio:
@@ -1035,10 +1035,10 @@ class SimuladorVigaMejorado:
                             long_total = fin - inicio
                             V -= mag * long_total
                             M -= mag * long_total * (xi - (inicio + long_total/2))
-                            
+
                 cortante[i] = V
                 momento[i] = M
-                
+
             self.dibujar_diagramas(x, cortante, momento, RA, RB, RC)
 
         except Exception as e:
@@ -1083,7 +1083,7 @@ class SimuladorVigaMejorado:
 
         self.log(f"🌀 Par torsor en x={x:.2f} m: {momento:.2f} N·m\n", "data")
         return momento
-            
+
     def dibujar_viga_actual(self, x_cm=None):
         for widget in self.frame_grafico.winfo_children():
             widget.destroy()
@@ -1106,7 +1106,7 @@ class SimuladorVigaMejorado:
         apoyo_b = '^' if self.tipo_apoyo_b.get() == 'Fijo' else 'o'
         ax.plot(0, h_inicial, apoyo_a, markersize=15, color='#1f77b4', label='Apoyo A', zorder=10)
         ax.plot(L, h_final, apoyo_b, markersize=15, color='#1f77b4', label='Apoyo B', zorder=10)
-        
+
         if self.tipo_apoyo_c.get() != "Ninguno":
             c = self.posicion_apoyo_c.get()
             h_c = h_inicial + (h_final - h_inicial) * c / L
@@ -1220,7 +1220,7 @@ class SimuladorVigaMejorado:
         # Dibujar apoyos
         ax.scatter(0, 0, 0, marker='^', s=100, color='blue', label='Apoyo A')
         ax.scatter(L, 0, 0, marker='o' if self.tipo_apoyo_b.get() == 'Móvil' else '^', s=100, color='blue', label='Apoyo B')
-        
+
         if self.tipo_apoyo_c.get() != "Ninguno":
             c = self.posicion_apoyo_c.get()
             apoyo_c = '^' if self.tipo_apoyo_c.get() == 'Fijo' else 'o'
@@ -1261,35 +1261,35 @@ class SimuladorVigaMejorado:
     def dibujar_viga_con_reacciones(self, RA, RB, RC=0):
         for widget in self.frame_grafico.winfo_children():
             widget.destroy()
-        
+
         fig, ax = plt.subplots(figsize=(10, 5)) # Ajustar tamaño de figura
         plt.style.use("seaborn-v0_8-whitegrid")
         L = self.longitud.get()
-        
+
         # Dibujar viga
         ax.plot([0, L], [0, 0], 'k-', linewidth=4)
-        
+
         # Dibujar apoyos y reacciones
         apoyo_a = '^' if self.tipo_apoyo_a.get() == 'Fijo' else 'o'
         apoyo_b = '^' if self.tipo_apoyo_b.get() == 'Fijo' else 'o'
         ax.plot(0, 0, apoyo_a, markersize=12, color='blue')
         ax.plot(L, 0, apoyo_b, markersize=12, color='blue')
-        
+
         ax.arrow(0, -0.3, 0, 0.25, head_width=L*0.015, head_length=0.03, fc='blue', ec='blue', width=0.002)
         ax.text(0, -0.35, f'RA={RA:.2f}N', ha='center', va='top', fontsize=9, color='blue', weight='bold')
-        
+
         ax.arrow(L, -0.3, 0, 0.25, head_width=L*0.015, head_length=0.03, fc='blue', ec='blue', width=0.002)
         ax.text(L, -0.35, f'RB={RB:.2f}N', ha='center', va='top', fontsize=9, color='blue', weight='bold')
-        
+
         if self.tipo_apoyo_c.get() != "Ninguno":
             c = self.posicion_apoyo_c.get()
             apoyo_c = '^' if self.tipo_apoyo_c.get() == 'Fijo' else 'o'
             ax.plot(c, 0, apoyo_c, markersize=12, color='green')
             ax.arrow(c, -0.3, 0, 0.25, head_width=L*0.015, head_length=0.03, fc='green', ec='green', width=0.002)
             ax.text(c, -0.35, f'RC={RC:.2f}N', ha='center', va='top', fontsize=9, color='green', weight='bold')
-        
+
         # Dibujar cargas
-            
+
         max_mag = max([abs(m) for _, m in self.cargas_puntuales] + [1])
         for pos, mag in self.cargas_puntuales:
             size = 6 + 4 * abs(mag) / max_mag
@@ -1326,40 +1326,40 @@ class SimuladorVigaMejorado:
         canvas.draw()
         canvas.get_tk_widget().pack(fill="both", expand=True)
         self.ultima_figura = fig
-        
+
     def dibujar_diagramas(self, x, cortante, momento, RA, RB, RC):
         for widget in self.frame_grafico.winfo_children():
             widget.destroy()
-            
+
         fig, (ax1, ax2, ax3, ax4) = plt.subplots(
             4, 1, figsize=(10, 18), constrained_layout=True # Ajustar tamaño de figura
         )
         plt.style.use("seaborn-v0_8-whitegrid")
-        
+
         L = self.longitud.get()
-        
+
         # Diagrama de la viga
         ax1.plot([0, L], [0, 0], 'k-', linewidth=4)
         apoyo_a = '^' if self.tipo_apoyo_a.get() == 'Fijo' else 'o'
         apoyo_b = '^' if self.tipo_apoyo_b.get() == 'Fijo' else 'o'
         ax1.plot(0, 0, apoyo_a, markersize=12, color='blue')
         ax1.plot(L, 0, apoyo_b, markersize=12, color='blue')
-        
+
         ax1.arrow(0, -0.2, 0, 0.15, head_width=L*0.015, head_length=0.02, fc='blue', ec='blue', width=0.002)
         ax1.text(0, -0.25, f'RA={RA:.2f}N', ha='center', va='top', fontsize=8, color='blue')
         ax1.arrow(L, -0.2, 0, 0.15, head_width=L*0.015, head_length=0.02, fc='blue', ec='blue', width=0.002)
         ax1.text(L, -0.25, f'RB={RB:.2f}N', ha='center', va='top', fontsize=8, color='blue')
-        
+
         if self.tipo_apoyo_c.get() != "Ninguno":
             apoyo_c = '^' if self.tipo_apoyo_c.get() == 'Fijo' else 'o'
             pos_c = self.posicion_apoyo_c.get()
             ax1.plot(pos_c, 0, apoyo_c, markersize=12, color='green')
             ax1.text(pos_c, -0.25, f'RC={RC:.2f}N', ha='center', va='top', fontsize=8, color='green')
-        
+
         for pos, mag in self.cargas_puntuales:
             ax1.arrow(pos, 0.3, 0, -0.25, head_width=L*0.015, head_length=0.03, fc='red', ec='red', width=0.002)
             ax1.text(pos, 0.35, f'{mag}N', ha='center', va='bottom', fontsize=7, color='red')
-        
+
         for inicio, fin, mag in self.cargas_distribuidas:
             F_eq = mag * (fin - inicio)
             n_arrows = max(2, int((fin - inicio) / (L * 0.1)))
@@ -1368,7 +1368,7 @@ class SimuladorVigaMejorado:
                 ax1.arrow(x, 0.55, 0, -0.25, head_width=L*0.01, head_length=0.03, fc='orange', ec='orange', width=0.0015)
             ax1.arrow((inicio+fin)/2, 0.6, 0, -0.4, head_width=L*0.015, head_length=0.03, fc='red', ec='red', width=0.002)
             ax1.text((inicio+fin)/2, 0.65, f'{F_eq:.1f}N', ha='center', va='bottom', fontsize=7, color='red')
-        
+
         ax1.set_xlim(-L*0.1, L*1.1)
         ax1.set_ylim(-0.6, 0.7)
         ax1.margins(x=0.05, y=0.2)
@@ -1376,7 +1376,7 @@ class SimuladorVigaMejorado:
         ax1.grid(True, alpha=0.3, linestyle='--')
         ax1.set_xlabel('Posición (m)', fontsize=10)
         ax1.set_ylabel('Altura (m)', fontsize=10)
-        
+
         # Diagrama de cortante
         ax2.plot(x, cortante, 'b-', linewidth=2)
         ax2.fill_between(x, cortante, alpha=0.3, color='blue')
@@ -1386,7 +1386,7 @@ class SimuladorVigaMejorado:
         ax2.grid(True, alpha=0.3, linestyle='--')
         ax2.set_xlim(-L*0.1, L*1.1)
         ax2.margins(x=0.05)
-        
+
         for pos, _ in self.cargas_puntuales:
             ax2.plot(pos, 0, 'ko', markersize=4)
             ax3.plot(pos, 0, 'ko', markersize=4)
@@ -1398,7 +1398,7 @@ class SimuladorVigaMejorado:
         cortante_min = np.min(cortante)
         ax2.text(L*1.05, cortante_max, f'Max: {cortante_max:.2f}N', va='bottom', ha='left', fontsize=8)
         ax2.text(L*1.05, cortante_min, f'Min: {cortante_min:.2f}N', va='top', ha='left', fontsize=8)
-        
+
         # Diagrama de momento
         ax3.plot(x, momento, 'r-', linewidth=2)
         ax3.fill_between(x, momento, alpha=0.3, color='red')
@@ -1409,13 +1409,13 @@ class SimuladorVigaMejorado:
         ax3.grid(True, alpha=0.3, linestyle='--')
         ax3.set_xlim(-L*0.1, L*1.1)
         ax3.margins(x=0.05)
-        
+
         # Añadir valores máximos y mínimos al diagrama de momento
         momento_max = np.max(momento)
         momento_min = np.min(momento)
         ax3.text(L*1.05, momento_max, f'Max: {momento_max:.2f}N·m', va='bottom', ha='left', fontsize=8)
         ax3.text(L*1.05, momento_min, f'Min: {momento_min:.2f}N·m', va='top', ha='left', fontsize=8)
-        
+
         # Diagrama de torsión
         par_torsor = self.par_torsor.get()
         torsion = np.full_like(x, par_torsor)
@@ -1437,7 +1437,7 @@ class SimuladorVigaMejorado:
         canvas.draw()
         canvas.get_tk_widget().pack(fill="both", expand=True)
         self.ultima_figura = fig
-        
+
         # Mostrar valores máximos en el área de resultados
         self.log("\n📈 VALORES MÁXIMOS:\n", "title")
         self.log(f"Cortante máximo: +{cortante_max:.2f} N\n", "data")
@@ -1445,12 +1445,12 @@ class SimuladorVigaMejorado:
         self.log(f"Momento máximo: +{momento_max:.2f} N·m\n", "data")
         self.log(f"Momento mínimo: {momento_min:.2f} N·m\n", "data")
         self.log(f"Par Torsor: {par_torsor:.2f} N·m\n", "data")
-        
+
     def limpiar_cargas_puntuales(self):
         self.cargas_puntuales.clear()
         self.log("🗑️ Cargas puntuales eliminadas\n", "warning")
         self.dibujar_viga_actual()
-        
+
     def limpiar_cargas_distribuidas(self):
         self.cargas_distribuidas.clear()
         self.log("🗑️ Cargas distribuidas eliminadas\n", "warning")
@@ -1459,7 +1459,7 @@ class SimuladorVigaMejorado:
     def limpiar_resultados(self):
         """Borra el contenido de la casilla de resultados."""
         self.texto_resultado.delete(1.0, tk.END)
-        
+
     def limpiar_todo(self):
         # Limpiar listas de cargas
         self.cargas_puntuales.clear()
@@ -1525,7 +1525,7 @@ class SimuladorVigaMejorado:
         self.carga_fy.set(0.0)
         self.corte_valor.set(0.0)
         self.corte_eje.set("X")
-        
+
         self.nodo_x_bast.set(0.0)
         self.nodo_y_bast.set(0.0)
         self.nodo_apoyo_bast.set("Libre")
@@ -1535,8 +1535,6 @@ class SimuladorVigaMejorado:
         self.carga_nodo_bast.set(1)
         self.carga_fx_bast.set(0.0)
         self.carga_fy_bast.set(0.0)
-        self.corte_valor_bast.set(0.0)
-        self.corte_eje_bast.set("X")
         self.nodo_fuerza_bast.set(1) # Reiniciar la variable corregida
 
 
@@ -1557,7 +1555,7 @@ class SimuladorVigaMejorado:
 
         # Redibujar la viga en su estado inicial
         self.dibujar_viga_actual()
-        
+
     def mostrar_ayuda(self):
         ayuda_texto = """
 🎓 GUÍA RÁPIDA DEL SIMULADOR DE ESTRUCTURAS
@@ -1699,20 +1697,31 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         scroll_ayuda.pack(side="right", fill="y")
 
     def ampliar_grafica(self):
-        if hasattr(self, 'ultima_figura'):
+        if hasattr(self, 'ultima_figura') and self.ultima_figura is not None:
             nueva_ventana = tk.Toplevel(self.root)
             nueva_ventana.title("Gráfica Ampliada")
-            
+
+            # Crear una nueva figura para la ventana ampliada para evitar problemas
+            # con el embedding de la misma figura en dos canvas.
+            amplified_fig = plt.figure(figsize=self.ultima_figura.get_size_inches() * self.ultima_figura.dpi / 50) # Escalar un poco
+            amplified_fig.canvas.manager.set_window_title(nueva_ventana.title())
+
+            # Copiar el contenido de la figura original a la nueva
+            # Esto puede ser complejo para todas las propiedades, una manera sencilla es recrear los ejes y los plots.
+            # Sin embargo, para simplicidad, si es la ultima figura de matplotlib, la re-dibuja.
+            # Para armaduras y bastidores, self.ultima_figura ya es la figura completa de matplotlib.
+            # Para la viga, las funciones dibujar_viga_actual, etc. ya crean una nueva figura.
+            # Simplemente asignamos self.ultima_figura a una variable local y la pasamos al nuevo canvas.
             canvas = FigureCanvasTkAgg(self.ultima_figura, master=nueva_ventana)
             canvas.draw()
             canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-            
+
             toolbar = NavigationToolbar2Tk(canvas, nueva_ventana)
             toolbar.update()
             canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         else:
             messagebox.showinfo("Información", "No hay gráfica para ampliar.")
-    
+
     def calcular_propiedades_seccion(self):
         try:
             # Obtener dimensiones
@@ -1830,7 +1839,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         button_row_1.columnconfigure(1, weight=1)
         ttk.Button(button_row_1, text="Agregar Forma", command=self.agregar_forma).grid(row=0, column=0, padx=5, pady=2, sticky="ew")
         ttk.Button(button_row_1, text="Calcular CG", command=self.calcular_cg_formas).grid(row=0, column=1, padx=5, pady=2, sticky="ew")
-        
+
         # Botones de limpiar y ampliar
         button_row_2 = ttk.Frame(control_frame)
         button_row_2.grid(row=4, column=0, columnspan=4, pady=5, sticky="ew")
@@ -1939,7 +1948,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         arm_buttons_frame.columnconfigure(1, weight=1)
         ttk.Button(arm_buttons_frame, text="Calcular Armadura", command=self.calcular_armadura).grid(row=0, column=0, padx=5, pady=5, sticky="ew")
         ttk.Button(arm_buttons_frame, text="Instrucciones", command=self.mostrar_instrucciones_armadura).grid(row=0, column=1, padx=5, pady=5, sticky="ew")
-        
+
         self.canvas_armadura = tk.Canvas(frame_arm, bg="white", highlightbackground="gray", highlightthickness=1)
         self.canvas_armadura.pack(fill="both", expand=True, padx=5, pady=5)
         self.canvas_armadura.bind("<Configure>", lambda e: self.dibujar_armadura())
@@ -2024,8 +2033,13 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         frame_ayuda_bast.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
         frame_ayuda_bast.columnconfigure(0, weight=1)
         frame_ayuda_bast.columnconfigure(1, weight=1)
+        frame_ayuda_bast.columnconfigure(2, weight=1) # Añadir columna para el nuevo botón
+
         ttk.Button(frame_ayuda_bast, text="Ayuda", command=self.mostrar_instrucciones_bastidor).grid(row=0, column=0, padx=2, pady=2, sticky="ew")
         ttk.Button(frame_ayuda_bast, text="Ejemplo", command=self.cargar_ejemplo_bastidor).grid(row=0, column=1, padx=2, pady=2, sticky="ew")
+        # Nuevo botón para ampliar gráfica del bastidor
+        ttk.Button(frame_ayuda_bast, text="Ampliar Gráfica", command=self.ampliar_grafica).grid(row=0, column=2, padx=2, pady=2, sticky="ew")
+
 
         # Canvas para representar el bastidor
         self.canvas_bastidor = tk.Canvas(frame_arm, bg="white", highlightbackground="gray", highlightthickness=1)
@@ -2039,14 +2053,15 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             y = float(self.y_forma.get())
             ancho = float(self.ancho_forma.get())
             alto = float(self.alto_forma.get())
-            
+
             if tipo not in ["Rectángulo", "Triángulo", "Círculo"]:
                 raise ValueError("Tipo de forma no válido")
-            
+
             self.formas.append((tipo, x, y, ancho, alto))
             self.redibujar_formas()
             self.log(f"Forma agregada: {tipo} en ({x}, {y})\n", "data")
-        except ValueError as e:
+
+        except Exception as e:
             messagebox.showerror("Error", f"Valores inválidos: {e}")
 
     def colocar_forma(self, event):
@@ -2066,7 +2081,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             else: # Rectángulo o Triángulo, asumir el clic como esquina superior izquierda para visual
                 # Ajustamos 'y' para que el punto del clic sea la esquina superior izquierda del rectángulo o el vértice superior del triángulo.
                 # Al dibujar, 'create_rectangle' usa la esquina superior izquierda. Para el triángulo también queremos esa lógica visual.
-                self.formas.append((tipo, x, y, ancho, alto)) 
+                self.formas.append((tipo, x, y, ancho, alto))
 
             self.redibujar_formas()
             self.log(f"Forma agregada: {tipo} en ({x}, {y})\n", "data")
@@ -2077,18 +2092,18 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         if not self.formas:
             messagebox.showwarning("Advertencia", "No hay formas para calcular")
             return
-        
+
         area_total = 0
         cx_total = 0
         cy_total = 0
-        
+
         for forma in self.formas:
             tipo, x, y, ancho, alto = forma
             if tipo == "Rectángulo":
                 area = ancho * alto
                 cx = x + ancho/2
                 # Para un rectángulo dibujado desde la esquina superior izquierda (x,y), el centroide es (x + ancho/2, y + alto/2)
-                cy = y + alto/2 
+                cy = y + alto/2
             elif tipo == "Triángulo":
                 area = ancho * alto / 2
                 # Para un triángulo con vértice superior en (x,y), y base de ancho 'ancho' a una distancia 'alto' hacia abajo
@@ -2105,24 +2120,24 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                 cy = y
             else:
                 continue  # Saltar formas no reconocidas
-            
+
             area_total += area
             cx_total += cx * area
             cy_total += cy * area
-        
+
         if area_total == 0:
             messagebox.showerror("Error", "Área total es cero")
             return
-        
+
         cg_x = cx_total / area_total
         cg_y = cy_total / area_total
-        
+
         self.log(f"\nCentro de Gravedad: ({cg_x:.2f}, {cg_y:.2f})\n", "data")
         self.dibujar_formas_irregulares(cg_x, cg_y)
 
     def dibujar_formas_irregulares(self, cg_x, cg_y):
         fig, ax = plt.subplots(figsize=(8, 8))
-        
+
         for forma in self.formas:
             tipo, x, y, ancho, alto = forma
             if tipo == "Rectángulo":
@@ -2136,16 +2151,16 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             elif tipo == "Círculo":
                 # plt.Circle toma (x,y) como centro y luego el radio
                 ax.add_patch(plt.Circle((x, y), ancho/2, fill=False))
-        
+
         ax.plot(cg_x, cg_y, 'ro', markersize=10)
         ax.text(cg_x, cg_y, f'CG ({cg_x:.2f}, {cg_y:.2f})', ha='right', va='bottom')
-        
+
         ax.set_aspect('equal', 'box')
         # Ajustar límites para abarcar una mesa de hasta 100x50 con un pequeño margen
         ax.set_xlim(min(0, min(f[1] for f in self.formas if f[1] is not None) - 10), max(100, max(f[1]+f[3] for f in self.formas if f[1] is not None) + 10))
         ax.set_ylim(min(0, min(f[2] for f in self.formas if f[2] is not None) - 10), max(50, max(f[2]+f[4] for f in self.formas if f[2] is not None) + 10))
         ax.set_title('Formas Irregulares y Centro de Gravedad')
-        
+
         plt.tight_layout()
         canvas = FigureCanvasTkAgg(fig, master=self.frame_grafico)
         canvas.draw()
@@ -2476,6 +2491,12 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                             c.create_line(x_node, y_node, x_node, y_end, arrow=tk.LAST, fill='orange', width=2, tags="reaccion")
                             c.create_text(x_node + 10, y_end, text=f"{ry:.1f}", fill='orange', font=("Arial", 8, "bold"), tags="reaccion_mag")
 
+        # Guardar la figura del canvas_armadura para poder ampliarla
+        # Esto es un placeholder, ya que canvas de Tkinter no es una figura de Matplotlib directamente.
+        # Si se desea ampliar el canvas de Tkinter, se necesitaría una lógica diferente o renderizarlo en Matplotlib.
+        # Por ahora, nos centraremos en el bastidor, que sí usa Matplotlib.
+        # Si se quiere ampliar armaduras, deberíamos dibujarlas también en un gráfico de Matplotlib.
+
     def mostrar_dcl_nodos(self):
         if not self.miembros_arm or not hasattr(self, 'reacciones_arm'):
             messagebox.showwarning("Advertencia", "Calcule primero la armadura para ver los DCLs.")
@@ -2697,7 +2718,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             "   Las barras en rojo están en compresión y en azul en tensión.\n"
             "   Las reacciones se muestran en naranja en los apoyos.\n"
             "5. Use 'DCL Nodos' para ver el diagrama de cuerpo libre de cada nodo.\n"
-            "6. Use 'Método de Secciones' para analizar las fuerzas en un corte específico." 
+            "6. Use 'Método de Secciones' para analizar las fuerzas en un corte específico."
         )
         messagebox.showinfo("Instrucciones Armaduras", texto)
 
@@ -2778,12 +2799,12 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             if num_vars > num_eqs:
                 messagebox.showwarning(
                     "Advertencia",
-                    "La bastidor es estáticamente indeterminada. Puede que no tenga una solución única o sea inestable.",
+                    "El bastidor es estáticamente indeterminada. Puede que no tenga una solución única o sea inestable.",
                 )
             elif num_vars < num_eqs:
                 messagebox.showwarning(
                     "Advertencia",
-                    "La bastidor es estáticamente sobredeterminada. Puede que no sea soluble con las condiciones dadas.",
+                    "El bastidor es estáticamente sobredeterminada. Puede que no sea soluble con las condiciones dadas.",
                 )
 
             for j, m in enumerate(self.miembros_bast):
@@ -2946,79 +2967,95 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         self.ajustar_vista_bastidor()
         c.delete('all')
 
-        for nodo in self.nodos_bast:
-            x = nodo['x'] * self.escala_bast + self.offset_x_bast
-            y = self.offset_y_bast - nodo['y'] * self.escala_bast
-            c.create_oval(x-5, y-5, x+5, y+5, fill='black', tags="nodo")
-            c.create_text(x, y-10, text=str(nodo['id']), fill='black', tags="nodo_id")
+        fig, ax = plt.subplots(figsize=(6, 5)) # Crear figura de Matplotlib para la representación
+        ax.set_aspect('equal', adjustable='box')
+        ax.set_xlabel('Coordenada X')
+        ax.set_ylabel('Coordenada Y')
+        ax.set_title('Bastidor')
 
+        node_coords = {} # Para almacenar coordenadas matplotlib para el texto
+        for nodo in self.nodos_bast:
+            x_mpl = nodo['x']
+            y_mpl = nodo['y']
+            node_coords[nodo['id']] = (x_mpl, y_mpl)
+            ax.plot(x_mpl, y_mpl, 'ko', markersize=8) # Nodos
+            ax.text(x_mpl, y_mpl + 0.2, str(nodo['id']), ha='center', va='bottom', fontsize=8)
+
+            # Dibujar apoyos
             if nodo['apoyo'] == 'Fijo':
-                c.create_polygon(x-10, y+10, x+10, y+10, x, y, fill='blue', outline='blue', tags="apoyo")
-                c.create_line(x-15, y+10, x+15, y+10, fill='gray', tags="apoyo")
-                for i in range(-1, 2):
-                    c.create_line(x + i*5, y + 10, x + i*5 + 5, y + 15, fill='gray', tags="apoyo")
+                ax.plot([x_mpl - 0.2, x_mpl + 0.2], [y_mpl - 0.2, y_mpl - 0.2], 'b-', linewidth=2)
+                ax.plot(x_mpl, y_mpl - 0.2, '^', markersize=10, color='blue')
             elif nodo['apoyo'] == 'Móvil':
-                c.create_oval(x-8, y+2, x+8, y+18, fill='blue', outline='blue', tags="apoyo")
-                c.create_line(x-15, y+20, x+15, y+20, fill='gray', tags="apoyo")
-                for i in range(-1, 2):
-                    c.create_line(x + i*5, y + 20, x + i*5 + 5, y + 25, fill='gray', tags="apoyo")
+                ax.plot([x_mpl - 0.2, x_mpl + 0.2], [y_mpl - 0.2, y_mpl - 0.2], 'b-', linewidth=2)
+                ax.plot(x_mpl, y_mpl - 0.2, 'o', markersize=10, color='blue')
 
         for m in self.miembros_bast:
-            n1 = next(n for n in self.nodos_bast if n['id']==m['inicio'])
-            n2 = next(n for n in self.nodos_bast if n['id']==m['fin'])
-
-            x1 = n1['x'] * self.escala_bast + self.offset_x_bast
-            y1 = self.offset_y_bast - n1['y'] * self.escala_bast
-            x2 = n2['x'] * self.escala_bast + self.offset_x_bast
-            y2 = self.offset_y_bast - n2['y'] * self.escala_bast
+            n1 = node_coords[m['inicio']]
+            n2 = node_coords[m['fin']]
 
             color = 'black'
             if 'fuerza' in m:
                 color = 'red' if m['fuerza'] < 0 else 'blue'
 
-            c.create_line(x1, y1, x2, y2, fill=color, width=2, tags="miembro")
+            ax.plot([n1[0], n2[0]], [n1[1], n2[1]], color=color, linewidth=2)
 
             if 'fuerza' in m:
-                mid_x = (x1+x2)/2
-                mid_y = (y1+y2)/2
-                c.create_text(mid_x, mid_y, text=f"{m['fuerza']:.1f} N", fill=color, font=("Arial", 8, "bold"), tags="miembro_fuerza")
+                mid_x = (n1[0]+n2[0])/2
+                mid_y = (n1[1]+n2[1])/2
+                # Añadir un fondo blanco al texto de la fuerza del miembro
+                ax.text(mid_x, mid_y, f"{m['fuerza']:.1f} N", color=color, fontsize=8,
+                        ha='center', va='center', bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2'))
 
-        arrow_len = 20
+        arrow_len_scale = 0.5 # Escala para el tamaño de las flechas de carga
         for carg in self.cargas_bast:
-            nodo = next(n for n in self.nodos_bast if n['id']==carg['nodo'])
-            x = nodo['x'] * self.escala_bast + self.offset_x_bast
-            y = nodo['y'] * self.escala_bast + self.offset_y_bast
-
+            nodo = node_coords[carg['nodo']]
             fx = carg['Fx']
             fy = carg['Fy']
             mag = (fx**2 + fy**2) ** 0.5
             if mag > 0:
                 ux, uy = fx / mag, fy / mag
-                # y-uy*arrow_len porque el origen y está invertido en canvas
-                c.create_line(x, self.offset_y_bast - nodo['y'] * self.escala_bast, 
-                              x + ux * arrow_len, self.offset_y_bast - nodo['y'] * self.escala_bast - uy * arrow_len, 
-                              arrow=tk.LAST, fill='green', width=2, tags="carga")
-                c.create_text(x + ux * arrow_len + 15 * ux, self.offset_y_bast - nodo['y'] * self.escala_bast - uy * arrow_len - 15 * uy, 
-                              text=f"{mag:.1f} N", fill='green', font=("Arial", 8, "bold"), tags="carga_mag")
+                # Ajustar el origen de la flecha para que se vea bien
+                arrow_start_x = nodo[0] - ux * 0.1 # Un pequeño offset para que la flecha no empiece exactamente en el nodo
+                arrow_start_y = nodo[1] - uy * 0.1
+                ax.arrow(arrow_start_x, arrow_start_y, ux * arrow_len_scale, uy * arrow_len_scale,
+                         head_width=0.1, head_length=0.15, fc='green', ec='green',
+                         length_includes_head=True)
+                ax.text(nodo[0] + ux * (arrow_len_scale + 0.1), nodo[1] + uy * (arrow_len_scale + 0.1),
+                        f"{mag:.1f} N", color='green', fontsize=8, ha='center', va='center',
+                        bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2'))
 
         if hasattr(self, 'reacciones_bast'):
-            reaction_arrow_len = 25
-            for nodo in self.nodos_bast:
-                if nodo['apoyo'] in ('Fijo', 'Móvil'):
-                    if nodo['id'] in self.reacciones_bast:
-                        rx, ry = self.reacciones_bast[nodo['id']]
-                        x_node = nodo['x'] * self.escala_bast + self.offset_x_bast
-                        y_node = self.offset_y_bast - nodo['y'] * self.escala_bast
+            reaction_arrow_len_scale = 0.6
+            for nodo_id, r in self.reacciones_bast.items():
+                nodo = node_coords[nodo_id]
+                rx, ry = r
+                if abs(rx) > 0.01:
+                    ax.arrow(nodo[0], nodo[1], (1 if rx > 0 else -1) * reaction_arrow_len_scale, 0,
+                             head_width=0.1, head_length=0.15, fc='orange', ec='orange',
+                             length_includes_head=True)
+                    ax.text(nodo[0] + (1 if rx > 0 else -1) * reaction_arrow_len_scale * 1.1, nodo[1],
+                            f"Rx={rx:.1f}", color='orange', fontsize=8, ha='center', va='center',
+                            bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2'))
+                if abs(ry) > 0.01:
+                    ax.arrow(nodo[0], nodo[1], 0, (1 if ry > 0 else -1) * reaction_arrow_len_scale,
+                             head_width=0.1, head_length=0.15, fc='orange', ec='orange',
+                             length_includes_head=True)
+                    ax.text(nodo[0], nodo[1] + (1 if ry > 0 else -1) * reaction_arrow_len_scale * 1.1,
+                            f"Ry={ry:.1f}", color='orange', fontsize=8, ha='center', va='center',
+                            bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2'))
 
-                        if abs(rx) > 0.1:
-                            x_end = x_node + (1 if rx > 0 else -1) * reaction_arrow_len
-                            c.create_line(x_node, y_node, x_end, y_node, arrow=tk.LAST, fill='orange', width=2, tags="reaccion")
-                            c.create_text(x_end, y_node - 10, text=f"{rx:.1f}", fill='orange', font=("Arial", 8, "bold"), tags="reaccion_mag")
+        ax.autoscale_view()
+        ax.margins(0.2)
+        plt.tight_layout()
 
-                        if abs(ry) > 0.1:
-                            y_end = y_node - (1 if ry > 0 else -1) * reaction_arrow_len
-                            c.create_line(x_node, y_node, x_node, y_end, arrow=tk.LAST, fill='orange', width=2, tags="reaccion")
-                            c.create_text(x_node + 10, y_end, text=f"{ry:.1f}", fill='orange', font=("Arial", 8, "bold"), tags="reaccion_mag")
+        # Limpiar el canvas de Tkinter y dibujar la figura de Matplotlib
+        for widget in c.winfo_children():
+            widget.destroy()
+        canvas_widget = FigureCanvasTkAgg(fig, master=c)
+        canvas_widget.draw()
+        canvas_widget.get_tk_widget().pack(fill="both", expand=True)
+
+        self.ultima_figura = fig # Guardar la figura para la función de ampliar
 
     def mostrar_dcl_nodos_bastidor(self):
         if not self.miembros_bast or not hasattr(self, 'reacciones_bast'):
@@ -3054,7 +3091,8 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                 vec_y = u[1] * arrow_len * (1 if fuerza >= 0 else -1)
 
                 ax.arrow(0, 0, vec_x, vec_y, color=color, head_width=0.1, length_includes_head=True)
-                ax.text(vec_x*1.1, vec_y*1.1, f"{abs(fuerza):.1f}", color=color, ha='center', va='center')
+                ax.text(vec_x*1.1, vec_y*1.1, f"{abs(fuerza):.1f}", color=color, ha='center', va='center',
+                        bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2')) # Fondo blanco
 
         for c in self.cargas_bast:
             if c['nodo']==nodo['id']:
@@ -3062,17 +3100,20 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                 if mag > 0:
                     ux, uy = c['Fx']/mag, c['Fy']/mag
                     ax.arrow(0, 0, ux*arrow_len, uy*arrow_len, color='green', head_width=0.1, length_includes_head=True)
-                    ax.text(ux*arrow_len*1.1, uy*arrow_len*1.1, f"{mag:.1f}", color='green', ha='center', va='center')
+                    ax.text(ux*arrow_len*1.1, uy*arrow_len*1.1, f"{mag:.1f}", color='green', ha='center', va='center',
+                            bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2')) # Fondo blanco
 
         if nodo['apoyo'] in ('Fijo','Móvil') and hasattr(self,'reacciones_bast'):
             if nodo['id'] in self.reacciones_bast:
                 rx, ry = self.reacciones_bast[nodo['id']]
                 if abs(rx) > 0.01:
                     ax.arrow(0, 0, (1 if rx > 0 else -1) * arrow_len, 0, color='orange', head_width=0.1, length_includes_head=True)
-                    ax.text((1 if rx > 0 else -1) * arrow_len * 1.1, 0.1, f"{abs(rx):.1f}", color='orange', ha='center', va='center')
+                    ax.text((1 if rx > 0 else -1) * arrow_len * 1.1, 0.1, f"{abs(rx):.1f}", color='orange', ha='center', va='center',
+                            bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2')) # Fondo blanco
                 if abs(ry) > 0.01:
                     ax.arrow(0, 0, 0, (1 if ry > 0 else -1) * arrow_len, color='orange', head_width=0.1, length_includes_head=True)
-                    ax.text(0.1, (1 if ry > 0 else -1) * arrow_len * 1.1, f"{abs(ry):.1f}", color='orange', ha='center', va='center')
+                    ax.text(0.1, (1 if ry > 0 else -1) * arrow_len * 1.1, f"{abs(ry):.1f}", color='orange', ha='center', va='center',
+                            bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2')) # Fondo blanco
 
         ax.set_xlim(-1.5,1.5)
         ax.set_ylim(-1.5,1.5)
@@ -3151,17 +3192,20 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                             if mag_c > 0:
                                 ux_c, uy_c = c['Fx']/mag_c, c['Fy']/mag_c
                                 ax.arrow(nodo['x'], nodo['y'], ux_c*arrow_scale, uy_c*arrow_scale, color='green', head_width=0.08, length_includes_head=True)
-                                ax.text(nodo['x'] + ux_c*arrow_scale*1.1, nodo['y'] + uy_c*arrow_scale*1.1, f"{mag_c:.1f}", color='green', fontsize=7, ha='center', va='center')
+                                ax.text(nodo['x'] + ux_c*arrow_scale*1.1, nodo['y'] + uy_c*arrow_scale*1.1, f"{mag_c:.1f}", color='green', fontsize=7, ha='center', va='center',
+                                        bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2')) # Fondo blanco
 
                     if nodo['apoyo'] in ('Fijo', 'Móvil') and hasattr(self, 'reacciones_bast'):
                         if nodo['id'] in self.reacciones_bast:
                             rx, ry = self.reacciones_bast[nodo['id']]
                             if abs(rx) > 0.01:
                                 ax.arrow(nodo['x'], nodo['y'], (1 if rx > 0 else -1) * arrow_scale, 0, color='orange', head_width=0.08, length_includes_head=True)
-                                ax.text(nodo['x'] + (1 if rx > 0 else -1) * arrow_scale * 1.1, nodo['y'] + 0.1, f"{abs(rx):.1f}", color='orange', fontsize=7, ha='center', va='center')
+                                ax.text(nodo['x'] + (1 if rx > 0 else -1) * arrow_scale * 1.1, nodo['y'] + 0.1, f"{abs(rx):.1f}", color='orange', fontsize=7, ha='center', va='center',
+                                        bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2')) # Fondo blanco
                             if abs(ry) > 0.01:
                                 ax.arrow(nodo['x'], nodo['y'], 0, (1 if ry > 0 else -1) * arrow_scale, color='orange', head_width=0.08, length_includes_head=True)
-                                ax.text(nodo['x'] + 0.1, nodo['y'] + (1 if ry > 0 else -1) * arrow_scale * 1.1, f"{abs(ry):.1f}", color='orange', fontsize=7, ha='center', va='center')
+                                ax.text(nodo['x'] + 0.1, nodo['y'] + (1 if ry > 0 else -1) * arrow_scale * 1.1, f"{abs(ry):.1f}", color='orange', fontsize=7, ha='center', va='center',
+                                        bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2')) # Fondo blanco
 
             for m in miembros_cortados:
                 n1 = node_lookup[m['inicio']]
@@ -3188,7 +3232,8 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                 vec_y = uy_m * arrow_scale * (1 if fuerza >= 0 else -1)
 
                 ax.arrow(x_cut, y_cut, vec_x, vec_y, color=color, head_width=0.08, length_includes_head=True)
-                ax.text(x_cut + vec_x*1.1, y_cut + vec_y*1.1, f"{abs(fuerza):.1f}", color=color, fontsize=7, ha='center', va='center')
+                ax.text(x_cut + vec_x*1.1, y_cut + vec_y*1.1, f"{abs(fuerza):.1f}", color=color, fontsize=7, ha='center', va='center',
+                        bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2')) # Fondo blanco
 
         elif eje == 'y':
             ax.axhline(corte, color='red', linestyle='--', linewidth=2, label=f'Corte en Y={corte:.2f}')
@@ -3211,17 +3256,20 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                             if mag_c > 0:
                                 ux_c, uy_c = c['Fx']/mag_c, c['Fy']/mag_c
                                 ax.arrow(nodo['x'], nodo['y'], ux_c*arrow_scale, uy_c*arrow_scale, color='green', head_width=0.08, length_includes_head=True)
-                                ax.text(nodo['x'] + ux_c*arrow_scale*1.1, nodo['y'] + uy_c*arrow_scale*1.1, f"{mag_c:.1f}", color='green', fontsize=7, ha='center', va='center')
+                                ax.text(nodo['x'] + ux_c*arrow_scale*1.1, nodo['y'] + uy_c*arrow_scale*1.1, f"{mag_c:.1f}", color='green', fontsize=7, ha='center', va='center',
+                                        bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2')) # Fondo blanco
 
                     if nodo['apoyo'] in ('Fijo', 'Móvil') and hasattr(self, 'reacciones_bast'):
                         if nodo['id'] in self.reacciones_bast:
                             rx, ry = self.reacciones_bast[nodo['id']]
                             if abs(rx) > 0.01:
                                 ax.arrow(nodo['x'], nodo['y'], (1 if rx > 0 else -1) * arrow_scale, 0, color='orange', head_width=0.08, length_includes_head=True)
-                                ax.text(nodo['x'] + (1 if rx > 0 else -1) * arrow_scale * 1.1, nodo['y'] + 0.1, f"{abs(rx):.1f}", color='orange', fontsize=7, ha='center', va='center')
+                                ax.text(nodo['x'] + (1 if rx > 0 else -1) * arrow_scale * 1.1, nodo['y'] + 0.1, f"{abs(rx):.1f}", color='orange', fontsize=7, ha='center', va='center',
+                                        bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2')) # Fondo blanco
                             if abs(ry) > 0.01:
                                 ax.arrow(nodo['x'], nodo['y'], 0, (1 if ry > 0 else -1) * arrow_scale, color='orange', head_width=0.08, length_includes_head=True)
-                                ax.text(nodo['x'] + 0.1, nodo['y'] + (1 if ry > 0 else -1) * arrow_scale * 1.1, f"{abs(ry):.1f}", color='orange', fontsize=7, ha='center', va='center')
+                                ax.text(0.1, (1 if ry > 0 else -1) * arrow_scale * 1.1, f"{abs(ry):.1f}", color='orange', fontsize=7, ha='center', va='center',
+                                        bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2')) # Fondo blanco
 
             for m in miembros_cortados:
                 n1 = node_lookup[m['inicio']]
@@ -3248,7 +3296,8 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                 vec_y = uy_m * arrow_scale * (1 if fuerza >= 0 else -1)
 
                 ax.arrow(x_cut, y_cut, vec_x, vec_y, color=color, head_width=0.08, length_includes_head=True)
-                ax.text(x_cut + vec_x*1.1, y_cut + vec_y*1.1, f"{abs(fuerza):.1f}", color=color, fontsize=7, ha='center', va='center')
+                ax.text(x_cut + vec_x*1.1, y_cut + vec_y*1.1, f"{abs(fuerza):.1f}", color=color, fontsize=7, ha='center', va='center',
+                        bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2')) # Fondo blanco
 
         ax.set_aspect('equal', adjustable='box')
         ax.set_xlabel('Coordenada X')
@@ -3375,11 +3424,11 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         if indice_seleccionado is None:
             return
         tipo, x, y, ancho, alto = self.formas[indice_seleccionado]
-        
+
         # Determinar el factor de escala (rueda arriba = zoom in, rueda abajo = zoom out)
         # event.delta es 120 o -120 en Windows, event.num 4 o 5 en Linux/macOS
         factor = 1.1 if (event.delta > 0 or event.num == 4) else 0.9
-        
+
         # Calcular nuevas dimensiones
         nuevo_ancho = max(1, ancho * factor)
         nuevo_alto = max(1, alto * factor)
@@ -3393,7 +3442,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             # Para rectángulos y triángulos, escalar desde la esquina superior izquierda (x,y)
             # Esto mantiene la esquina superior izquierda fija y expande hacia la derecha y abajo
             self.formas[indice_seleccionado] = (tipo, x, y, nuevo_ancho, nuevo_alto)
-            
+
         self.redibujar_formas()
 
 
@@ -3418,7 +3467,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         if self.forma_escalando is None:
             return
         tipo, x, y, _, _ = self.formas[self.forma_escalando] # Usamos x,y de la forma original
-        
+
         # Calcular el cambio de arrastre desde el inicio del escalado
         dx = event.x - self.inicio_escala_x
         dy = event.y - self.inicio_escala_y # Asumimos que arrastrar hacia abajo/derecha aumenta, arriba/izquierda disminuye
@@ -3429,18 +3478,18 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         # Para escalado arrastrando el vértice inferior derecho, la altura aumenta si dy es positivo
         # Si (x,y) es la esquina superior izquierda del rectángulo, y arrastramos el inferior derecho:
         # la nueva altura sería self.alto_inicial + dy.
-        nuevo_alto = max(1, self.alto_inicial + dy) 
-        
+        nuevo_alto = max(1, self.alto_inicial + dy)
+
         if tipo == "Círculo":
             # Para círculos, mantener el ancho y alto iguales (radio)
             nuevo_tam = max(nuevo_ancho, nuevo_alto)
             nuevo_ancho = nuevo_alto = nuevo_tam
-        
+
         # Actualizar las dimensiones de la forma
         self.formas[self.forma_escalando] = (tipo, x, y, nuevo_ancho, nuevo_alto)
-        
+
         self.redibujar_formas()
-        
+
         # Actualizar el tooltip en el canvas
         event.widget.delete("tooltip")
         event.widget.create_text(event.x + 10, event.y - 10,
@@ -3487,7 +3536,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                 area = ancho * alto / 2
                 # CG para triángulo con vértice superior en (x,y) y base en (x +/- ancho/2, y+alto)
                 cx = x + ancho / 2
-                cy = y + (2 * alto / 3) 
+                cy = y + (2 * alto / 3)
             elif tipo == "Círculo":
                 area = np.pi * (ancho / 2) ** 2
                 cx = x
@@ -3545,16 +3594,16 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         # Ajustar para que el dibujo se haga desde (0,0) como base de la mesa.
         # Las coordenadas de los puntos deben ser compatibles con el dibujo de matplotlib.Rectangle(xy, width, height)
         # donde xy es la esquina inferior izquierda.
-        
+
         # Original del problema de la mesa:
         # Rectángulo 1: 0,0 a 100,2 (x,y,ancho,alto) -> CG (50,1) Area 200
-        self.formas.append(("Rectángulo", 0, 0, 100, 2)) 
+        self.formas.append(("Rectángulo", 0, 0, 100, 2))
         # Rectángulo 2: 0,2 a 2,50 -> CG (1,26) Area 96
-        self.formas.append(("Rectángulo", 0, 2, 2, 48)) 
+        self.formas.append(("Rectángulo", 0, 2, 2, 48))
         # Rectángulo 3: 98,2 a 100,50 -> CG (99,26) Area 96
-        self.formas.append(("Rectángulo", 98, 2, 2, 48)) 
+        self.formas.append(("Rectángulo", 98, 2, 2, 48))
         # Rectángulo 4: 2,48 a 98,50 -> CG (50,49) Area 192
-        self.formas.append(("Rectángulo", 2, 48, 96, 2)) 
+        self.formas.append(("Rectángulo", 2, 48, 96, 2))
         # Rectángulo 5: 39,23 a 61,27 (hueco) - se resta el área y momentos
         # El ejercicio original tiene un hueco, pero el simulador actual suma formas.
         # Para simularlo, podríamos agregar un rectángulo con "masa negativa", pero la implementación actual no lo soporta.
@@ -3625,6 +3674,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         ax.text(cg_x_solar + 0.5, cg_y_solar + 0.5, f'CG ({cg_x_solar:.2f}, {cg_y_solar:.2f})',
                 ha='left', va='bottom', color='red')
 
+        # Ajustar límites para una mejor visualización de este CG específico
         ax.set_aspect('equal', 'box')
         ax.set_xlim(0, 10)
         ax.set_ylim(0, 10)
