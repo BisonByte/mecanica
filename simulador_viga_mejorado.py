@@ -2640,7 +2640,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
                             ax.arrow(nodo['x'], nodo['y'], 0, signy*arrow_len,
                                      color='orange', head_width=0.1,
                                      length_includes_head=True)
-                            ax.text(nodo['x'] + 0.05, nodo['y'] + signy*arrow_len,
+                            ax.text(0.1, nodo['y'] + signy*arrow_len,
                                     f"Ry={ry:.1f}", color='orange', ha='left',
                                     va='bottom' if signy > 0 else 'top')
             ax.axvline(corte, color='red', linestyle='--')
