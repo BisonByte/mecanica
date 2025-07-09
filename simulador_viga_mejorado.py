@@ -664,7 +664,7 @@ class SimuladorVigaMejorado:
             self.graficar_deformacion(L0_m, delta_axial, delta_termica, delta_total, sigma)
 
         except ValueError:
-            messagebox.showerror("Error de Entrada", "Por favor, introduce valores numéricos válidos en todos los campos.")
+            messagebox.showerror("Error de Cálculo", "Por favor, introduce valores numéricos válidos en todos los campos.")
         except Exception as e:
             messagebox.showerror("Error", f"Ocurrió un error inesperado: {e}")
 
@@ -1369,6 +1369,19 @@ class SimuladorVigaMejorado:
             ax1.arrow((inicio+fin)/2, 0.6, 0, -0.4, head_width=L*0.015, head_length=0.03, fc='red', ec='red', width=0.002)
             ax1.text((inicio+fin)/2, 0.65, f'{F_eq:.1f}N', ha='center', va='bottom', fontsize=7, color='red')
 
+        par_torsor = self.par_torsor.get()
+        if par_torsor != 0:
+            # Dibujar una flecha circular para representar el par torsor
+            center = L / 2
+            radius = 0.2
+            angle = np.linspace(0, 2*np.pi, 100)
+            x_circ = center + radius * np.cos(angle)
+            y_circ = radius * np.sin(angle)
+            color = 'green' if par_torsor > 0 else 'purple'
+            ax1.plot(x_circ, y_circ, color=color)
+            ax1.arrow(center + radius, 0, 0.05, 0.05, head_width=0.05, head_length=0.05, fc=color, ec=color)
+            ax1.text(center, 0.3, f'T={par_torsor:.2f}N·m', ha='center', va='bottom', fontsize=9, color=color)
+
         ax1.set_xlim(-L*0.1, L*1.1)
         ax1.set_ylim(-0.6, 0.7)
         ax1.margins(x=0.05, y=0.2)
@@ -1848,18 +1861,7 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         ttk.Button(button_row_2, text="Limpiar Lienzo", command=self.limpiar_lienzo_formas).grid(row=0, column=0, padx=5, pady=2, sticky="ew")
         ttk.Button(button_row_2, text="Ampliar Lienzo", command=self.ampliar_lienzo_formas).grid(row=0, column=1, padx=5, pady=2, sticky="ew")
 
-        # Botones de cargar proyectos
-        project_buttons_frame = ttk.Frame(control_frame)
-        project_buttons_frame.grid(row=5, column=0, columnspan=4, pady=5, sticky="ew")
-        project_buttons_frame.columnconfigure(0, weight=1)
-        project_buttons_frame.columnconfigure(1, weight=1)
-        project_buttons_frame.columnconfigure(2, weight=1)
-        ttk.Button(project_buttons_frame, text="Cargar Proyecto 3 (Mesa)",
-                   command=self.cargar_proyecto_3_cg_mesa).grid(row=0, column=0, padx=5, pady=2, sticky="ew")
-        ttk.Button(project_buttons_frame, text="Cargar CG (Solar)",
-                   command=self.cargar_cg_solar).grid(row=0, column=1, padx=5, pady=2, sticky="ew")
-        ttk.Button(project_buttons_frame, text="Cargar Proyecto (Mancuerna)",
-                   command=self.cargar_proyecto_mancuerna_cg).grid(row=0, column=2, padx=5, pady=2, sticky="ew")
+        # Removed project buttons frame and its contents
 
         ttk.Label(frame_formas, text="⚡ También puede hacer clic derecho para escalar y arrastrar en el lienzo.").pack(pady=2) # Ajustar padding
         self.canvas_formas = tk.Canvas(frame_formas, bg="white", highlightbackground="gray", highlightthickness=1)
@@ -2048,21 +2050,35 @@ I_total = Σ(I_barra_i + A_i * d_i²)
 
     def agregar_forma(self):
         try:
+            pos_x = self.x_forma.get()
+            pos_y = self.y_forma.get()
+            ancho_str = self.ancho_forma.get()
+            alto_str = self.alto_forma.get()
+
+            # Convertir a flotante y manejar cadenas vacías
+            x = float(pos_x) if pos_x else 0.0
+            y = float(pos_y) if pos_y else 0.0
+            ancho = float(ancho_str) if ancho_str else 0.0
+            alto = float(alto_str) if alto_str else 0.0
+
             tipo = self.tipo_forma.get()
-            x = float(self.x_forma.get())
-            y = float(self.y_forma.get())
-            ancho = float(self.ancho_forma.get())
-            alto = float(self.alto_forma.get())
 
             if tipo not in ["Rectángulo", "Triángulo", "Círculo"]:
                 raise ValueError("Tipo de forma no válido")
+            
+            if ancho <= 0 or alto <= 0:
+                messagebox.showerror("Error", "El ancho y el alto deben ser mayores que cero.")
+                return
+
 
             self.formas.append((tipo, x, y, ancho, alto))
             self.redibujar_formas()
-            self.log(f"Forma agregada: {tipo} en ({x}, {y})\n", "data")
+            self.log(f"Forma agregada: {tipo} en ({x}, {y}) con Ancho: {ancho}, Alto: {alto}\n", "data")
 
+        except ValueError as e:
+            messagebox.showerror("Error", f"Valores inválidos para las dimensiones o coordenadas: {e}")
         except Exception as e:
-            messagebox.showerror("Error", f"Valores inválidos: {e}")
+            messagebox.showerror("Error", f"Ocurrió un error inesperado al agregar la forma: {e}")
 
     def colocar_forma(self, event):
         """Permite agregar una forma haciendo clic en el lienzo."""
@@ -2136,6 +2152,9 @@ I_total = Σ(I_barra_i + A_i * d_i²)
         self.dibujar_formas_irregulares(cg_x, cg_y)
 
     def dibujar_formas_irregulares(self, cg_x, cg_y):
+        for widget in self.frame_grafico.winfo_children():
+            widget.destroy()
+
         fig, ax = plt.subplots(figsize=(8, 8))
 
         for forma in self.formas:
@@ -2344,21 +2363,10 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             fuerzas, reacciones, num_vars, num_eqs = self.resolver_articulado(
                 self.nodos_arm, self.miembros_arm, self.cargas_arm)
 
-            if num_vars > num_eqs:
-                messagebox.showwarning(
-                    "Advertencia",
-                    "La armadura es estáticamente indeterminada. Puede que no tenga una solución única o sea inestable.",
-                )
-            elif num_vars < num_eqs:
-                messagebox.showwarning(
-                    "Advertencia",
-                    "La armadura es estáticamente sobredeterminada. Puede que no sea soluble con las condiciones dadas.",
-                )
-
             for j, m in enumerate(self.miembros_arm):
                 m['fuerza'] = fuerzas[j]
 
-            self.reacciones_arm = reacciones
+            self.reacciones_arm = reactions_from_solution
 
             self.log(f"\n{'='*50}\n", "title")
             self.log("📐 ANÁLISIS DE ARMADURA:\n", "title")
@@ -2369,6 +2377,18 @@ I_total = Σ(I_barra_i + A_i * d_i²)
 
             for nid, r in self.reacciones_arm.items():
                 self.log(f"Reacciones nodo {nid}: Rx={r[0]:.2f} N, Ry={r[1]:.2f} N\n", "data")
+            
+            # Check for static determinacy after setting self.reacciones_arm
+            if num_vars > num_eqs:
+                messagebox.showwarning(
+                    "Advertencia",
+                    "La armadura es estáticamente indeterminada. Puede que no tenga una solución única o sea inestable.",
+                )
+            elif num_vars < num_eqs:
+                messagebox.showwarning(
+                    "Advertencia",
+                    "La armadura es estáticamente sobredeterminada. Puede que no sea soluble con las condiciones dadas.",
+                )
 
             self.dibujar_armadura()
 
@@ -3387,24 +3407,31 @@ I_total = Σ(I_barra_i + A_i * d_i²)
             elif event.num == 3:
                 self.iniciar_escalado_forma(event)
         else:
-            # Si no se seleccionó ninguna forma, y es un clic izquierdo, intenta colocar una nueva
+            # If no shape was selected, and it's a left click, try to place a new one
             if event.num == 1:
                 try:
                     tipo = self.tipo_forma.get()
-                    # Si los campos de ancho/alto están vacíos, usar valores por defecto
-                    ancho_val = float(self.ancho_forma.get()) if self.ancho_forma.get() else 50
-                    alto_val = float(self.alto_forma.get()) if self.alto_forma.get() else 50
+                    # If width/height fields are empty, use default values
+                    ancho_val_str = self.ancho_forma.get()
+                    alto_val_str = self.alto_forma.get()
+
+                    ancho_val = float(ancho_val_str) if ancho_val_str else 50
+                    alto_val = float(alto_val_str) if alto_val_str else 50
+
+                    if ancho_val <= 0 or alto_val <= 0:
+                        messagebox.showerror("Error", "El ancho y el alto deben ser mayores que cero para agregar una nueva forma.")
+                        return
 
                     x_click = event.x
                     y_click = event.y
 
-                    # Para Rectángulo y Triángulo, (x_click, y_click) es la esquina superior izquierda del bounding box.
-                    # Para Círculo, (x_click, y_click) es el centro.
+                    # For Rectangle and Triangle, (x_click, y_click) is the top-left corner of the bounding box.
+                    # For Circle, (x_click, y_click) is the center.
                     self.formas.append((tipo, x_click, y_click, ancho_val, alto_val))
                     self.redibujar_formas()
                     self.log(f"Forma agregada: {tipo} en ({x_click}, {y_click})\n", "data")
                 except ValueError as e:
-                    messagebox.showerror("Error", f"Valores inválidos: {e}")
+                    messagebox.showerror("Error", f"Valores inválidos: {e}. Asegúrese de que el ancho y alto sean numéricos.")
 
     def arrastrar_forma(self, event):
         if self.forma_seleccionada is None:
@@ -3585,152 +3612,6 @@ I_total = Σ(I_barra_i + A_i * d_i²)
 
         self.coord_label_ampliado = ttk.Label(self.ventana_lienzo, text="x=0, y=0")
         self.coord_label_ampliado.pack()
-
-    def cargar_proyecto_3_cg_mesa(self):
-        """Carga los datos del Proyecto 3 (Mesa) y muestra su centro de gravedad."""
-        self.limpiar_lienzo_formas()
-
-        # Las coordenadas de la tabla original son para el CG, no para el vértice superior izquierdo.
-        # Ajustar para que el dibujo se haga desde (0,0) como base de la mesa.
-        # Las coordenadas de los puntos deben ser compatibles con el dibujo de matplotlib.Rectangle(xy, width, height)
-        # donde xy es la esquina inferior izquierda.
-
-        # Original del problema de la mesa:
-        # Rectángulo 1: 0,0 a 100,2 (x,y,ancho,alto) -> CG (50,1) Area 200
-        self.formas.append(("Rectángulo", 0, 0, 100, 2))
-        # Rectángulo 2: 0,2 a 2,50 -> CG (1,26) Area 96
-        self.formas.append(("Rectángulo", 0, 2, 2, 48))
-        # Rectángulo 3: 98,2 a 100,50 -> CG (99,26) Area 96
-        self.formas.append(("Rectángulo", 98, 2, 2, 48))
-        # Rectángulo 4: 2,48 a 98,50 -> CG (50,49) Area 192
-        self.formas.append(("Rectángulo", 2, 48, 96, 2))
-        # Rectángulo 5: 39,23 a 61,27 (hueco) - se resta el área y momentos
-        # El ejercicio original tiene un hueco, pero el simulador actual suma formas.
-        # Para simularlo, podríamos agregar un rectángulo con "masa negativa", pero la implementación actual no lo soporta.
-        # Por ahora, solo se agregarán las formas positivas.
-        # Si se desea un cálculo exacto del CG de la mesa con el hueco, se debe implementar la resta de áreas.
-
-        # Recalcular CG basado en las formas añadidas
-        area_total = 0
-        sum_XA_formas = 0
-        sum_YA_formas = 0
-
-        for tipo, x, y, ancho, alto in self.formas:
-            if tipo == "Rectángulo":
-                area = ancho * alto
-                cx = x + ancho / 2
-                cy = y + alto / 2
-            # Añadir otras formas si la mesa las incluyera
-            else:
-                area = 0 # Ignorar otros tipos por ahora
-                cx = 0
-                cy = 0
-
-            area_total += area
-            sum_XA_formas += cx * area
-            sum_YA_formas += cy * area
-
-        if area_total != 0:
-            cg_x_proyecto = sum_XA_formas / area_total
-            cg_y_proyecto = sum_YA_formas / area_total
-        else:
-            cg_x_proyecto = 0
-            cg_y_proyecto = 0
-            self.log("Error: El área total de las formas añadidas es cero, no se puede calcular el CG.\n", "error")
-
-
-        self.cg_label.config(text=f"CG Mesa (Cal.): ({cg_x_proyecto:.2f}, {cg_y_proyecto:.2f})")
-        self.redibujar_formas()
-
-        self.log("\n\U0001F4CA Datos del Proyecto 3 (Mesa) cargados y calculados:\n", "title")
-        self.log(f"Centro de Gravedad calculado (según formas añadidas): X={cg_x_proyecto:.2f}, Y={cg_y_proyecto:.2f}\n", "data")
-        self.log("Se ha agregado un rect\u00e1ngulo representativo de la forma exterior de la mesa.\n", "info")
-        self.log("Nota: Si el proyecto original incluye huecos, esta simulación actual solo suma las áreas positivas. Para un cálculo con huecos se necesitaría una implementación de resta de áreas.\n", "info")
-
-        # Dibujar las formas y el CG calculado en el matplotlib
-        self.dibujar_formas_irregulares(cg_x_proyecto, cg_y_proyecto)
-
-
-    def cargar_cg_solar(self):
-        """Carga los datos predefinidos del centro de gravedad para la figura 'Solar'."""
-        self.limpiar_lienzo_formas()
-
-        # Las formas para "Solar" no están definidas en el documento, solo el CG final.
-        # Si se desea una representación visual completa, se necesitarían las geometrías de las partes.
-        # Por ahora, solo se dibujará el punto del CG.
-        cg_x_solar = 5.0
-        cg_y_solar = 6.55
-
-        self.cg_label.config(text=f"CG Solar: ({cg_x_solar:.2f}, {cg_y_solar:.2f})")
-
-        self.log("\n\U0001F4CA Datos del Centro de Gravedad (Solar) cargados:\n", "title")
-        self.log(f"Centro de Gravedad: X={cg_x_solar:.2f} cm, Y={cg_y_solar:.2f} cm\n", "data")
-        self.log("Se ha cargado y visualizado el Centro de Gravedad de la figura 'Solar'.\n", "info")
-        self.log("Nota: La visualizaci\u00f3n dibuja solo el punto del CG. Si tuvieras los detalles de las formas que componen 'Solar', podr\u00edas a\u00f1adirlas aqu\u00ed.\n", "info")
-
-        # Dibujar solo el punto del CG en Matplotlib, ya que no se tienen las formas componentes
-        fig, ax = plt.subplots(figsize=(8, 8))
-        ax.plot(cg_x_solar, cg_y_solar, 'ro', markersize=10, label='Centro de Gravedad')
-        ax.text(cg_x_solar + 0.5, cg_y_solar + 0.5, f'CG ({cg_x_solar:.2f}, {cg_y_solar:.2f})',
-                ha='left', va='bottom', color='red')
-
-        # Ajustar límites para una mejor visualización de este CG específico
-        ax.set_aspect('equal', 'box')
-        ax.set_xlim(0, 10)
-        ax.set_ylim(0, 10)
-        ax.set_title('Centro de Gravedad de la Figura Solar')
-        ax.set_xlabel('Coordenada X (cm)')
-        ax.set_ylabel('Coordenada Y (cm)')
-        ax.grid(True, linestyle='--', alpha=0.7)
-        ax.legend()
-
-        plt.tight_layout()
-        for widget in self.frame_grafico.winfo_children():
-            widget.destroy()
-        canvas = FigureCanvasTkAgg(fig, master=self.frame_grafico)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill="both", expand=True)
-        self.ultima_figura = fig
-
-
-    def cargar_proyecto_mancuerna_cg(self):
-        """Carga los datos del Centro de Gravedad de la figura de mancuerna."""
-        self.limpiar_lienzo_formas()
-
-        # Coordenadas del Centro de Gravedad calculadas para la mancuerna (según la imagen)
-        cg_x_mancuerna = 4.22
-        cg_y_mancuerna = 14.02
-
-        self.cg_label.config(text=f"CG Mancuerna: ({cg_x_mancuerna:.2f}, {cg_y_mancuerna:.2f})")
-
-        self.log("\n\U0001F4CA Datos del Centro de Gravedad (Mancuerna) cargados:\n", "title")
-        self.log(f"Centro de Gravedad: X={cg_x_mancuerna:.2f}, Y={cg_y_mancuerna:.2f}\n", "data")
-        self.log("Se muestra el CG calculado. La visualizaci\u00f3n de la forma completa de la 'Mancuerna' no se dibuja autom\u00e1ticamente en este caso, ya que no se especificaron las formas individuales que la componen en el documento original. Si deseas que se dibuje, necesitar\u00eda los detalles de las formas (rect\u00e1ngulos, c\u00edrculos, etc.) que la componen y sus posiciones.\n", "info")
-
-        # Dibujar solo el punto del CG en Matplotlib
-        fig, ax = plt.subplots(figsize=(8, 8))
-        ax.plot(cg_x_mancuerna, cg_y_mancuerna, 'ro', markersize=10, label='Centro de Gravedad')
-        ax.text(cg_x_mancuerna + 0.5, cg_y_mancuerna + 0.5, f'CG ({cg_x_mancuerna:.2f}, {cg_y_mancuerna:.2f})',
-                ha='left', va='bottom', color='red')
-
-        # Ajustar límites para una mejor visualización de este CG específico
-        ax.set_aspect('equal', 'box')
-        ax.set_xlim(0, 20)
-        ax.set_ylim(0, 30)
-        ax.set_title('Centro de Gravedad de la Mancuerna')
-        ax.set_xlabel('Coordenada X (cm)')
-        ax.set_ylabel('Coordenada Y (cm)')
-        ax.grid(True, linestyle='--', alpha=0.7)
-        ax.legend()
-
-        plt.tight_layout()
-        for widget in self.frame_grafico.winfo_children():
-            widget.destroy()
-        canvas = FigureCanvasTkAgg(fig, master=self.frame_grafico)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill="both", expand=True)
-        self.ultima_figura = fig
-
 
     def crear_seccion_resultados(self, parent):
         frame_resultados = ttk.LabelFrame(parent, text="Resultados", padding="10 10 10 10")
