@@ -89,16 +89,6 @@ El simulador utiliza `matplotlib` para crear visualizaciones claras y dinámicas
 
 ## 🚀 ¡Empieza a Usar el Simulador!
 
-Si quieres evitar configurar el entorno manualmente, ahora puedes levantar la aplicación y una base de datos PostgreSQL con un solo comando gracias a **Docker Compose**:
-
-```bash
-docker-compose up
-```
-
-Esto descargará las imágenes necesarias y ejecutará el simulador junto con la base de datos.
-
-Si prefieres instalar todo en tu sistema local, sigue estos pasos:
-
 1.  **Clona este repositorio** o descarga el código fuente directamente.
 2.  **Asegúrate de tener Python 3 instalado**. Las dependencias clave son `tkinter` (incluido en la mayoría de las instalaciones de Python), `matplotlib` y `numpy`.
     * Puedes instalar `matplotlib` y `numpy` con pip:
