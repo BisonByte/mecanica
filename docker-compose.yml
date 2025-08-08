@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  app:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: python simulador_viga_mejorado.py
+    depends_on:
+      - db
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: simulador
+    volumes:
+      - db_data:/var/lib/postgresql/data
+volumes:
+  db_data:
