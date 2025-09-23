@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simulador de Estructuras Web</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/css/main.css" />
+</head>
+<body>
+    <div class="background-gradient"></div>
+    <header class="app-header">
+        <div class="brand">
+            <span class="brand__logo">ME</span>
+            <div>
+                <h1 class="brand__title">Simulador de Estructuras</h1>
+                <p class="brand__subtitle">Diseño profesional · Resultados confiables</p>
+            </div>
+        </div>
+        <nav class="app-nav">
+            <a href="#configuracion">Configuración</a>
+            <a href="#cargas">Cargas</a>
+            <a href="#resultados">Resultados</a>
+            <a href="#graficas">Gráficas</a>
+        </nav>
+    </header>
+
+    <main class="app-shell" id="configuracion">
+        <aside class="panel panel--controls" aria-label="Panel de configuración">
+            <form id="beam-form" class="form-grid" autocomplete="off">
+                <section class="panel__section">
+                    <h2 class="panel__title">Parámetros globales</h2>
+                    <div class="field">
+                        <label for="length">Longitud de la viga (m)</label>
+                        <input id="length" name="length" type="number" step="0.1" min="0" required />
+                    </div>
+                    <div class="field field--inline">
+                        <div>
+                            <label for="height_start">Altura inicio (m)</label>
+                            <input id="height_start" name="height_start" type="number" step="0.01" />
+                        </div>
+                        <div>
+                            <label for="height_end">Altura fin (m)</label>
+                            <input id="height_end" name="height_end" type="number" step="0.01" />
+                        </div>
+                    </div>
+                    <div class="field field--inline">
+                        <div>
+                            <label for="support_a_type">Apoyo A</label>
+                            <select id="support_a_type" name="support_a_type">
+                                <option value="Fijo">Fijo</option>
+                                <option value="Movil">Móvil</option>
+                                <option value="Ninguno">Ninguno</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="support_b_type">Apoyo B</label>
+                            <select id="support_b_type" name="support_b_type">
+                                <option value="Fijo">Fijo</option>
+                                <option value="Movil" selected>Móvil</option>
+                                <option value="Ninguno">Ninguno</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="support_c_type">Apoyo C (opcional)</label>
+                        <select id="support_c_type" name="support_c_type">
+                            <option value="Ninguno">Ninguno</option>
+                            <option value="Fijo">Fijo</option>
+                            <option value="Movil">Móvil</option>
+                        </select>
+                    </div>
+                    <div class="field" id="support_c_position_group" style="display:none">
+                        <label for="support_c_position">Posición apoyo C (m)</label>
+                        <input id="support_c_position" name="support_c_position" type="number" step="0.1" min="0" />
+                    </div>
+                    <div class="field">
+                        <label for="torsor">Par torsor externo (N·m)</label>
+                        <input id="torsor" name="torsor" type="number" step="0.1" value="0" />
+                    </div>
+                </section>
+
+                <section class="panel__section" id="cargas">
+                    <h2 class="panel__title">Cargas puntuales</h2>
+                    <div id="point-loads" class="dynamic-list" aria-live="polite"></div>
+                    <button type="button" class="btn btn--ghost" id="add-point-load">Agregar carga puntual</button>
+                </section>
+
+                <section class="panel__section">
+                    <h2 class="panel__title">Cargas distribuidas</h2>
+                    <div id="distributed-loads" class="dynamic-list" aria-live="polite"></div>
+                    <button type="button" class="btn btn--ghost" id="add-distributed-load">Agregar carga distribuida</button>
+                </section>
+
+                <div class="panel__footer">
+                    <button type="submit" class="btn btn--primary">Calcular</button>
+                    <button type="button" class="btn btn--ghost" id="reset-form">Restablecer</button>
+                    <p id="form-feedback" class="feedback" role="status"></p>
+                    <p class="helper">Todos los valores se guardan localmente en tu navegador.</p>
+                </div>
+            </form>
+        </aside>
+
+        <section class="panel panel--results" id="resultados" aria-live="polite">
+            <div class="panel__section">
+                <h2 class="panel__title">Resumen de reacciones</h2>
+                <div class="cards-grid" id="reactions-summary">
+                    <article class="card" data-reaction="A">
+                        <h3>Apoyo A</h3>
+                        <p class="card__value" data-field="vertical">0.00 N</p>
+                        <p class="card__meta" data-field="horizontal">Horizontal: 0.00 N</p>
+                    </article>
+                    <article class="card" data-reaction="B">
+                        <h3>Apoyo B</h3>
+                        <p class="card__value" data-field="vertical">0.00 N</p>
+                        <p class="card__meta" data-field="horizontal">Horizontal: 0.00 N</p>
+                    </article>
+                    <article class="card" data-reaction="C">
+                        <h3>Apoyo C</h3>
+                        <p class="card__value" data-field="vertical">0.00 N</p>
+                        <p class="card__meta" data-field="horizontal">Horizontal: 0.00 N</p>
+                    </article>
+                </div>
+                <div class="equilibrium" id="equilibrium-summary">
+                    <div>
+                        <span>SF<sub>y</sub></span>
+                        <strong data-field="sum_vertical_loads">0.00 N</strong>
+                    </div>
+                    <div>
+                        <span>SM<sub>A</sub></span>
+                        <strong data-field="sum_moment_about_a">0.00 N·m</strong>
+                    </div>
+                    <div>
+                        <span>Par externo</span>
+                        <strong data-field="torsor">0.00 N·m</strong>
+                    </div>
+                    <div>
+                        <span>Centro de masa</span>
+                        <strong id="center-of-mass">—</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel__section" id="graficas">
+                <h2 class="panel__title">Gráficas interactivas</h2>
+                <div class="charts-grid">
+                    <figure class="chart-card">
+                        <figcaption>Diagrama de fuerza cortante</figcaption>
+                        <canvas id="shearChart" height="220"></canvas>
+                    </figure>
+                    <figure class="chart-card">
+                        <figcaption>Diagrama de momento flector</figcaption>
+                        <canvas id="momentChart" height="220"></canvas>
+                    </figure>
+                    <figure class="chart-card">
+                        <figcaption>Par torsor interno</figcaption>
+                        <canvas id="torsorChart" height="220"></canvas>
+                    </figure>
+                </div>
+            </div>
+
+            <div class="panel__section">
+                <h2 class="panel__title">Detalle de cargas</h2>
+                <div class="loads-table" id="loads-detail"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>© {{ current_year }} Simulador de Estructuras. Diseño renovado y optimizado.</p>
+        <p>Construido con FastAPI · Chart.js · CSS personalizado.</p>
+    </footer>
+
+    <script>window.__DEFAULT_PAYLOAD__ = {{ default_payload | tojson | safe }};</script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" integrity="sha384-e7NmBGG99nmHn7+O+kO5OVwOB1p5MNDoAuCEi0aKBslZx2drXr/7EQo1gChX2NDN" crossorigin="anonymous"></script>
+    <script src="/static/js/app.js" type="module"></script>
+</body>
+</html>
