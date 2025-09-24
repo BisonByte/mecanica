@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import BaseModel, Field, model_validator, validator
 
 from mechanics import DistributedLoad, PointLoad, compute_beam_analysis
 from mechanics.viga import BeamComputationError
@@ -53,13 +53,11 @@ class DistributedLoadPayload(BaseModel):
     def _default_label(cls, value: Optional[str]) -> str:
         return value or ""
 
-    @root_validator
-    def _check_interval(cls, values):
-        start = values.get("start")
-        end = values.get("end")
-        if start is not None and end is not None and end <= start:
+    @model_validator(mode="after")
+    def _check_interval(self):
+        if self.start is not None and self.end is not None and self.end <= self.start:
             raise ValueError("El fin de la carga distribuida debe ser mayor que el inicio.")
-        return values
+        return self
 
 
 class BeamPayload(BaseModel):
@@ -72,23 +70,21 @@ class BeamPayload(BaseModel):
     support_c_position: Optional[float] = None
     torsor: float = 0.0
     num_points: int = Field(800, ge=50, le=5000)
-    point_loads: List[PointLoadPayload] = []
-    distributed_loads: List[DistributedLoadPayload] = []
+    point_loads: List[PointLoadPayload] = Field(default_factory=list)
+    distributed_loads: List[DistributedLoadPayload] = Field(default_factory=list)
 
-    @root_validator
-    def _normalise_support_c(cls, values):
-        support_type = (values.get("support_c_type") or "").lower()
-        position = values.get("support_c_position")
+    @model_validator(mode="after")
+    def _normalise_support_c(self):
+        support_type = (self.support_c_type or "").lower()
         if support_type in {"ninguno", "none", ""}:
-            values["support_c_position"] = None
-        elif position is None:
+            self.support_c_position = None
+        elif self.support_c_position is None:
             raise ValueError("Debe proporcionar la posicion del apoyo C.")
-        return values
+        return self
 
     @validator("support_a_type", "support_b_type", "support_c_type", pre=True, always=True)
     def _strip_supports(cls, value: str) -> str:
         return (value or "").strip() or "Ninguno"
-
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request) -> HTMLResponse:
@@ -145,3 +141,5 @@ async def analyze_beam(payload: BeamPayload):
 @app.get("/health")
 async def healthcheck() -> Dict[str, str]:
     return {"status": "ok"}
+
+

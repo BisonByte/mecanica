@@ -16,22 +16,22 @@
             <span class="brand__logo">ME</span>
             <div>
                 <h1 class="brand__title">Simulador de Estructuras</h1>
-                <p class="brand__subtitle">Diseño profesional · Resultados confiables</p>
+                <p class="brand__subtitle">DiseÃ±o profesional Â· Resultados confiables</p>
             </div>
         </div>
         <nav class="app-nav">
-            <a href="#configuracion">Configuración</a>
+            <a href="#configuracion">ConfiguraciÃ³n</a>
             <a href="#cargas">Cargas</a>
             <a href="#resultados">Resultados</a>
-            <a href="#graficas">Gráficas</a>
+            <a href="#graficas">GrÃ¡ficas</a>
         </nav>
     </header>
 
     <main class="app-shell" id="configuracion">
-        <aside class="panel panel--controls" aria-label="Panel de configuración">
+        <aside class="panel panel--controls" aria-label="Panel de configuraciÃ³n">
             <form id="beam-form" class="form-grid" autocomplete="off">
                 <section class="panel__section">
-                    <h2 class="panel__title">Parámetros globales</h2>
+                    <h2 class="panel__title">ParÃ¡metros globales</h2>
                     <div class="field">
                         <label for="length">Longitud de la viga (m)</label>
                         <input id="length" name="length" type="number" step="0.1" min="0" required />
@@ -51,7 +51,7 @@
                             <label for="support_a_type">Apoyo A</label>
                             <select id="support_a_type" name="support_a_type">
                                 <option value="Fijo">Fijo</option>
-                                <option value="Movil">Móvil</option>
+                                <option value="Movil">MÃ³vil</option>
                                 <option value="Ninguno">Ninguno</option>
                             </select>
                         </div>
@@ -59,7 +59,7 @@
                             <label for="support_b_type">Apoyo B</label>
                             <select id="support_b_type" name="support_b_type">
                                 <option value="Fijo">Fijo</option>
-                                <option value="Movil" selected>Móvil</option>
+                                <option value="Movil" selected>MÃ³vil</option>
                                 <option value="Ninguno">Ninguno</option>
                             </select>
                         </div>
@@ -69,15 +69,15 @@
                         <select id="support_c_type" name="support_c_type">
                             <option value="Ninguno">Ninguno</option>
                             <option value="Fijo">Fijo</option>
-                            <option value="Movil">Móvil</option>
+                            <option value="Movil">MÃ³vil</option>
                         </select>
                     </div>
                     <div class="field" id="support_c_position_group" style="display:none">
-                        <label for="support_c_position">Posición apoyo C (m)</label>
+                        <label for="support_c_position">PosiciÃ³n apoyo C (m)</label>
                         <input id="support_c_position" name="support_c_position" type="number" step="0.1" min="0" />
                     </div>
                     <div class="field">
-                        <label for="torsor">Par torsor externo (N·m)</label>
+                        <label for="torsor">Par torsor externo (NÂ·m)</label>
                         <input id="torsor" name="torsor" type="number" step="0.1" value="0" />
                     </div>
                 </section>
@@ -130,21 +130,21 @@
                     </div>
                     <div>
                         <span>SM<sub>A</sub></span>
-                        <strong data-field="sum_moment_about_a">0.00 N·m</strong>
+                        <strong data-field="sum_moment_about_a">0.00 NÂ·m</strong>
                     </div>
                     <div>
                         <span>Par externo</span>
-                        <strong data-field="torsor">0.00 N·m</strong>
+                        <strong data-field="torsor">0.00 NÂ·m</strong>
                     </div>
                     <div>
                         <span>Centro de masa</span>
-                        <strong id="center-of-mass">—</strong>
+                        <strong id="center-of-mass">â€”</strong>
                     </div>
                 </div>
             </div>
 
             <div class="panel__section" id="graficas">
-                <h2 class="panel__title">Gráficas interactivas</h2>
+                <h2 class="panel__title">GrÃ¡ficas interactivas</h2>
                 <div class="charts-grid">
                     <figure class="chart-card">
                         <figcaption>Diagrama de fuerza cortante</figcaption>
@@ -169,8 +169,8 @@
     </main>
 
     <footer class="app-footer">
-        <p>© {{ current_year }} Simulador de Estructuras. Diseño renovado y optimizado.</p>
-        <p>Construido con FastAPI · Chart.js · CSS personalizado.</p>
+        <p>Â© {{ current_year }} Simulador de Estructuras. DiseÃ±o renovado y optimizado.</p>
+        <p>Construido con FastAPI Â· Chart.js Â· CSS personalizado.</p>
     </footer>
 
     <script>window.__DEFAULT_PAYLOAD__ = {{ default_payload | tojson | safe }};</script>
