@@ -1,0 +1,286 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Panel del simulador | Mecánica Estructural Pro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', path='css/main.css') }}" />
+    <script>
+        window.__DEFAULT_PAYLOAD__ = {{ default_payload | tojson | safe }};
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer></script>
+    <script src="{{ url_for('static', path='js/app.js') }}" defer></script>
+</head>
+<body class="app-body">
+    <div class="background-gradient"></div>
+    <div class="orb orb--one"></div>
+    <div class="orb orb--two"></div>
+
+    <header class="app-header">
+        <div class="brand">
+            <span class="brand__logo">ME</span>
+            <div>
+                <p class="brand__name">Mecánica Estructural Pro</p>
+                <p class="brand__tagline">Simulador web para ingeniería moderna</p>
+            </div>
+        </div>
+        <div class="app-header__actions">
+            <div class="user-badge" aria-live="polite">
+                <span class="user-badge__name">{{ user.full_name or user.email }}</span>
+                <span class="user-badge__role">{{ 'Administrador' if user.is_admin else 'Usuario aprobado' }}</span>
+            </div>
+            <form method="post" action="{{ request.url_for('auth_logout') }}">
+                <button type="submit" class="secondary-button">Cerrar sesión</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="app-layout">
+        <section class="app-panel app-panel--form">
+            <header class="app-panel__header">
+                <h1>Configuración del escenario</h1>
+                <p>Define geometría, apoyos y cargas antes de ejecutar el análisis.</p>
+            </header>
+
+            <nav id="form-stepper" class="stepper" aria-label="Pasos del configurador">
+                <button type="button" class="stepper__step stepper__step--active" data-step="geometria">1. Geometría</button>
+                <button type="button" class="stepper__step" data-step="apoyos">2. Apoyos</button>
+                <button type="button" class="stepper__step" data-step="cargas">3. Cargas</button>
+                <button type="button" class="stepper__step" data-step="opciones">4. Opciones</button>
+                <button type="button" class="stepper__step" data-step="resultados">5. Resultados</button>
+            </nav>
+
+            <form id="beam-form" class="beam-form" novalidate>
+                <div class="step-panels">
+                    <section class="step-panel step--active" data-step-panel="geometria">
+                        <div class="field-group">
+                            <label for="length">Longitud de la viga (m)</label>
+                            <input id="length" type="number" min="0" step="0.1" required />
+                        </div>
+                        <div class="field-grid">
+                            <div class="field-group">
+                                <label for="height_start">Cota inicial (m)</label>
+                                <input id="height_start" type="number" step="0.01" />
+                            </div>
+                            <div class="field-group">
+                                <label for="height_end">Cota final (m)</label>
+                                <input id="height_end" type="number" step="0.01" />
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <label for="torsor">Torsor externo (N·m)</label>
+                            <input id="torsor" type="number" step="0.01" />
+                        </div>
+                    </section>
+
+                    <section class="step-panel" data-step-panel="apoyos">
+                        <div class="field-grid">
+                            <div class="field-group">
+                                <label for="support_a_type">Apoyo A</label>
+                                <select id="support_a_type">
+                                    <option value="Fijo">Fijo</option>
+                                    <option value="Movil">Móvil</option>
+                                    <option value="Empotrado">Empotrado</option>
+                                </select>
+                            </div>
+                            <div class="field-group">
+                                <label for="support_b_type">Apoyo B</label>
+                                <select id="support_b_type">
+                                    <option value="Movil">Móvil</option>
+                                    <option value="Fijo">Fijo</option>
+                                    <option value="Empotrado">Empotrado</option>
+                                </select>
+                            </div>
+                            <div class="field-group">
+                                <label for="support_c_type">Apoyo intermedio C</label>
+                                <select id="support_c_type">
+                                    <option value="Ninguno">Sin apoyo</option>
+                                    <option value="Fijo">Fijo</option>
+                                    <option value="Movil">Móvil</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="field-group" id="support_c_position_group">
+                            <label for="support_c_position">Posición del apoyo C (m)</label>
+                            <input id="support_c_position" type="number" min="0" step="0.01" />
+                        </div>
+                    </section>
+
+                    <section class="step-panel" data-step-panel="cargas">
+                        <div class="panel-split">
+                            <div>
+                                <header class="panel-split__header">
+                                    <h3>Cargas puntuales</h3>
+                                    <button type="button" id="add-point-load" class="btn btn--ghost">Añadir carga</button>
+                                </header>
+                                <div id="point-loads" class="dynamic-list" aria-live="polite"></div>
+                            </div>
+                            <div>
+                                <header class="panel-split__header">
+                                    <h3>Cargas distribuidas</h3>
+                                    <button type="button" id="add-distributed-load" class="btn btn--ghost">Añadir distribuida</button>
+                                </header>
+                                <div id="distributed-loads" class="dynamic-list" aria-live="polite"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="step-panel" data-step-panel="opciones">
+                        <div class="field-grid">
+                            <div class="field-group">
+                                <label for="num_points">Resolución numérica</label>
+                                <input id="num_points" type="number" min="100" max="5000" step="50" />
+                                <small>Valores altos generan diagramas más suaves.</small>
+                            </div>
+                            <div class="field-group">
+                                <label for="unit_system">Sistema de unidades</label>
+                                <select id="unit_system">
+                                    <option value="SI">SI (m, N)</option>
+                                    <option value="US">US (ft, lb)</option>
+                                </select>
+                            </div>
+                            <div class="field-group">
+                                <label for="export_format">Formato de exportación</label>
+                                <select id="export_format">
+                                    <option value="json">JSON</option>
+                                    <option value="csv">CSV</option>
+                                    <option value="xlsx">XLSX</option>
+                                </select>
+                            </div>
+                        </div>
+                        <label class="checkbox-field">
+                            <input id="auto-analyze" type="checkbox" checked />
+                            <span>Ejecutar análisis automáticamente al modificar parámetros</span>
+                        </label>
+                    </section>
+
+                    <section class="step-panel" data-step-panel="resultados">
+                        <p>Cuando estés conforme con la configuración, ejecuta el cálculo manualmente o confía en el modo automático para ver los resultados.</p>
+                        <p>Desde aquí también puedes exportar la configuración o cargar escenarios guardados.</p>
+                    </section>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="reset-form" class="secondary-button">Restablecer</button>
+                    <button type="submit" class="primary-button">Calcular</button>
+                </div>
+                <p id="form-feedback" class="feedback" role="status"></p>
+            </form>
+
+            <section class="templates-panel">
+                <header class="templates-panel__header">
+                    <h2>Escenarios preconfigurados</h2>
+                    <button type="button" id="reload-templates" class="btn btn--ghost">Actualizar</button>
+                </header>
+                <div id="template-list" class="template-list" aria-live="polite"></div>
+                <button type="button" id="export-json" class="secondary-button template-export">Exportar configuración</button>
+            </section>
+        </section>
+
+        <section class="app-panel app-panel--results">
+            <header class="app-panel__header">
+                <h2>Resultados y diagnóstico</h2>
+                <p>Los valores se actualizan después de cada análisis. Usa estos datos para validar tus hipótesis.</p>
+            </header>
+
+            <div class="results-grid" id="reactions-summary">
+                <article class="result-card" data-reaction="A">
+                    <h3>Apoyo A</h3>
+                    <p class="result-card__value" data-field="vertical">0.00 N</p>
+                    <p class="result-card__meta" data-field="horizontal">Horizontal: 0.00 N</p>
+                </article>
+                <article class="result-card" data-reaction="B">
+                    <h3>Apoyo B</h3>
+                    <p class="result-card__value" data-field="vertical">0.00 N</p>
+                    <p class="result-card__meta" data-field="horizontal">Horizontal: 0.00 N</p>
+                </article>
+                <article class="result-card" data-reaction="C">
+                    <h3>Apoyo C</h3>
+                    <p class="result-card__value" data-field="vertical">0.00 N</p>
+                    <p class="result-card__meta" data-field="horizontal">Horizontal: 0.00 N</p>
+                </article>
+            </div>
+
+            <section class="equilibrium-card">
+                <header>
+                    <h3>Equilibrio global</h3>
+                </header>
+                <div id="equilibrium-summary" class="equilibrium-grid">
+                    <div>
+                        <span>ΣFy</span>
+                        <strong data-field="sum_vertical_loads">0.00 N</strong>
+                    </div>
+                    <div>
+                        <span>ΣMa</span>
+                        <strong data-field="sum_moment_about_a">0.00 N·m</strong>
+                    </div>
+                    <div>
+                        <span>Torsor aplicado</span>
+                        <strong data-field="torsor">0.00 N·m</strong>
+                    </div>
+                </div>
+                <p class="equilibrium-card__note">Centro de masa: <span id="center-of-mass">-</span></p>
+            </section>
+
+            <div class="charts-grid">
+                <article class="chart-card">
+                    <header><h3>Diagrama de cortante</h3></header>
+                    <canvas id="shearChart" height="240"></canvas>
+                </article>
+                <article class="chart-card">
+                    <header><h3>Momento flector</h3></header>
+                    <canvas id="momentChart" height="240"></canvas>
+                </article>
+                <article class="chart-card">
+                    <header><h3>Torsor</h3></header>
+                    <canvas id="torsorChart" height="240"></canvas>
+                </article>
+            </div>
+
+            <section class="loads-card">
+                <header><h3>Detalle de cargas</h3></header>
+                <div id="loads-detail" class="load-list"></div>
+            </section>
+
+            <section class="summary-card">
+                <header><h3>Resumen del escenario</h3></header>
+                <div id="project-summary" class="summary-grid">
+                    <div>
+                        <span>Longitud</span>
+                        <strong data-summary="length">0.00 m</strong>
+                    </div>
+                    <div>
+                        <span>Apoyos</span>
+                        <strong data-summary="supports">-</strong>
+                    </div>
+                    <div>
+                        <span>Cargas puntuales</span>
+                        <strong data-summary="point-loads">0</strong>
+                    </div>
+                    <div>
+                        <span>Cargas distribuidas</span>
+                        <strong data-summary="distributed-loads">0</strong>
+                    </div>
+                    <div>
+                        <span>Centro de masa</span>
+                        <strong data-summary="center-of-mass">-</strong>
+                    </div>
+                    <div>
+                        <span>Último cálculo</span>
+                        <strong data-summary="last-run">-</strong>
+                    </div>
+                </div>
+            </section>
+
+            <section class="insights-card">
+                <header><h3>Insights automáticos</h3></header>
+                <ul id="analysis-insights" class="insights-list"></ul>
+            </section>
+        </section>
+    </main>
+</body>
+</html>
+

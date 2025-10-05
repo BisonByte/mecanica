@@ -1,4 +1,4 @@
-"""API router that exposes beam related endpoints."""
+﻿"""API router that exposes beam related endpoints."""
 from __future__ import annotations
 
 from datetime import datetime
@@ -38,12 +38,12 @@ async def beam_templates() -> Dict[str, List[Dict[str, Any]]]:
     return {
         "categories": [
             {
-                "name": "Didácticos",
+                "name": "DidÃ¡cticos",
                 "items": [
                     {
                         "id": "simple-span",
                         "title": "Viga biapoyada con carga puntual",
-                        "description": "Caso clásico con carga puntual centrada.",
+                        "description": "Caso clÃ¡sico con carga puntual centrada.",
                         "payload": {
                             "length": 8.0,
                             "support_a_type": "Fijo",
@@ -91,12 +91,20 @@ async def beam_templates() -> Dict[str, List[Dict[str, Any]]]:
     }
 
 
-def render_dashboard(request: Request, default_payload: Dict[str, Any]) -> HTMLResponse:
+def render_dashboard(
+    request: Request,
+    *,
+    default_payload: Dict[str, Any],
+    user: Dict[str, Any],
+    current_year: int,
+) -> HTMLResponse:
     return templates.TemplateResponse(
-        "index.html",
+        "dashboard.html",
         {
             "request": request,
             "default_payload": default_payload,
-            "current_year": datetime.utcnow().year,
+            "current_year": current_year,
+            "user": user,
         },
     )
+

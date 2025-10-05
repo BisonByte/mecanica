@@ -1,0 +1,56 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Iniciar sesión | Mecánica Estructural Pro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', path='css/main.css') }}" />
+</head>
+<body class="auth-body">
+    <div class="background-gradient"></div>
+    <div class="orb orb--one"></div>
+    <div class="orb orb--two"></div>
+
+    <main class="auth-layout">
+        <section class="auth-card" aria-labelledby="login-title">
+            <header class="auth-card__header">
+                <div class="brand">
+                    <span class="brand__logo">ME</span>
+                    <div>
+                        <p class="brand__name">Mecánica Estructural Pro</p>
+                        <p class="brand__tagline">Portal seguro de simulación</p>
+                    </div>
+                </div>
+                <h1 id="login-title">Iniciar sesión</h1>
+                <p class="auth-card__subtitle">Accede con tus credenciales aprobadas para continuar al simulador.</p>
+            </header>
+
+            {% if success_message %}
+            <p class="alert alert--success">{{ success_message }}</p>
+            {% endif %}
+            {% if error_message %}
+            <p class="alert alert--error">{{ error_message }}</p>
+            {% endif %}
+
+            <form method="post" class="auth-form">
+                <label for="email">Correo electrónico</label>
+                <input id="email" name="email" type="email" value="{{ email or '' }}" required autofocus />
+
+                <label for="password">Contraseña</label>
+                <input id="password" name="password" type="password" required />
+
+                <button type="submit" class="primary-button auth-form__submit">Entrar</button>
+            </form>
+
+            <footer class="auth-card__footer">
+                <p>¿No tienes acceso todavía? <a href="{{ request.url_for('auth_register') }}">Solicita una cuenta</a>.</p>
+                <p class="auth-card__note">Soporte: escribe a <a href="mailto:soporte@mecanica.local">soporte@mecanica.local</a> para recuperar acceso.</p>
+                <a class="auth-card__link" href="{{ request.url_for('landing') }}">Volver al sitio principal</a>
+            </footer>
+        </section>
+    </main>
+</body>
+</html>

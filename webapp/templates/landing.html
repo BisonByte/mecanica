@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mecánica Estructural Pro</title>
+    <title>MecÃ¡nica Estructural Pro</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -18,16 +18,20 @@
         <div class="brand">
             <span class="brand__logo">ME</span>
             <div>
-                <p class="brand__name" data-l10n="brand-title">Mecánica Estructural Pro</p>
-                <p class="brand__tagline" data-l10n="brand-subtitle">Simulador web para ingeniería moderna</p>
+                <p class="brand__name" data-l10n="brand-title">MecÃ¡nica Estructural Pro</p>
+                <p class="brand__tagline" data-l10n="brand-subtitle">Simulador web para ingenierÃ­a moderna</p>
             </div>
         </div>
-        <nav class="site-nav" aria-label="Principal">
-            <a href="#overview" data-l10n="nav-overview">Visión general</a>
+        <button class="nav-toggle" aria-controls="site-nav" aria-expanded="false" aria-label="Abrir menÃº">
+            <span class="nav-toggle__box">
+                <span class="nav-toggle__inner"></span>
+            </span>
+        </button>
+        <nav id="site-nav" class="site-nav" aria-label="Principal">
+            <a href="#overview" data-l10n="nav-overview">VisiÃ³n general</a>
             <a href="#features" data-l10n="nav-features">Capacidades</a>
             <a href="#workflow" data-l10n="nav-workflow">Flujo de acceso</a>
             <a href="#access" data-l10n="nav-access">Ingreso</a>
-            <a href="#admin" data-l10n="nav-admin">Panel admin</a>
         </nav>
         <div class="header-actions">
             <div class="language-switcher" role="group" aria-label="Selector de idioma">
@@ -42,21 +46,21 @@
         <section id="overview" class="hero section">
             <div class="hero__content">
                 <span class="eyebrow" data-l10n="hero-subtitle">Simulaciones avanzadas desde cualquier dispositivo.</span>
-                <h1 class="hero__title" data-l10n="hero-title">Analiza estructuras con precisión de clase profesional</h1>
+                <h1 class="hero__title" data-l10n="hero-title">Analiza estructuras con precisiÃ³n de clase profesional</h1>
                 <p class="hero__lead" data-l10n="hero-description">
-                    Combina cálculo automatizado, reportes dinámicos y una gestión clara de usuarios para tu organización.
+                    Combina cÃ¡lculo automatizado, reportes dinÃ¡micos y una gestiÃ³n clara de usuarios para tu organizaciÃ³n.
                 </p>
                 <ul class="hero__benefits">
                     <li data-l10n="hero-bullet-1">Modelos de vigas con cargas puntuales y distribuidas.</li>
                     <li data-l10n="hero-bullet-2">Resultados visuales listos para reportes ejecutivos.</li>
-                    <li data-l10n="hero-bullet-3">Gestión de accesos con aprobación centralizada.</li>
+                    <li data-l10n="hero-bullet-3">GestiÃ³n de accesos con aprobaciÃ³n centralizada.</li>
                 </ul>
                 <div class="hero__actions">
                     <a class="primary-button" href="#access" data-l10n="hero-cta-primary">Acceso al simulador</a>
-                    <a class="secondary-button" href="#features" data-l10n="hero-cta-secondary">Conoce más</a>
+                    <a class="secondary-button" href="#features" data-l10n="hero-cta-secondary">Conoce mÃ¡s</a>
                 </div>
                 <p class="hero__footnote" data-l10n="hero-footnote">
-                    Los administradores también ingresan desde el portal de usuarios para mantener un único punto de acceso.
+                    Los administradores tambiÃ©n ingresan desde el portal de usuarios para mantener un Ãºnico punto de acceso.
                 </p>
             </div>
             <div class="hero__visual" aria-hidden="true">
@@ -65,18 +69,18 @@
                         <span class="hero-card__label" data-l10n="stat-1-label">Proyectos analizados</span>
                         <strong class="hero-card__value" data-l10n="stat-1-value">1200+</strong>
                     </header>
-                    <p data-l10n="stat-1-caption">Resultados auditados y listos para ingeniería.</p>
+                    <p data-l10n="stat-1-caption">Resultados auditados y listos para ingenierÃ­a.</p>
                     <div class="hero-card__divider"></div>
                     <div class="hero-card__status">
                         <div>
-                            <span data-l10n="stat-2-label">Tiempos de cálculo</span>
+                            <span data-l10n="stat-2-label">Tiempos de cÃ¡lculo</span>
                             <strong data-l10n="stat-2-value">&lt; 10 s</strong>
                             <p data-l10n="stat-2-caption">Promedio en escenarios complejos.</p>
                         </div>
                         <div>
-                            <span data-l10n="stat-3-label">Satisfacción</span>
+                            <span data-l10n="stat-3-label">SatisfacciÃ³n</span>
                             <strong data-l10n="stat-3-value">98%</strong>
-                            <p data-l10n="stat-3-caption">Equipos que confían en la plataforma.</p>
+                            <p data-l10n="stat-3-caption">Equipos que confÃ­an en la plataforma.</p>
                         </div>
                     </div>
                 </div>
@@ -85,12 +89,12 @@
 
         <section id="features" class="section">
             <header class="section__header">
-                <span class="eyebrow" data-l10n="features-title">Diseñado para equipos exigentes</span>
-                <h2 data-l10n="features-description">Cada módulo fue creado para brindar confianza y velocidad en tus entregables técnicos.</h2>
+                <span class="eyebrow" data-l10n="features-title">DiseÃ±ado para equipos exigentes</span>
+                <h2 data-l10n="features-description">Cada mÃ³dulo fue creado para brindar confianza y velocidad en tus entregables tÃ©cnicos.</h2>
             </header>
             <div class="feature-grid">
                 <article class="feature-card">
-                    <h3 data-l10n="feature-1-title">Motor de cálculo robusto</h3>
+                    <h3 data-l10n="feature-1-title">Motor de cÃ¡lculo robusto</h3>
                     <p data-l10n="feature-1-description">
                         Utiliza algoritmos validados para reacciones, diagramas de cortante, momento flector y torsor.
                     </p>
@@ -112,7 +116,7 @@
 
         <section id="workflow" class="section section--surface">
             <header class="section__header">
-                <span class="eyebrow" data-l10n="workflow-title">Proceso de incorporación sencillo</span>
+                <span class="eyebrow" data-l10n="workflow-title">Proceso de incorporaciÃ³n sencillo</span>
                 <h2 data-l10n="workflow-description">Desde la solicitud hasta el acceso total en minutos.</h2>
             </header>
             <ol class="timeline">
@@ -120,34 +124,34 @@
                     <div class="timeline__index">1</div>
                     <div>
                         <h3 data-l10n="workflow-step-1-title">Registro de usuario</h3>
-                        <p data-l10n="workflow-step-1-description">Completa el formulario con un correo válido para identificar la cuenta.</p>
+                        <p data-l10n="workflow-step-1-description">Completa el formulario con un correo vÃ¡lido para identificar la cuenta.</p>
                     </div>
                 </li>
                 <li class="timeline__item">
                     <div class="timeline__index">2</div>
                     <div>
-                        <h3 data-l10n="workflow-step-2-title">Estado: Esperando aprobación</h3>
+                        <h3 data-l10n="workflow-step-2-title">Estado: Esperando aprobaciÃ³n</h3>
                         <p data-l10n="workflow-step-2-description">El solicitante puede revisar el portal y ver el estado hasta que un administrador lo apruebe.</p>
                     </div>
                 </li>
                 <li class="timeline__item">
                     <div class="timeline__index">3</div>
                     <div>
-                        <h3 data-l10n="workflow-step-3-title">Aprobación del administrador</h3>
-                        <p data-l10n="workflow-step-3-description">El panel central muestra usuarios en línea, aprobados y rechazados para controlar accesos.</p>
+                        <h3 data-l10n="workflow-step-3-title">AprobaciÃ³n del administrador</h3>
+                        <p data-l10n="workflow-step-3-description">El panel central muestra usuarios en lÃ­nea, aprobados y rechazados para controlar accesos.</p>
                     </div>
                 </li>
                 <li class="timeline__item">
                     <div class="timeline__index">4</div>
                     <div>
                         <h3 data-l10n="workflow-step-4-title">Ingreso al software</h3>
-                        <p data-l10n="workflow-step-4-description">Una vez aprobado, el usuario y los administradores utilizan el mismo inicio de sesión.</p>
+                        <p data-l10n="workflow-step-4-description">Una vez aprobado, el usuario y los administradores utilizan el mismo inicio de sesiÃ³n.</p>
                     </div>
                 </li>
             </ol>
         </section>
 
-        <section id="access" class="section">
+                <section id="access" class="section">
             <header class="section__header">
                 <span class="eyebrow" data-l10n="access-title">Punto de acceso unificado</span>
                 <h2 data-l10n="access-description">Mantén toda la operación controlada desde un único portal.</h2>
@@ -155,39 +159,21 @@
             <div class="access-grid">
                 <article class="access-card access-card--highlight">
                     <h3 data-l10n="software-card-title">Acceso al software</h3>
-                    <p data-l10n="software-card-description">Ingresa directamente al simulador con tu usuario aprobado.</p>
-                    <a class="primary-button" href="#" data-l10n="software-card-button">Iniciar simulador</a>
-                    <p class="access-card__note" data-l10n="software-card-note">Disponible únicamente para cuentas aprobadas por un administrador.</p>
+                    <p data-l10n="software-card-description">Ingresa al simulador con tu cuenta verificada.</p>
+                    <a class="primary-button" href="{{ request.url_for('auth_login') }}" data-l10n="software-card-button">Abrir panel</a>
+                    <p class="access-card__note" data-l10n="software-card-note">Requiere un usuario aprobado o permisos de administrador.</p>
                 </article>
                 <article class="access-card">
                     <h3 data-l10n="login-card-title">Inicio de sesión</h3>
-                    <p data-l10n="login-card-description">Acceso para usuarios aprobados y administradores.</p>
-                    <form class="form">
-                        <label data-l10n="login-email-label" for="login-email">Correo electrónico</label>
-                        <input id="login-email" type="email" data-l10n-placeholder="login-email-placeholder" placeholder="nombre@empresa.com" />
-                        <label data-l10n="login-password-label" for="login-password">Contraseña</label>
-                        <input id="login-password" type="password" data-l10n-placeholder="login-password-placeholder" placeholder="********" />
-                        <button type="submit" class="primary-button" data-l10n="login-submit">Iniciar sesión</button>
-                        <a class="form__link" href="#" data-l10n="login-forgot">¿Olvidaste tu contraseña?</a>
-                    </form>
+                    <p data-l10n="login-card-description">Acceso directo para usuarios habilitados.</p>
+                    <a class="primary-button access-card__action" href="{{ request.url_for('auth_login') }}" data-l10n="login-submit">Iniciar sesión</a>
+                    <p class="access-card__note" data-l10n="login-card-note">Si olvidaste tu clave, contacta al administrador del proyecto.</p>
                 </article>
                 <article class="access-card">
                     <h3 data-l10n="register-card-title">Crear cuenta</h3>
-                    <p data-l10n="register-card-description">Solicita acceso y sigue el estado de aprobación.</p>
-                    <form class="form">
-                        <label data-l10n="register-name-label" for="register-name">Nombre completo</label>
-                        <input id="register-name" type="text" data-l10n-placeholder="register-name-placeholder" placeholder="Ingresa tu nombre" />
-                        <label data-l10n="register-email-label" for="register-email">Correo corporativo</label>
-                        <input id="register-email" type="email" data-l10n-placeholder="register-email-placeholder" placeholder="usuario@empresa.com" />
-                        <label data-l10n="register-role-label" for="register-role">Rol esperado</label>
-                        <input id="register-role" type="text" data-l10n-placeholder="register-role-placeholder" placeholder="Ej. Ingeniero estructural" />
-                        <div class="form__status">
-                            <span data-l10n="register-status-label">Estado actual</span>
-                            <strong data-l10n="register-status-value">Esperando aprobación</strong>
-                        </div>
-                        <button type="submit" class="secondary-button" data-l10n="register-submit">Enviar solicitud</button>
-                    </form>
-                    <p class="access-card__note" data-l10n="register-help">Puedes registrar un correo inicial y actualizarlo luego desde la configuración administrativa.</p>
+                    <p data-l10n="register-card-description">Solicita acceso y sigue tu estado de aprobación.</p>
+                    <a class="secondary-button access-card__action" href="{{ request.url_for('auth_register') }}" data-l10n="register-submit">Solicitar acceso</a>
+                    <p class="access-card__note" data-l10n="register-help">Recibirás una notificación por correo cuando tu solicitud sea aprobada.</p>
                 </article>
             </div>
         </section>
@@ -199,30 +185,31 @@
             </header>
             <div class="admin-grid">
                 <article class="status-card">
-                    <h3 data-l10n="admin-card-online">Usuarios en línea</h3>
+                    <h3 data-l10n="admin-card-online">Usuarios en lÃ­nea</h3>
                     <strong>08</strong>
                     <p data-l10n="admin-card-online-detail">Actividad concurrente monitoreada al instante.</p>
                 </article>
                 <article class="status-card">
                     <h3 data-l10n="admin-card-approved">Aprobados</h3>
                     <strong>152</strong>
-                    <p data-l10n="admin-card-approved-detail">Controla quién tiene acceso operativo.</p>
+                    <p data-l10n="admin-card-approved-detail">Controla quiÃ©n tiene acceso operativo.</p>
                 </article>
                 <article class="status-card">
                     <h3 data-l10n="admin-card-rejected">Rechazados</h3>
                     <strong>05</strong>
-                    <p data-l10n="admin-card-rejected-detail">Historial transparente para auditorías.</p>
+                    <p data-l10n="admin-card-rejected-detail">Historial transparente para auditorÃ­as.</p>
                 </article>
             </div>
-            <p class="admin-tip" data-l10n="admin-tip">Todos los administradores y usuarios utilizan el mismo inicio de sesión. Los administradores pueden actualizar correos desde la configuración del panel.</p>
+            <p class="admin-tip" data-l10n="admin-tip">Todos los administradores y usuarios utilizan el mismo inicio de sesiÃ³n. Los administradores pueden actualizar correos desde la configuraciÃ³n del panel.</p>
         </section>
     </main>
 
     <footer class="site-footer">
-        <p data-l10n="footer-cta">¿Listo para potenciar tus análisis estructurales?</p>
-        <p class="site-footer__legal">© {{ current_year }} Mecánica Estructural Pro. Todos los derechos reservados.</p>
+        <p data-l10n="footer-cta">Â¿Listo para potenciar tus anÃ¡lisis estructurales?</p>
+        <p class="site-footer__legal">Â© {{ current_year }} MecÃ¡nica Estructural Pro. Todos los derechos reservados.</p>
     </footer>
 
     <script src="{{ url_for('static', path='js/landing.js') }}" defer></script>
 </body>
 </html>
+
